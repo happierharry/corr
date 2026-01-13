@@ -1,0 +1,379 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath, amssymb}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{lipsum}
+\geometry{a4paper, margin=1in}
+
+\begin{document}
+
+\begin{center}
+Vol. 91 (2023) \quad \textit{REPORTS ON MATHEMATICAL PHYSICS} \quad No. 2
+\end{center}
+
+\begin{center}
+\textbf{NEW QUANTUM AND LCD CODES FROM CYCLIC CODES} \\
+\textbf{OVER A FINITE NON-CHAIN RING}
+\end{center}
+
+\begin{center}
+\textsc{Nadeem ur Rehman, Mohd Azmi and Ghulam Mohammad} \\
+Department of Mathematics, Aligarh Muslim University, Aligarh-202002, India \\
+(e-mails: nu.rehman.mm@amu.ac.in, waytoazmi40@gmail.com, mohdghulam202@gmail.com)
+\end{center}
+
+\begin{center}
+(\textit{Received July 18, 2022 — Revised November 7, 2022})
+\end{center}
+
+In this work, we study cyclic codes of length $n$ over a finite commutative non-chain ring 
+\[
+\mathcal{R} = \mathbb{F}_q[u,v]/(u^2 - \gamma u, v^2 - \epsilon v, uv - vu)
+\]
+where $\gamma, \epsilon \in \mathbb{F}_q^*$ and we find new and better quantum error-correcting codes than previously known quantum error correcting codes. Then certain constraints are imposed on the generator polynomials of cyclic codes, so these codes become linear complementary dual codes (in short LCD codes). We then verify that the Gray image of linear complementary dual codes of length $n$ over $\mathcal{R}$ is a linear complementary dual code of length $n$ over $\mathbb{F}_q$ by establishing a Gray map.
+
+\textbf{Keywords:} LCD codes, Hamming distance, quantum codes.
+
+\section*{1. Introduction}
+In the late 1940s, Claude Shannon \cite{shannon1948} proved that information might be securely sent over noisy communication channels provided correct encoding and decoding techniques are employed. This finding sparked an exploration of classical error-correcting codes. Later, it was established that error correction is a crucial element of modern technology for the reliable transmission, storage, and processing of classical information. But classical information theory has also come up with flaws. To overcome these flaws, we use quantum information theory, i.e. an extension of classical information to a quantum environment.
+
+Quantum computers have shown enormous promise, but to fulfill that potential, they must be protected from noise. Quantum error-correcting codes are employed in quantum computing to secure quantum information from flaws caused by decoherence and other quantum noise. As we know, error correction is not used in traditional computers. One explanation for this is that traditional computers make extensive use of electrons. As a result, if something goes wrong, the consequences are minimal.
+
+It is also worth noting that classical information cannot travel faster than the speed of light, but quantum information may if appropriate criteria are fulfilled. Quantum information cannot be reconstructed, while classical information can be. As a consequence, in contrast to classical information, quantum information is more efficient. A quantum computer can tackle complex tasks considerably faster than a classical computer.
+
+
+One follows the establishment of quantum error-correcting codes that protect quantum information in the same way as classical error-correcting codes protect classical information. As a result, research on quantum error-correcting codes has surged exponentially. In 1995, an American mathematician Peter Shor \cite{25} developed the first quantum error-correcting code. Then in 1998, Calderbank et al. \cite{4} presented a method for generating quantum error-correcting codes from conventional error-correcting codes. Qian et al. \cite{17} were the first to construct quantum codes from cyclic codes of odd length over the finite chain rings. Kai and Zhu \cite{29} later proposed a method for generating quantum codes using cyclic codes of odd length over the finite chain ring $\mathbb{F}_4 + u\mathbb{F}_4$ with $u^2 = 0$. Further, Qian \cite{18} has introduced a method for generating quantum error-correcting codes using cyclic codes over the finite non-chain ring $\mathbb{F}_2 + v\mathbb{F}_2$ with arbitrary length $v^2 = v$. The authors \cite{2,12,13,19,20,26} used this work to construct quantum codes using cyclic codes and constacyclic codes over the different rings.
+
+Massey \cite{16} suggested a new class of linear codes in 1992, linear complementary dual codes, namely LCD codes that satisfy their duals trivially, and revealed that asymptotically efficient LCD codes exist. Yang and Massey \cite{28} claimed in 1994 that a cyclic code is an LCD code over a finite field if the generator polynomial satisfies certain conditions. Several researchers have lately carried out research on LCD codes over finite chain rings and non-chain rings (see \cite{8,10,11,30,31}). Since its use in cryptography, in particular, to secure information from the so-called ``side-channel assaults (SCA)'' or ``fault noninvasive attacks'', LCD codes have become a particularly active study topic in the last five years. Here we examine the different optimal and near-optimal LCD codes for the ring $\mathcal{R}$ as a result of this refinement of previous research.
+
+We examine cyclic codes over a finite commutative non-chain ring $\mathcal{R} = \mathbb{F}_q[u,v]/\langle u^2 - \gamma u, v^2 - \epsilon v, uv - uu \rangle$ for $\gamma, \epsilon \in \mathbb{F}_q^*$ and its relevance in the generation of optimal LCD codes and comparatively new quantum codes. It is worth noting that the ring in \cite{21} is a specific form of our fundamental ring $\mathcal{R}$ (for $\gamma = 1, \epsilon = 1$).
+
+\section*{2. Preliminaries}
+Throughout this paper, we are assuming $\mathbb{F}_q$ as a finite field having $q$ elements with $q = p^r$ and $p$ is an odd prime,\ldots  and $r \geq 1$ is an integer. Let $\mathcal{R} = \mathbb{F}_q[u,v]/\langle u^2 - \gamma u, v^2 - \epsilon v, uv - uu \rangle$, where $u^2 = \gamma u, v^2 = \epsilon v, uv = uu$ and $\gamma, \epsilon \in \mathbb{F}_q^*$, which is a finite commutative non-chain ring with unity having characteristic $p$. Also, notice that $\mathcal{R}$ is a Frobenius ring that is not local, and $\mathcal{R}$ is a non-chain ring. Now we describe some elementary definitions as follows.
+
+A code $C$ of length $n$ over $\mathcal{R}$ is a nonempty subset of $\mathcal{R}^n$, and its element is called a codeword. A code $C$ is linear over $\mathcal{R}$, if it is an $\mathcal{R}$-submodule of $\mathcal{R}^n$. The Euclidean inner product of any two vectors $l = (l_0, l_1, \ldots, l_{n-1})$ and $k = (k_0, k_1, \ldots, k_{n-1})$ is
+\begin{equation}
+\langle l, k \rangle = \sum_{i=0}^{n-1} l_i k_i.
+\end{equation}
+
+
+The dual code $C^{\perp}$ of $C$ is defined as
+\[
+C^{\perp} = \{ l \in \mathbb{R}^n \mid l \cdot k = 0, \ \text{for all} \ k \in C \}.
+\]
+
+A code $C$ is said to be:
+\begin{itemize}
+    \item self-dual, if $C = C^{\perp}$,
+    \item self-orthogonal, if $C \subseteq C^{\perp}$,
+    \item dual containing, if $C^{\perp} \subseteq C$.
+\end{itemize}
+
+If $C \cap C^{\perp} = \{0\}$, a linear code $C$ is said to be a linear complementary dual (shortened as LCD codes). A linear code $C$ of length $n$ over $\mathcal{R}$ is said to be cyclic if for any $c = (c_0, c_1, \ldots, c_{n-1}) \in C$ we have $\varrho(c) := (c_{n-1}, c_0, c_1, \ldots, c_{n-2}) \in C$. Here $\varrho$ is known as a cyclic shift operator. Further if $(c_{n-1}, c_{n-2}, \ldots, c_1, c_0) \in C$, whenever $(c_0, c_1, \ldots, c_{n-1}) \in C$, the linear code $C$ is said to be reversible.
+
+If $f(x) = f^*(x)$, where its reciprocal polynomial is given by $f^*(x) = x^{\deg(f(x))} f(1/x)$, the polynomial $f(x)$ is said to be self-reciprocal. Moreover if $f(x)$ is a self-reciprocal polynomial, the cyclic code $C = \langle f(x) \rangle$ of length $n$ over $\mathbb{F}_q$ is reversible \cite{15}.
+
+As we know the ring $\mathcal{R}$ can be shown as $\mathcal{R} = \mathbb{F}_q + u\mathbb{F}_q + v\mathbb{F}_q + uv\mathbb{F}_q$, where $u^2 = \gamma u$, $v^2 = \epsilon v$, $uv = vu$, so for each $t \in \mathcal{R}$ can be represented as $t = a + ub + vc + uvd$, for $a, b, c, d \in \mathbb{F}_q$. Let
+\[
+\gamma \epsilon = \gamma v - \epsilon u + uv, \quad uv = \frac{uv}{\gamma \epsilon}, \quad \eta_0 = \frac{uv}{\gamma \epsilon}, \quad \eta_1 = \frac{u\epsilon - uv}{\gamma \epsilon}, \quad \eta_2 = \frac{v\gamma - uv}{\gamma \epsilon}, \quad \eta_3 = \frac{uv}{\gamma \epsilon}.
+\]
+
+For $\eta_i$ ($i \in \{0, 1, 2, 3\}$) to exist in (1), the multiplicative inverse of $\gamma$ and $\epsilon$ must exist in $\mathbb{F}_q^*$ ($\gamma, \epsilon \neq 0$). Thus, $\gamma$ and $\epsilon$ must be included in $\mathbb{F}_q^*$.
+
+Also we notice that
+\[
+\sum_{i=0}^3 \eta_i = 1, \quad \eta_i^2 = \eta_i, \quad \eta_i \eta_j = 0, \ i \neq j.
+\]
+
+Hence, by using the Chinese Remainder Theorem,
+\[
+\mathcal{R} = \bigoplus_{i=0}^3 \eta_i \mathcal{R} \simeq \bigoplus_{i=0}^3 \eta_i \mathbb{F}_q,
+\]
+we have that each $t \in \mathcal{R}$ can be represented as
+\[
+t = \sum_{i=0}^3 t_i \eta_i,
+\]
+where $t_i \in \mathbb{F}_q$, for $i \in \{0, 1, 2, 3\}$.
+
+Next we define the Gray map $\phi : \mathcal{R} \longrightarrow \mathbb{F}_q^4$ by
+\[
+\phi(t) = (t_0, t_1, t_2, t_3)M = tM,
+\]
+where $t \in \mathbb{F}_q^4$, $M \in GL_4(\mathbb{F}_q)$ and $GL_4(\mathbb{F}_q)$ is the set of all $4 \times 4$ invertible matrices over $\mathbb{F}_q$. The $\mathbb{F}_q$-images of codes have improved parameters, which is the contribution of $\phi$. The map is bijective.
+
+For any $e \in \mathcal{R}$,
+\[
+w_G(e) = w_H(\phi(e))
+\]
+is the Gray weight of $e \in \mathcal{R}$ and $w_H$ is the Hamming weight in $\mathbb{F}_q$.
+
+Also for $\mathbf{e} = (e_0, e_1, \ldots, e_{n-1}) \in \mathbb{R}^n$ we have
+\begin{equation}
+w_G(\mathbf{e}_i) = \sum_{i=0}^{n-1} w_G(e_i)
+\end{equation}
+and the Gray distance between $\mathbf{e}, \mathbf{h} \in \mathbb{R}^n$ is $d_G(\mathbf{e}, \mathbf{h}) = w_G(\mathbf{e} - \mathbf{h})$. Further, the Gray distance for a linear code $C$ is given by $d_G(C) = \min\{ w_G(l) \mid l \in C \setminus \{0\} \}$.
+
+Next, following Ashraf and Mohd \cite{21}, we recall that for a linear code $C$ of length $n$ over $\mathbb{R}$. Define:
+\begin{align*}
+C_0 &= \{ l_0 \in \mathbb{F}_q^n \mid \sum_{i=0}^3 l_i \eta_i \in C, \text{ for some } l_1, l_2, l_3 \in \mathbb{F}_q^n \}, \\
+C_1 &= \{ l_1 \in \mathbb{F}_q^n \mid \sum_{i=0}^3 l_i \eta_i \in C, \text{ for some } l_0, l_2, l_3 \in \mathbb{F}_q^n \}, \\
+C_2 &= \{ l_2 \in \mathbb{F}_q^n \mid \sum_{i=0}^3 l_i \eta_i \in C, \text{ for some } l_0, l_1, l_3 \in \mathbb{F}_q^n \}, \\
+C_3 &= \{ l_3 \in \mathbb{F}_q^n \mid \sum_{i=0}^3 l_i \eta_i \in C, \text{ for some } l_0, l_1, l_2 \in \mathbb{F}_q^n \}.
+\end{align*}
+
+Then $C_i$ is a linear code of length $n$ over $\mathbb{F}_q$ for $i \in \{0,1,2,3\}$. Further, $C$ can be uniquely expressed as $C = \bigoplus_{i=0}^3 \eta_i C_i$, and its dual $C^\perp = \bigoplus_{i=0}^3 \eta_i C_i^\perp$. The generator matrix for $C$ is given by
+\begin{equation}
+G = \begin{bmatrix}
+\eta_0 G_0 \\
+\eta_1 G_1 \\
+\eta_2 G_2 \\
+\eta_3 G_3
+\end{bmatrix}
+\end{equation}
+where $G_i$ is a generator matrix of $C_i$ for $i \in \{0,1,2,3\}$. From all of the above discussion, we conclude that the Gray map $\phi$ is a linear distance-preserving map from $(\mathbb{R}^n, d_G)$ to $\mathbb{F}_q^{4n}$ and the weight-preserving map from $(\mathbb{R}^n, \text{Gray weight})$ to $(\mathbb{F}_q^{4n}, \text{Hamming weight})$. Consequently, for an $[n, k, d_G]$ linear code $C$ over $\mathbb{R}$, its Gray image $\phi(C)$ is a $[4n, k, d_G]$ linear code over $\mathbb{F}_q$ with $d_G = d_H$.
+
+\textbf{Lemma 1.} \textit{Let $C$ be a linear code of length $n$ over $\mathbb{R}$. Then}
+\begin{itemize}
+    \item[(a)] $\phi(C^\perp) = (\phi(C))^\perp$,
+    \item[(b)] \textit{if $C$ is a self-orthogonal linear code then $\phi(C)$ is a self-orthogonal linear code of length $4n$ over $\mathbb{F}_q$},
+    \item[(c)] \textit{$C$ is a self-dual linear code if and only if $\phi(C)$ is a self-dual linear code of length $4n$ over $\mathbb{F}_q$}.
+\end{itemize}
+
+\textit{Proof:} (a) Let
+\begin{equation}
+\mathbf{e} = (e_0, e_1, e_2, \ldots, e_{n-1}) \in C
+\end{equation}
+
+\noindent and
+\[
+    h = (h_0, h_1, h_2, \ldots, h_{n-1}) \in C^{\perp},
+\]
+where
+\[
+    e_k = \sum_{i=0}^3 \eta_i t_k^i, \quad h_k = \sum_{i=0}^3 \eta_i m_k^i, \quad t_k^i, m_k^i \in \mathbb{F}_q \quad \text{for all } i, k.
+\]
+Further,
+\[
+    e \cdot h = \sum_{k=0}^{n-1} e_k h_k = 0
+\]
+gives
+\[
+    \sum_{k=0}^{n-1} \left( t_k^0 m_k^0 + t_k^1 m_k^1 + t_k^2 m_k^2 + t_k^3 m_k^3 \right) = 0.
+\]
+Also, we notice that
+\[
+    \phi(e) = [(t_0^0, t_0^1, t_0^2, t_0^3)M, \ldots, (t_{n-1}^0, t_{n-1}^1, t_{n-1}^2, t_{n-1}^3)M] = (\gamma_0 M, \ldots, \gamma_{n-1} M)
+\]
+and
+\[
+    \phi(h) = [(m_0^0, m_0^1, m_0^2, m_0^3)M, \ldots, (m_{n-1}^0, m_{n-1}^1, m_{n-1}^2, m_{n-1}^3)M] = (\epsilon_0 M, \ldots, \epsilon_{n-1} M),
+\]
+where
+\[
+    \gamma_k = (t_k^0, t_k^1, t_k^2, t_k^3), \quad \epsilon_k = (m_k^0, m_k^1, m_k^2, m_k^3) \quad \text{for } 0 \leq k \leq n-1.
+\]
+Then
+\begin{align*}
+    \phi(e) \cdot \phi(h) &= \phi(e) \phi(h)^T \\
+    &= \sum_{k=0}^{n-1} \gamma_k M M^T \epsilon_k^T \\
+    &= 4 \sum_{k=0}^{n-1} \gamma_k \epsilon_k^T \\
+    &= 4 \sum_{k=0}^{n-1} \left( t_k^0 m_k^0 + t_k^1 m_k^1 + t_k^2 m_k^2 + t_k^3 m_k^3 \right) \\
+    &= 0.
+\end{align*}
+Since $e \in C$ and $h \in C^{\perp}$ are arbitrary, we have $\phi(C^{\perp}) \subseteq (\phi(C))^{\perp}$. On the other side, as $\phi$ is a bijective linear map, we have $|\phi(C^{\perp})| = |(\phi(C))^{\perp}|$. Hence, $\phi(C^{\perp}) = (\phi(C))^{\perp}$.
+
+\noindent (b) Let $C \subseteq C^{\perp}$, then $\phi(C) \subseteq \phi(C^{\perp})$. By part (a), we have $\phi(C^{\perp}) = (\phi(C))^{\perp}$. Therefore, $\phi(C) \subseteq \phi(C)^{\perp}$ and hence $\phi(C)$ is a self-orthogonal linear code.
+
+\noindent (c) Let $C = C^{\perp}$, then by part (a), $\phi(C) = \phi(C^{\perp}) = \phi(C)^{\perp}$. Therefore, $\phi(C)$ is a self-dual code. Conversely, let $\phi(C) = \phi(C)^{\perp}$ then by part (a) we have $\phi(C) = (\phi(C))^{\perp} = \phi(C^{\perp})$. Since $\phi$ is bijective implies $C = C^{\perp}$. Hence $C$ is a self-dual linear code.
+
+\section*{3. Cyclic codes}
+The purpose of this section is to determine the structure of cyclic codes and dual codes, which will help generate quantum codes.
+
+\section*{Theorem 1 ([21])}
+Let $C = \bigoplus\limits_{i=0}^3 \eta_i C_i$ be a linear code of length $n$ over $\mathcal{R}$. Then:
+
+\begin{itemize}
+    \item[(a)] $C$ is a cyclic code if and only if $C_0, C_1, C_2, C_3$ are cyclic codes of length $n$ over $\mathbb{F}_q$.
+    \item[(b)] For a cyclic code $C$, there exists a polynomial $h(x) = \sum\limits_{i=0}^3 \eta_i h_i(x)$, where $h_i(x) \mid (x^n - 1)$ in $\mathbb{F}_q[x]$ such that $C = \langle h(x) \rangle$ and $h(x) \mid (x^n - 1)$ in $\mathcal{R}[x]$.
+    \item[(c)] The ring $C[x]/\langle (x^n - 1) \rangle$ is a principal ideal ring.
+\end{itemize}
+
+\textbf{Proof:}
+
+(a) Let $C$ be a cyclic code of length $n$ over $\mathcal{R}$. Let $l^i = (l^i_0, l^i_1, l^i_2, \dots, l^i_{n-1}) \in C_i$, for $i \in \{0, 1, 2, 3\}$.
+
+If $c_j = \sum\limits_{i=0}^3 \eta_i l^i_j$, for $0 \leq j \leq n-1$, then $c = (c_0, c_1, c_2, \dots, c_{n-1}) \in C$. Since $C$ is a cyclic code, $\varrho(c) = (c_{n-1}, c_0, \dots, c_{n-2}) \in C$. Again,
+\[
+\varrho(c) = \sum_{i=0}^3 \eta_i \varrho(l^i) \in C = \bigoplus_{i=0}^3 \eta_i C_i.
+\]
+Therefore, $\varrho(l^i) \in C_i$ for $i \in \{0, 1, 2, 3\}$. Thus $C_0, C_1, C_2, C_3$ are cyclic codes of length $n$ over $\mathbb{F}_q$.
+
+Conversely, let $C_0, C_1, C_2, C_3$ be cyclic codes of length $n$ over $\mathbb{F}_q$. Let $c = (c_0, c_1, \dots, c_{n-1}) \in C$, where $c_j = \sum\limits_{i=0}^3 \eta_i l^i_j$, for $0 \leq j \leq n-1$. Then $l^i = (l^i_0, l^i_1, \dots, l^i_{n-1}) \in C_i$ for $i \in \{0, 1, 2, 3\}$. Hence, $\varrho(l^i) \in C_i$, for $i \in \{0, 1, 2, 3\}$.
+
+Now $\varrho(c) = \sum\limits_{i=0}^3 \eta_i \varrho(l^i) \in \bigoplus\limits_{i=0}^3 \eta_i C_i = C$. Thus, $C$ is a cyclic code of length $n$ over $\mathcal{R}$.
+
+(b) Let $C$ be a cyclic code of length $n$ over $\mathcal{R}$. Then by part (a), $C_0, C_1, C_2, C_3$ are cyclic codes of length $n$ over $\mathbb{F}_q$.
+
+Let $C_i = \langle h_i(x) \rangle$ such that $h_i(x) \mid (x^n - 1)$, for $i \in \{0, 1, 2, 3\}$. Therefore, $h_i(x)$ is a generator polynomial of $C$ for $i \in \{0, 1, 2, 3\}$. If
+\[
+h(x) = \sum_{i=0}^3 \eta_i h_i(x),
+\]
+it implies $\langle h(x) \rangle \subseteq C$.
+
+On the other hand, $\eta_i h_i(x) = \eta_i h(x) \in \langle h(x) \rangle$, for $i \in \{0, 1, 2, 3\}$. Hence, $C \subseteq \langle h(x) \rangle$. Combining both sides, we have $C = \langle h(x) \rangle$.
+
+Further, let $x^n - 1 = h_i(x) p_i(x)$ in $\mathbb{F}_q[x]$, for $i \in \{0, 1, 2, 3\}$. Then
+\[
+h(x) \sum_{i=0}^3 \eta_i p_i(x) = \sum_{i=0}^3 \eta_i h_i(x) p_i(x) = x^n - 1 \sum_{i=0}^3 \eta_i = x^n - 1.
+\]
+Thus, $h(x) \mid x^n - 1$.
+
+(c) Let $C$ be an ideal of $\mathcal{R}[x]/\langle x^n - 1 \rangle$. Then $C$ is a cyclic code of length $n$ over $\mathcal{R}$. Again, by part (b), there exists $h(x) \in \mathcal{R}[x]$ such that $C = \langle h(x) \rangle$. Hence, $\mathcal{R}[x]/\langle x^n - 1 \rangle$ is a principal ideal ring. $\square$
+
+\vspace{0.3cm}
+\noindent\textbf{Theorem 2} ([10]). Let $C = \bigoplus\limits_{i=0}^3 \eta_i C_i$ be a cyclic code of length $n$ over $\mathcal{R}$ where
+\[
+C = \left\langle \sum_{i=0}^3 \eta_i h_i(x) \right\rangle \text{ is such that } (x^n - 1) = h_i(x) b_i(x) \text{ in } \mathbb{F}_q[x].
+\]
+Then:
+\begin{itemize}
+    \item[(a)] $C^{\perp} = \bigoplus\limits_{i=0}^3 \eta_i C_i^{\perp}$ is a cyclic code of length $n$ over $\mathcal{R}$,
+    \item[(b)] $C^{\perp} = \left\langle \sum\limits_{i=0}^3 \eta_i b_i^*(x) \right\rangle$, where $b_i^*(x)$ is reciprocal of $b_i(x)$, for $i \in \{0,1,2,3\}$,
+    \item[(c)] $C$ is a self-dual cyclic code if and only if $C_0, C_1, C_2, C_3$ are self-dual cyclic codes of length $n$ over $\mathbb{F}_q$,
+    \item[(d)] $|C^{\perp}| = q^{\sum\limits_{i=0}^3 \deg(h_i(x))}$.
+\end{itemize}
+
+\noindent\textit{Proof:}
+\begin{itemize}
+    \item[(a)] Since $C = \eta_i C_i$ is a cyclic code of length $n$ over $\mathcal{R}$, by part (a) of Theorem 1, $C_0, C_1, C_2, C_3$ are cyclic codes of length $n$ over $\mathbb{F}_q$. It is known that the dual of a cyclic code is again a cyclic code over a finite field $\mathbb{F}_q$. Therefore, $C_i^{\perp}$ is a cyclic code of length $n$ over $\mathbb{F}_q$, for $i \in \{0,1,2,3\}$. Hence, by part (a) of Theorem 1, $C^{\perp} = \bigoplus\limits_{i=0}^3 \eta_i C_i^{\perp}$ is a cyclic code of length $n$ over $\mathcal{R}$.
+    
+    \item[(b)] As $C_i$ is a cyclic code of length $n$ over $\mathbb{F}_q$, let $C_i^{\perp} = \langle h_i^*(x) \rangle$, where $x^n - 1 = h_i(x) b_i(x)$, for $i \in \{0,1,2,3\}$. Then, by part (b) of Theorem 1, we have $C^{\perp} = \left\langle \sum\limits_{i=0}^3 \eta_i b_i^*(x) \right\rangle$, where $b_i^*(x)$ is reciprocal of $b_i(x)$, for $i \in \{0,1,2,3\}$.
+    
+    \item[(c)] Let $C = C^{\perp}$, i.e., $\bigoplus\limits_{i=0}^3 \eta_i C_i = \bigoplus\limits_{i=0}^3 \eta_i C_i^{\perp}$ and this implies that $C_i = C_i^{\perp}$, for $i \in \{0,1,2,3\}$. Thus, $C_0, C_1, C_2, C_3$ are self-dual cyclic codes of length $n$ over $\mathbb{F}_q$. Conversely, let $C_i = C_i^{\perp}$ for $i \in \{0,1,2,3\}$. Now,
+    \[
+    C^{\perp} = \bigoplus\limits_{i=0}^3 \eta_i C_i^{\perp} = \bigoplus\limits_{i=0}^3 \eta_i C_i.
+    \]
+    Therefore, $C$ is a self-dual cyclic code of length $n$ over $\mathcal{R}$.
+    
+    \item[(d)] Since $C_i^{\perp} = \langle b_i^*(x) \rangle$, where $x^n - 1 = h_i(x) b_i(x)$, then $|C_i^{\perp}| = q^{\deg(h_i(x))}$ for $i \in \{0,1,2,3\}$. Hence,
+    \[
+    |C^{\perp}| = \prod_{i=0}^3 |C_i^{\perp}| = q^{\sum\limits_{i=0}^3 \deg(h_i(x))}.
+    \]
+\end{itemize}
+$\square$
+
+\section*{4. LCD codes}
+
+The formation of cyclic codes and their duals over $\mathcal{R}$ is described in Theorems 1 and 2, respectively. To produce linear complementary dual codes (shortened as LCD codes) over $\mathcal{R}$, we now put certain restrictions on cyclic codes. In this context, we first analyze the following two essential results.
+
+\textbf{Lemma 2} ([28]). Let $C = \langle h(x) \rangle$ be a cyclic code of length $n$ over $\mathbb{F}_q$, where $n = p^t m$ and the greatest common divisor $\gcd(m, p) = 1$. Then $C$ is an LCD code if and only if $h(x)$ is self-reciprocal and all the monic irreducible factors of $h(x)$ have the same multiplicity in $h(x)$ and in $(x^n - 1)$.
+
+\textbf{Lemma 3} ([28]). Let $C$ be a cyclic code of length $n$ over $\mathbb{F}_q$, where $\gcd(n, p) = 1$. Then $C$ is an LCD code if and only if $C$ is a reversible cyclic code.
+
+\textbf{Theorem 3}. Let $C = \bigoplus\limits_{i=0}^3 \eta_i C_i$ be a cyclic code of length $n$ over $\mathcal{R}$. Then $C$ is an LCD code if and only if $C_0, C_1, C_2, C_3$ are LCD codes of length $n$ over $\mathbb{F}_q$.
+
+\textit{Proof}: The fact that $C \cap C^{\perp} = \{0\}$ if and only if $C_i \cap C_i^{\perp} = \{0\}$ for $i \in \{0, 1, 2, 3\}$ leads to the conclusion. $\square$
+
+\textbf{Theorem 4}. Let $n = p^t m$ and $\gcd(m, p) = 1$. Let $C = \bigoplus\limits_{i=0}^3 \eta_i C_i$ be a cyclic code of length $n$ over $\mathcal{R}$, where $C_i = \langle h_i(x) \rangle$ is such that $h_i(x) \in \mathbb{F}_q[x]$ and $h_i(x) | (x^n - 1)$ for $i \in \{0, 1, 2, 3\}$. Then $C$ is an LCD code if and only if $h_i(x)$ is self-reciprocal and each monic irreducible factor of $h_i(x)$ has the same multiplicity in $h_i(x)$ and in $(x^n - 1)$ for $i \in \{0, 1, 2, 3\}$.
+
+\textit{Proof}: Using Lemma 2 and Theorem 3, it is verified. $\square$
+
+\textbf{Theorem 5}. Let $C = \bigoplus\limits_{i=0}^3 \eta_i C_i$ be a cyclic code of length $n$ over $\mathcal{R}$ with $\gcd(n, p) = 1$. Then $C$ is an LCD code if and only if $C_0, C_1, C_2, C_3$ are reversible cyclic codes of length $n$ over $\mathbb{F}_q$.
+
+\textit{Proof}: It follows from Lemma 3 and Theorem 3. $\square$
+
+\textbf{Theorem 6}. For $\gcd(n, p) = 1$, let $C = \bigoplus\limits_{i=0}^3 \eta_i C_i$ be a cyclic code of length $n$ over $\mathcal{R}$, where $C_i = \langle h_i(x) \rangle$ is a cyclic code of length $n$ over $\mathbb{F}_q$ for $i \in \{0, 1, 2, 3\}$. Then $C$ is an LCD code if and only if $h_i(x)$ is self-reciprocal polynomial in $\mathbb{F}_q$ for $i \in \{0, 1, 2, 3\}$.
+
+\textit{Proof}: With the help of Theorem 5, it can be easily verified. $\square$
+
+\textbf{Lemma 4.} \textit{Let $C$ be a linear code of length $n$ over $\mathcal{R}$ and $\phi$ be the Gray map defined in Eq. (2.1). Then $\phi(C \cap C^{\perp}) = \phi(C) \cap \phi(C)^{\perp}$.}
+
+\textbf{Theorem 7.} \textit{Let $C$ be a linear code of length $n$ over $\mathcal{R}$. Then $C$ is an LCD code if and only if its Gray image $\phi(C)$ is an LCD code of length $4n$ over $\mathbb{F}_q$.}
+
+\textit{Proof:} Let $C$ be an LCD code of length $n$ over $\mathcal{R}$. Then $C \cap C^{\perp} = \{0\}$. Now, by Lemma 4, $\phi(C) \cap \phi(C)^{\perp} = \phi(C \cap C^{\perp}) = \phi(\{0\}) = \{0\}$. This implies that $\phi(C)$ is an LCD code of length $4n$ over $\mathbb{F}_q$.
+
+Conversely, let $\phi(C)$ be an LCD code of length $4n$ over $\mathbb{F}_q$. Then $\phi(C) \cap \phi(C)^{\perp} = \{0\}$. Again, by Lemma 4, we have $\phi(C \cap C^{\perp}) = \phi(C) \cap \phi(C)^{\perp} = \{0\}$. Since $\phi$ is injective, we have $C \cap C^{\perp} = \{0\}$. Hence, $C$ is an LCD code of length $n$ over $\mathcal{R}$. $\square$
+
+\section*{5. Quantum codes}
+
+Let $\mathbb{H}(\mathbb{C})$ be a $q$-dimensional Hilbert space over the complex field $\mathbb{C}$. $\mathbb{H}_n(\mathbb{C})$ is defined as $\mathbb{H}_n(\mathbb{C}) = \mathbb{H} \times \mathbb{H} \times \dots \times \mathbb{H}$ ($n$ times), the $n$-fold tensor product of the Hilbert space $\mathbb{H}$. Then $\mathbb{H}_n(\mathbb{C})$ is a $q^n$-dimensional Hilbert space. A quantum code of length $n$ and dimension $k$ over $\mathbb{F}_q$ is defined to be a Hilbert subspace of $\mathbb{H}_n$ having dimension $q^k$. A quantum code with length $n$, dimension $k$ and minimum distance $d$ over $\mathbb{F}_q$ is denoted by $[[n, k, d]]_q$.
+
+The following lemmata give the construction of quantum error-correcting codes, which is known as the Calderbank--Steane--Shor construction, namely CSS construction.
+
+\textbf{Lemma 5} ([24] (CSS construction)). \textit{Let $C$ be an $[n, k, d]$ linear code of length $n$ over $\mathbb{F}_q$. If $C^{\perp} \subseteq C$, then there exists a quantum code $[[n, 2k - n, d]]_q$ over $\mathbb{F}_q$.}
+
+\textbf{Lemma 6} ([29]). \textit{Let $C = \langle h(x) \rangle$ be a cyclic code of length $n$ over $\mathbb{F}_q$. Then $C^{\perp} \subseteq C$ if and only if $(x^n - 1) \equiv 0 \pmod{h(x) h^*(x)}$, where $h^*(x)$ is the reciprocal polynomial of $h(x)$.}
+
+Here $[[n, k, d]]_q$ denotes a quantum code of length $n$, dimension $k$ and minimum distance $d$ over the field $\mathbb{F}_q$. In the next theorem, we use Lemma 6 to discover a necessary and sufficient condition for cyclic codes to contain their duals.
+
+\textbf{Theorem 8.} \textit{Let $C = \bigoplus_{i=0}^3 \eta_i C_i$ be a cyclic code of length $n$ over $\mathcal{R}$, where $C_i = \langle h_i(x) \rangle$, for $i \in \{0, 1, 2, 3\}$. Then}
+
+\begin{itemize}
+    \item[(a)] $C^{\perp} \subseteq C$ if and only if $C_i^{\perp} \subseteq C_i$ for $i \in \{0, 1, 2, 3\}$,
+    \item[(b)] $C^{\perp} \subseteq C$ if and only if $(x^n - 1) \equiv 0 \pmod{h_i(x) h_i^*(x)}$, where $h_i^*(x)$ is the reciprocal polynomial of $h_i(x)$, for $i \in \{0, 1, 2, 3\}$.
+\end{itemize}
+\textbf{Proof:} (a) Let $C^{\perp} \subseteq C$. Then $\displaystyle \bigoplus_{i=0}^3 \eta_i C_i^{\perp} \subseteq \bigoplus_{i=0}^3 C$. Since $C_i$ is a $q$-ary linear code such that $\eta_i C_i \equiv C \pmod{\eta_i}$, we have $C_i^{\perp} \subseteq C_i$ for $i \in \{0,1,2,3\}$.
+
+Conversely, let $C_i^{\perp} \subseteq C_i$ for $i \in \{0,1,2,3\}$. Then $C^{\perp} = \bigoplus_{i=0}^3 \eta_i C_i^{\perp} \subseteq \bigoplus_{i=0}^3 \eta_i C_i = C$.
+
+(b) Let $C^{\perp} \subseteq C$. Then by part (a), $C_i^{\perp} \subseteq C_i$ for $i \in \{0,1,2,3\}$. Now, by Lemma 6, we have $x^n - 1 \equiv 0 \pmod{h_i(x) h_i^*(x)}$, where $h_i^*(x)$ is the reciprocal polynomial of $h_i(x)$, for $i \in \{0,1,2,3\}$.
+
+Conversely, let $x^n - 1 \equiv 0 \pmod{h_i(x) h_i^*(x)}$, where $h_i^*(x)$ is the reciprocal polynomial of $h_i(x)$, for $i \in \{0,1,2,3\}$. Then, by Lemma 6, $C_i^{\perp} \subseteq C_i$ for $i \in \{0,1,2,3\}$. Thus, by part (a), $C^{\perp} \subseteq C$. \hfill $\square$
+
+\medskip
+
+Next, we establish $q$-ary quantum codes utilizing dual-containing cyclic codes.
+
+\medskip
+\noindent
+\textbf{Theorem 9.} Suppose $C = \bigoplus_{i=0}^3 \eta_i C_i$ is a cyclic code of length $n$ over $\mathcal{R}$, where $C_i = \langle h_i(x) \rangle$ for $i \in \{0,1,2,3\}$ and $\phi(C)$ has the parameters $[4n, k, d_H]$.
+
+\begin{itemize}
+    \item[(a)] If $C^{\perp} \subseteq C$ then there exists a quantum code $[[4n, 2k - 4n, d_H]]_q$.
+    \item[(b)] If $x^n - 1 \equiv 0 \pmod{h_i(x) h_i^*(x)}$, where $h_i^*(x)$ is the reciprocal polynomial of $h_i(x)$, for $i \in \{0,1,2,3\}$, then there exists a quantum code $[[4n, 2k - 4n, d_H]]_q$ over $\mathbb{F}_q$.
+\end{itemize}
+
+\noindent
+\textbf{Proof:} (a) Let $C^{\perp} \subseteq C$. Since $\phi(C^{\perp}) = \phi(C)^{\perp}$ (by part (a) of Lemma 1), $(\phi(C))^{\perp} \subseteq \phi(C)$. Hence, $\phi(C)$ is a dual containing $[4n, k, d_H]$ linear code over $\mathbb{F}_q$. By Lemma 5, there exists a quantum code $[[4n, 2k - 4n, d_H]]_q$ over $\mathbb{F}_q$.
+
+(b) Let $x^n - 1 \equiv 0 \pmod{h_i(x) h_i^*(x)}$, where $h_i^*(x)$ is the reciprocal polynomial of $h_i(x)$, for $i \in \{0,1,2,3\}$. Then, by part (b) of Theorem 8, $C^{\perp} \subseteq C$. Hence, by part (a), there exists a quantum code $[[4n, 2k - 4n, d_H]]_q$ over $\mathbb{F}_q$. \hfill $\square$
+
+\section*{6. Conclusion}
+In order to obtain quantum codes from cyclic codes over $\mathbb{F}_q[u,v]/\langle u^2 - \gamma u, v^2 - \epsilon v, uv - \omega v \rangle$, the structural characteristics of linear and cyclic codes over $\mathbb{F}_q[u,v]/\langle u^2 - \gamma u, v^2 - \epsilon v, uv - \omega u \rangle$ have been provided in this paper. We have described a technique for obtaining LCD codes as a Gray image of LCD codes over the ring $\mathbb{F}_q[u,v]/\langle u^2 - \gamma u, v^2 - \epsilon v, uv - \omega u \rangle$. In addition, Table 1 includes several optimal LCD codes and the best known linear codes according to the database \cite{ref23}. On the other hand, we contrasted our obtained quantum codes with those provided in Table 2, according to the database \cite{ref14}.
+
+\section*{References}
+\begin{enumerate}
+\item A. Dertli, Y. Cengellenmis and S. Eren: On the codes over the $\mathbb{Z}_3 + u\mathbb{Z}_3 + v^2\mathbb{Z}_3$, arXiv:1510.01591 (2015).
+\item A. Dertli, Y. Cengellenmis and S. Eren: Quantum codes over the ring $\mathbb{F}_2 + u\mathbb{F}_2 + u^2\mathbb{F}_2 + \dots + u^m\mathbb{F}_2$, \textit{Int. J. Algebra} \textbf{3}, 115--121 (2015).
+\item A. N. Alkenani, M. Ashraf and G. Mohammad: Quantum codes from constacyclic codes over the ring $\mathbb{F}_q[u_1,u_2]/\langle u_1^q - u_1, u_2^q - u_2, u_1u_2 - u_2u_1 \rangle$, \textit{Mathematics} \textbf{8}(5), 781 (2020), doi: 10.3390/math8050781.
+\item A. R. Calderbank, E. M. Rains, P. M. Shor and N. J. A. Sloane: Quantum error correction via codes over GF(4), \textit{IEEE Trans. Inform. Theory} \textbf{44}(4), 1369--1387 (1998), doi: 10.1109/18.681315.
+\item C. E. Shannon: A mathematical theory of communication, \textit{The Bell System Tech. Journal} \textbf{27}(3), 379--423, (1948), doi: 10.1002/j.1538-7305.1948.tb01338.x.
+\item F. Ma, J. Gao and F. W. Fu: New non-binary quantum codes from constacyclic codes over $\mathbb{F}_q[u,v]/\langle u^2 - 1, v^2 - 1, uv - \omega u \rangle$, \textit{American Inst. Math. Sci.} \textbf{13}(3), 421--434 (2019).
+\item H. Islam and O. Prakash: Quantum codes from the cyclic codes over $\mathbb{F}_p[u,v]/\langle u^2 - 1, v^2 - 1, uv - \omega u, uv - \omega v, uv - \omega u \rangle$, \textit{J. Appl. Math. Comput.} \textbf{60}, 625--635 (2019).
+\item H. Islam and O. Prakash: New quantum and LCD codes over the finite field of even characteristic, \textit{Def. Sci. J.} \textbf{71}(5), 656--661 (2020).
+\item H. Islam, O. Prakash and R. K. Verma: Quantum codes from the cyclic codes over $\mathbb{F}_p[v,w]/\langle v^2 - 1, w^2 - 1, vw - wv \rangle$, \textit{Springer Proceedings in Mathematics \\& Statistics} \textbf{307} (2020).
+\item H. Islam and O. Prakash: Construction of LCD and new quantum codes from cyclic codes over a finite non-chain ring, \textit{Cryptogr. Commun.} \textbf{14}, 59--73 (2022), doi: 10.1007/s12095-021-00516-9.
+\item H. Q. Dinh, T. Bag, A. K. Upadhyay, Ramakrishna Bandi and W. Chinnakum: On the structure of cyclic codes over the ring $\mathbb{F}_qR$ and applications in quantum and LCD codes, \textit{IEEE. Access} \textbf{8}(1), 18902--18914 (2020).
+\item H. Q. Dinh, T. Bag, S. Pathak, A. K. Upadhyay and W. Chinnakum: Quantum codes obtained from constacyclic codes over a family of finite rings $\mathbb{F}_p[u_1, u_2, \dots, u_s]$, \textit{IEEE. Access} \textbf{8}, 194082--194091 (2020).
+\item H. Q. Dinh, S. Pathak, T. Bag, A. K. Upadhyay and W. Chinnakum: A Study of $\mathbb{F}_qR$-Cyclic codes and Their Applications in Constructing Quantum Codes, \textit{IEEE. Access} \textbf{8}, 190490--190603 (2021).
+\item J. Bierbrauer and Y. Edel: Some good quantum twisted codes, Online available at https://www.mathi.uni-heidelberg.de/$\sim$wevs/Matritzen/QTBCH/QTBCHIndex.html, (2020). Accessed on 2021-08-05.
+\item J. L. Massey: Reversible codes, \textit{Inf. Control} \textbf{7}(3), 369--380 (1964).
+\item J. L. Massey: Linear codes with complementary duals, \textit{Discrete Math.} \textbf{106} -- 107, 337--342 (1992).
+\item J. Qian, J. Ma and W. Guo: Quantum codes from cyclic codes over finite ring, \textit{Int. J. Quantum Inf.} \textbf{7}, 1277--1283 (2009).
+\item J. Qian: Quantum codes from cyclic codes over $\mathbb{F}_2 + u\mathbb{F}_2$, \textit{J. Inform. Comput. Sci.} \textbf{6}, 1715--1722 (2013).
+\item M. Ashraf and G. Mohammad: Quantum codes from cyclic codes over $\mathbb{F}_3 + u\mathbb{F}_3$, \textit{Int. J. Quantum Inf.} \textbf{12}(6), 1450042 (2014).
+\item M. Ashraf and G. Mohammad: Construction of quantum codes from cyclic codes over $\mathbb{F}_p + u\mathbb{F}_p$, \textit{Int. J. Inf. Coding Theory} \textbf{3}(2), 137--144 (2015).
+\item M. Ashraf and G. Mohammad: Quantum codes from cyclic codes over $\mathbb{F}_q + u\mathbb{F}_q + v\mathbb{F}_q$, \textit{Quantum Inf. Processing} \textbf{15}(10), 4089--4098 (2016).
+\item M. Ashraf and G. Mohammad: Quantum codes over $\mathbb{F}_p$ from cyclic codes over $\mathbb{F}_p[u,v]/\langle u^2 - 1, v^3 - u, uv - \omega u \rangle$, \textit{Cryptogr. Commun.} \textbf{11}(2), 325--335 (2019), doi: 10.1007/s12095-018-0299-0.
+\item M. Grassl: Code Tables: \textit{Bounds on the parameters of various types of codes}, available at http://www.codetables.de/accessed on 07/04/2020.
+\item M. Grassl, T. Beth and M. Roetteler: On optimal quantum codes, \textit{Int. J. Quantum Inf.} \textbf{2}(1), 55--64 (2004).
+\item P. W. Shor: Scheme for reducing decoherence in quantum memory, \textit{Phys. Rev. A} \textbf{52}(4), 2493--2496 (1995).
+\item T. Bag, H. Q. Dinh, A. K. Upadhyay and W. Yamaka: New non-binary quantum codes from cyclic codes over product rings, \textit{IEEE. Communication Letters} \textbf{24}(3), 486--490 (2020).
+\item W. Bosma and J. Cannon: \textit{Handbook of Magma Functions}, University of Sydney 1995.
+\item X. Yang and J. L. Massey: The condition for a cyclic code to have a complementary dual, \textit{Discrete Math.} \textbf{126}(1-3), 391--393 (1994).
+\item X. Kai and S. Zhu: Quaternary construction of quantum codes from cyclic codes over $\mathbb{F}_4 + u\mathbb{F}_4$, \textit{Int. J. Quantum Inf.} \textbf{9}, 689--700 (2011).
+\item X. Liu and H. Liu: LCD codes over finite chain rings, \textit{Finite Fields Appl.} \textbf{34}, 1--19 (2015).
+\item X. Liu and H. Liu: $\sigma$-LCD codes over finite chain rings, \textit{Des. Codes Cryptogr.} \textbf{88}, 727--746 (2020).
+\end{enumerate}
+
+\end{document}
