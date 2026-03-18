@@ -1,0 +1,275 @@
+\section{Tutorial 8: Gradient Flow and Instability}
+
+\subsection{Objectives}
+
+This tutorial develops intuition for gradient propagation in deep networks:
+
+\begin{itemize}
+    \item Understand how gradients evolve across layers
+    \item Analyze vanishing and exploding gradients
+    \item Study the role of activation functions
+    \item Examine the effect of initialization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Understand gradient flow as a dynamical process across layers.
+
+\subsection{Exercise 1: Gradient Through a Deep Linear Network}
+
+Consider a deep linear network:
+\[
+f(x) = W_L W_{L-1} \cdots W_1 x.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Write the gradient $\frac{\partial L}{\partial x}$.
+    \item Explain how depth affects gradient magnitude.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\[
+\frac{\partial L}{\partial x}
+= W_1^\top W_2^\top \cdots W_L^\top \frac{\partial L}{\partial f}.
+\]
+
+\medskip
+
+\noindent
+\begin{itemize}
+    \item Gradient is a product of matrices
+    \item Norm scales roughly as product of operator norms
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Repeated multiplication leads to exponential growth or decay.
+
+\subsection{Exercise 2: Scalar Case Intuition}
+
+Consider:
+\[
+f(x) = a^L x.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute $\frac{df}{dx}$.
+    \item Analyze behavior for:
+    \begin{itemize}
+        \item $|a| < 1$
+        \item $|a| > 1$
+    \end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\[
+\frac{df}{dx} = a^L.
+\]
+
+\begin{itemize}
+    \item $|a| < 1$ $\Rightarrow$ vanishing gradients
+    \item $|a| > 1$ $\Rightarrow$ exploding gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth amplifies small deviations multiplicatively.
+
+\subsection{Exercise 3: Effect of Activation Functions}
+
+Consider activations:
+
+\begin{itemize}
+    \item Sigmoid: $\sigma'(z) \leq 0.25$
+    \item ReLU: $\sigma'(z) \in \{0,1\}$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Why do sigmoid networks suffer from vanishing gradients?
+    \item Why does ReLU mitigate this problem?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Sigmoid:
+\begin{itemize}
+    \item Derivatives are small ($<1$)
+    \item Repeated multiplication $\Rightarrow$ vanishing gradients
+\end{itemize}
+
+\item ReLU:
+\begin{itemize}
+    \item Derivative is $1$ in active region
+    \item Preserves gradient magnitude
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Activation choice directly affects gradient flow.
+
+\subsection{Exercise 4: Variance Propagation (Conceptual)}
+
+Assume:
+\[
+h_\ell = W_\ell h_{\ell-1},
+\]
+with random weights.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens if weights are too large?
+    \item What happens if weights are too small?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Large weights:
+    \begin{itemize}
+        \item Activations grow exponentially
+        \item Exploding gradients
+    \end{itemize}
+
+    \item Small weights:
+    \begin{itemize}
+        \item Activations shrink
+        \item Vanishing gradients
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Initialization controls signal propagation.
+
+\subsection{Exercise 5: Gradient Flow as a Dynamical System}
+
+\textbf{Question.}  
+Why can we think of gradient propagation as a dynamical system?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item Each layer transforms gradients
+    \item Repeated transformations resemble iterative dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Training stability depends on the stability of this dynamical system.
+
+\subsection{Exercise 6: Practical Diagnosis}
+
+\textbf{Tasks.}
+\begin{enumerate}
+    \item How can you detect vanishing gradients during training?
+    \item How can you detect exploding gradients?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Vanishing:
+    \begin{itemize}
+        \item Near-zero gradients in early layers
+        \item Slow learning
+    \end{itemize}
+
+    \item Exploding:
+    \begin{itemize}
+        \item Very large gradients
+        \item Unstable loss or divergence
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Monitoring gradients is essential in practice.
+
+\subsection{Exercise 7 (Discussion): Remedies}
+
+\textbf{Question.}  
+What techniques can mitigate gradient instability?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Proper initialization
+    \item ReLU-type activations
+    \item Normalization methods
+    \item Residual connections
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Modern deep learning is largely about stabilizing gradient flow.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Gradient flow involves repeated transformations across layers
+    \item Vanishing and exploding gradients arise from multiplicative effects
+    \item Activation functions and initialization strongly influence stability
+    \item Training deep networks requires controlling gradient dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now study activation functions and architectural design choices that improve gradient flow and expressivity.

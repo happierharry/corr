@@ -1,0 +1,293 @@
+\chapter{Linear Regression and Least Squares}
+
+\section{Introduction}
+
+Linear regression is one of the foundational models in machine learning, statistics, and applied mathematics. Its importance is not only historical. It is also the simplest setting in which many central ideas appear clearly: empirical risk minimization, geometry of approximation, orthogonal projection, conditioning, regularization, and statistical interpretation.
+
+This chapter studies least squares in a more mathematical way. We derive the normal equations, interpret least squares as projection onto a linear subspace, discuss uniqueness and pseudoinverses, and explain why ill-conditioning matters in practice. We also briefly connect the optimization problem to the classical statistical noise model.
+
+\section{Linear Models and Design Matrices}
+
+Let the input be $x\in\mathbb R^p$ and the output be $y\in\mathbb R$. A linear model has the form
+\[
+f_\theta(x)=x^\top \theta,
+\]
+where $\theta\in\mathbb R^p$ is the parameter vector.
+
+Given data
+\[
+(x_1,y_1),\dots,(x_n,y_n),
+\]
+we assemble the \emph{design matrix}
+\[
+X=
+\begin{bmatrix}
+- & x_1^\top & -\\
+- & x_2^\top & -\\
+& \vdots & \\
+- & x_n^\top & -
+\end{bmatrix}
+\in\mathbb R^{n\times p},
+\qquad
+y=
+\begin{bmatrix}
+y_1\\ \vdots\\ y_n
+\end{bmatrix}\in\mathbb R^n.
+\]
+Then the vector of predictions is
+\[
+X\theta \in \mathbb R^n.
+\]
+
+The least-squares problem is
+\[
+\min_{\theta\in\mathbb R^p} \|X\theta-y\|^2.
+\]
+Equivalently, one minimizes the empirical squared loss
+\[
+\frac1n\sum_{i=1}^n (x_i^\top\theta-y_i)^2.
+\]
+
+\subsection{Polynomial Basis Regression}
+
+Linear regression is ``linear'' in the parameters, not necessarily in the raw input variable. For example, if the input is scalar $t\in\mathbb R$ and we choose features
+\[
+\phi(t)=(1,t,t^2,\dots,t^m)^\top,
+\]
+then
+\[
+f_\theta(t)=\theta_0+\theta_1 t+\cdots+\theta_m t^m
+\]
+is polynomial regression, but it is still linear regression in the feature vector $\phi(t)$.
+
+\section{Least Squares as Orthogonal Projection}
+
+The least-squares problem has a clean geometric interpretation. The set of all prediction vectors
+\[
+\{X\theta:\theta\in\mathbb R^p\}
+\]
+is the column space of $X$, denoted $\operatorname{col}(X)\subseteq\mathbb R^n$.
+
+Thus least squares asks for the vector in $\operatorname{col}(X)$ closest to $y$:
+\[
+\min_{z\in \operatorname{col}(X)} \|z-y\|^2.
+\]
+
+\begin{theorem}[Projection Interpretation of Least Squares]
+A vector $\hat\theta$ is a least-squares minimizer if and only if the fitted vector $X\hat\theta$ is the orthogonal projection of $y$ onto $\operatorname{col}(X)$. Equivalently, the residual
+\[
+r=y-X\hat\theta
+\]
+is orthogonal to every vector in $\operatorname{col}(X)$.
+\end{theorem}
+
+\begin{proof}
+If $X\hat\theta$ minimizes the distance from $y$ to $\operatorname{col}(X)$, then by the geometry of Euclidean projection, the error vector
+\[
+r=y-X\hat\theta
+\]
+must be orthogonal to the subspace $\operatorname{col}(X)$. Conversely, if $r$ is orthogonal to $\operatorname{col}(X)$, then for any $z\in\operatorname{col}(X)$,
+\[
+\|y-z\|^2=\|r+(X\hat\theta-z)\|^2
+=\|r\|^2+\|X\hat\theta-z\|^2,
+\]
+since $r\perp (X\hat\theta-z)$. Hence $\|y-z\|^2\ge \|r\|^2$, so $X\hat\theta$ is the closest point.
+\end{proof}
+
+This theorem is the geometric core of least squares.
+
+\subsection{Orthogonality of the Residual}
+
+Since $r$ is orthogonal to the column space of $X$, it is orthogonal to each column of $X$. In matrix form,
+\[
+X^\top(y-X\hat\theta)=0.
+\]
+These are exactly the normal equations.
+
+\section{Normal Equations and Pseudoinverses}
+
+Differentiating the objective
+\[
+\|X\theta-y\|^2=(X\theta-y)^\top(X\theta-y)
+\]
+gives
+\[
+\nabla_\theta \|X\theta-y\|^2 = 2X^\top(X\theta-y).
+\]
+Setting the gradient to zero yields the normal equations:
+\[
+X^\top X\theta = X^\top y.
+\]
+
+\begin{theorem}[Least-Squares Minimizer]
+A vector $\hat\theta$ minimizes $\|X\theta-y\|^2$ if and only if it satisfies
+\[
+X^\top X\hat\theta=X^\top y.
+\]
+\end{theorem}
+
+If $X^\top X$ is invertible, then the minimizer is unique and given by
+\[
+\hat\theta=(X^\top X)^{-1}X^\top y.
+\]
+
+\subsection{Uniqueness Conditions}
+
+The matrix $X^\top X$ is invertible exactly when the columns of $X$ are linearly independent, that is, when $\operatorname{rank}(X)=p$. In that case, the least-squares minimizer is unique.
+
+If $\operatorname{rank}(X)<p$, then the minimizer need not be unique. Different parameter vectors may produce the same fitted values.
+
+\subsection{Pseudoinverse}
+
+A standard canonical solution in the rank-deficient case is given by the Moore--Penrose pseudoinverse:
+\[
+\hat\theta = X^+ y.
+\]
+This yields the minimum-norm least-squares solution among all minimizers.
+
+\section{Rank Deficiency and Ill-Conditioning}
+
+Two different issues must be distinguished.
+
+\subsection{Rank Deficiency}
+
+If the columns of $X$ are linearly dependent, then $X^\top X$ is singular. This means the parameter vector is not uniquely identifiable. The fitted vector $X\hat\theta$ is still uniquely determined as the projection of $y$ onto $\operatorname{col}(X)$, but the coefficients may not be unique.
+
+This often occurs when:
+- one feature is a linear combination of others,
+- there are more parameters than informative directions in the data,
+- polynomial features are redundant or nearly redundant.
+
+\subsection{Ill-Conditioning}
+
+Even if $X^\top X$ is invertible, it may be close to singular. Then the problem is \emph{ill-conditioned}: small perturbations in data can produce large changes in the estimated coefficients.
+
+A standard indicator is the condition number. If the singular values of $X$ vary widely, then inversion becomes unstable. Ill-conditioning is especially common when features are highly correlated.
+
+This matters computationally and statistically:
+- numerical errors are amplified,
+- fitted coefficients become unstable,
+- interpretation becomes unreliable.
+
+Regularization methods such as ridge regression are often introduced partly to address this instability.
+
+\section{Worked Examples}
+
+\subsection{2D Geometric Least Squares}
+
+Suppose
+\[
+X=
+\begin{bmatrix}
+1\\
+2
+\end{bmatrix},
+\qquad
+y=
+\begin{bmatrix}
+1\\
+3
+\end{bmatrix}.
+\]
+Then $\operatorname{col}(X)$ is the line through $(1,2)^\top$ in $\mathbb R^2$. Least squares projects $y$ onto this line.
+
+The solution is
+\[
+\hat\theta = \frac{X^\top y}{X^\top X}
+= \frac{1\cdot 1 + 2\cdot 3}{1^2+2^2}
+= \frac{7}{5}.
+\]
+So the fitted vector is
+\[
+X\hat\theta=
+\frac75
+\begin{bmatrix}
+1\\2
+\end{bmatrix}
+=
+\begin{bmatrix}
+7/5\\14/5
+\end{bmatrix}.
+\]
+The residual is
+\[
+r=
+\begin{bmatrix}
+1\\3
+\end{bmatrix}
+-
+\begin{bmatrix}
+7/5\\14/5
+\end{bmatrix}
+=
+\begin{bmatrix}
+-2/5\\1/5
+\end{bmatrix},
+\]
+and indeed
+\[
+X^\top r = [1\;2]
+\begin{bmatrix}
+-2/5\\1/5
+\end{bmatrix}
+=0.
+\]
+
+\subsection{Polynomial Basis Regression}
+
+Given scalar inputs $t_1,\dots,t_n$, choose basis functions
+\[
+1,\; t,\; t^2.
+\]
+Then the design matrix is
+\[
+X=
+\begin{bmatrix}
+1&t_1&t_1^2\\
+1&t_2&t_2^2\\
+\vdots&\vdots&\vdots\\
+1&t_n&t_n^2
+\end{bmatrix}.
+\]
+Least squares in this basis fits the best quadratic approximation in empirical squared error. The geometry is the same as before: one projects $y$ onto the span of the three feature columns.
+
+\section{Statistical Noise Model and Gauss--Markov Intuition}
+
+Least squares also has a natural statistical interpretation. Suppose the data satisfy
+\[
+y = X\theta^\star + \varepsilon,
+\]
+where $\theta^\star\in\mathbb R^p$ is an unknown parameter and the noise vector $\varepsilon$ has mean zero:
+\[
+\mathbb E[\varepsilon]=0.
+\]
+
+Then least squares estimates $\theta^\star$ by finding the coefficient vector whose fitted values best match the observations in squared error.
+
+If one further assumes that the noise has constant variance and is uncorrelated, then least squares enjoys an important optimality property: among linear unbiased estimators, it has minimal variance. This is the content of the Gauss--Markov theorem. We will not prove it here, but its intuition is important: under a simple noise model, least squares is not only geometrically natural but statistically efficient within a broad class.
+
+\subsection{Interpretation}
+
+The fitted value $X\hat\theta$ can be interpreted as the signal component extracted from $y$, while the residual
+\[
+y-X\hat\theta
+\]
+is the unexplained part. The projection viewpoint and the statistical viewpoint therefore complement each other:
+- geometry explains orthogonality and normal equations,
+- statistics explains estimation under noise.
+
+\section{A Unifying Perspective}
+
+Linear regression is much more than a simple predictive model. It is the first setting in which approximation, optimization, geometry, and statistics come together in a fully analyzable form. Least squares is simultaneously:
+- minimization of empirical squared loss,
+- projection onto a linear subspace,
+- solution of the normal equations,
+- estimation under a linear noise model.
+
+This is why linear regression remains central even in the age of deep learning: it is the cleanest laboratory for understanding ideas that reappear in more complex models.
+
+\section{Summary}
+
+In this chapter we studied linear regression and least squares from a mathematical viewpoint. We introduced the design matrix, derived the normal equations, and showed that least squares is the orthogonal projection of the target vector onto the column space of the design matrix. We discussed uniqueness through full column rank, introduced the pseudoinverse for rank-deficient cases, and explained why ill-conditioning makes estimation unstable.
+
+We also connected least squares to the classical statistical noise model and stated the Gauss--Markov intuition. These ideas form the basis for much of supervised learning and prepare the way for logistic regression, kernel methods, and regularized estimators.

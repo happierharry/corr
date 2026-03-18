@@ -1,0 +1,370 @@
+\section{How Transformers Emerged}
+\label{sec:transformers-emergence}
+
+\subsection{Overview}
+
+Transformers did not appear suddenly as an isolated invention. They emerged from a sequence of conceptual and engineering developments in neural sequence modeling. The central historical arc is:
+\[
+\text{RNNs} \;\longrightarrow\; \text{LSTMs} \;\longrightarrow\; \text{seq2seq} \;\longrightarrow\; \text{attention} \;\longrightarrow\; \text{self-attention} \;\longrightarrow\; \text{transformers}.
+\]
+
+The main motivation was to overcome two persistent difficulties of recurrent sequence models:
+\begin{enumerate}
+    \item poor handling of long-range dependencies,
+    \item inherently sequential computation, which limited parallelization.
+\end{enumerate}
+
+The transformer architecture resolved these by making \emph{attention} rather than \emph{recurrence} the central computational primitive.
+
+\subsection{The Pre-Transformer Era: Recurrent Sequence Modeling}
+
+For many years, the dominant neural approach to sequence data was the recurrent neural network (RNN). Given an input sequence \(x_1,\dots,x_T\), an RNN computes hidden states recursively:
+\[
+h_t = \phi(W_h h_{t-1} + W_x x_t + b),
+\]
+where \(h_t\) summarizes the prefix \(x_1,\dots,x_t\).
+
+This formulation is natural for language, speech, and time-series data, but it suffers from serious limitations:
+\begin{itemize}
+    \item the hidden state must propagate information through many time steps,
+    \item gradients may vanish or explode over long temporal chains,
+    \item training and inference are sequential across positions, reducing hardware efficiency.
+\end{itemize}
+
+Long Short-Term Memory (LSTM) networks were introduced to mitigate the long-dependency problem by equipping the recurrence with gating and a memory cell. They improved the practical trainability of recurrent sequence models, but did not remove the fundamental sequential bottleneck.
+
+\subsection{Seq2Seq Models and the Fixed-Vector Bottleneck}
+
+A major step forward came from sequence-to-sequence (seq2seq) learning. In its classical form, a recurrent encoder reads a source sequence and compresses it into a final hidden state \(c\), and a recurrent decoder generates the output conditioned on that vector:
+\[
+c = h_T^{\text{enc}},
+\]
+\[
+s_t = \psi(s_{t-1}, y_{t-1}, c),
+\qquad
+p(y_t \mid y_{<t},x) = \mathrm{softmax}(W_o s_t).
+\]
+
+This architecture was elegant and general, but it created a severe compression bottleneck: the entire source sentence had to be represented by a single vector \(c\). For short sequences this could work reasonably well, but for long or information-rich sequences it became a major limitation.
+
+Thus the next conceptual question was:
+
+\begin{quote}
+Why should the decoder rely on only one fixed vector, when different output tokens may need to consult different parts of the source?
+\end{quote}
+
+\subsection{Attention as Dynamic Access to the Source}
+
+The attention mechanism solved this bottleneck. Instead of forcing the decoder to condition only on a single vector, attention allows the decoder at time \(t\) to compute a context vector \(c_t\) as a weighted combination of encoder states:
+\[
+c_t = \sum_{i=1}^T \alpha_{t,i} h_i^{\text{enc}},
+\qquad
+\sum_{i=1}^T \alpha_{t,i} = 1,
+\qquad
+\alpha_{t,i} \ge 0.
+\]
+
+The weights \(\alpha_{t,i}\) are computed by a learned alignment score:
+\[
+e_{t,i} = a(s_{t-1}, h_i^{\text{enc}}),
+\qquad
+\alpha_{t,i} = \frac{\exp(e_{t,i})}{\sum_{j=1}^T \exp(e_{t,j})}.
+\]
+
+Hence, when generating the next token, the decoder may focus more strongly on the source locations most relevant for that token.
+
+This was a decisive conceptual shift:
+\begin{itemize}
+    \item the source is no longer compressed into a single vector,
+    \item alignment becomes dynamic and data-dependent,
+    \item long inputs become easier to handle,
+    \item the model effectively gains differentiable memory access.
+\end{itemize}
+
+Attention first appeared as an \emph{auxiliary mechanism} attached to seq2seq RNNs. But once it proved effective, a natural question arose:
+
+\begin{quote}
+If attention is doing the most important representational work, how much recurrence do we still need?
+\end{quote}
+
+\subsection{Why Recurrence Became a Bottleneck}
+
+Even with attention, the encoder and decoder in seq2seq systems were still recurrent. This preserved two major difficulties:
+\begin{enumerate}
+    \item \textbf{Sequential dependence.} Hidden states had to be computed one time step at a time:
+    \[
+    h_1 \to h_2 \to \cdots \to h_T.
+    \]
+    Thus GPU and TPU parallelism could not be fully exploited.
+    \item \textbf{Long information paths.} Although attention helped, recurrent processing still imposed long computational paths through time, complicating optimization and limiting scalability.
+\end{enumerate}
+
+By the mid-2010s, scaling pressure from increasingly large datasets and accelerator hardware made parallelism a central design criterion. Matrix-heavy architectures were becoming increasingly attractive.
+
+\subsection{From Cross-Attention to Self-Attention}
+
+The next conceptual leap was to realize that attention need not only connect decoder states to encoder states. A sequence may attend \emph{to itself}.
+
+Given input representations \(x_1,\dots,x_T \in \mathbb{R}^d\), one may define learned linear projections:
+\[
+q_i = W_Q x_i, \qquad k_i = W_K x_i, \qquad v_i = W_V x_i.
+\]
+These are called the \emph{query}, \emph{key}, and \emph{value} vectors.
+
+The representation at position \(i\) can then be updated by comparing its query \(q_i\) with the keys \(k_j\) of all positions \(j\):
+\[
+\alpha_{ij}
+=
+\frac{\exp(q_i^\top k_j / \sqrt{d_k})}
+{\sum_{\ell=1}^T \exp(q_i^\top k_\ell / \sqrt{d_k})},
+\]
+and forming
+\[
+z_i = \sum_{j=1}^T \alpha_{ij} v_j.
+\]
+
+In matrix form, if
+\[
+Q = XW_Q, \qquad K = XW_K, \qquad V = XW_V,
+\]
+then self-attention is
+\[
+\mathrm{Attention}(Q,K,V)
+=
+\mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right)V.
+\]
+
+This mechanism has a profound consequence: position \(i\) may interact directly with any other position \(j\) in a single layer. Unlike an RNN, information need not travel sequentially through many intermediate hidden states.
+
+\subsection{The Mathematical Derivation: From Seq2Seq to Self-Attention}
+
+We now present a clean conceptual derivation.
+
+\subsubsection{Stage 1: Classical recurrent encoder-decoder}
+
+A recurrent encoder computes:
+\[
+h_i^{\text{enc}} = f(h_{i-1}^{\text{enc}}, x_i).
+\]
+A recurrent decoder computes:
+\[
+s_t = g(s_{t-1}, y_{t-1}, c),
+\]
+with \(c = h_T^{\text{enc}}\).
+
+The issue is that all source information must pass through one vector \(c\).
+
+\subsubsection{Stage 2: Add attention}
+
+Replace the fixed context \(c\) by a time-dependent context \(c_t\):
+\[
+c_t = \sum_{i=1}^T \alpha_{t,i} h_i^{\text{enc}},
+\]
+where
+\[
+\alpha_{t,i}
+=
+\frac{\exp(a(s_{t-1}, h_i^{\text{enc}}))}
+{\sum_{j=1}^T \exp(a(s_{t-1}, h_j^{\text{enc}}))}.
+\]
+Now the decoder selects source information adaptively at each output step.
+
+This removes the single-vector bottleneck, but the encoder and decoder remain recurrent.
+
+\subsubsection{Stage 3: View attention as content-based lookup}
+
+The score \(a(s_{t-1}, h_i^{\text{enc}})\) can be interpreted as a learned compatibility between a \emph{query} (the decoder state) and a set of \emph{keys} (the encoder states). The context is then a weighted sum of \emph{values} (again the encoder states or their projections).
+
+Thus attention may be abstracted as:
+\[
+\text{query} + \text{keys} + \text{values} \;\longrightarrow\; \text{weighted retrieval}.
+\]
+
+This abstraction does not inherently require recurrence.
+
+\subsubsection{Stage 4: Remove recurrence from the encoder}
+
+Suppose we replace recurrent hidden states by position-wise token embeddings with positional information:
+\[
+x_i = e_i + p_i,
+\]
+where \(e_i\) is the token embedding and \(p_i\) is a positional encoding.
+
+Then instead of computing
+\[
+h_i^{\text{enc}} = f(h_{i-1}^{\text{enc}},x_i),
+\]
+we directly let every position interact with every other via self-attention:
+\[
+z_i = \sum_{j=1}^T \alpha_{ij} v_j,
+\qquad
+\alpha_{ij}
+=
+\frac{\exp(q_i^\top k_j / \sqrt{d_k})}
+{\sum_{\ell=1}^T \exp(q_i^\top k_\ell / \sqrt{d_k})}.
+\]
+
+This gives a non-recurrent encoder layer.
+
+\subsubsection{Stage 5: Stack layers and add feedforward refinement}
+
+A single self-attention layer mixes information globally. To build expressive hierarchical representations, we stack layers and interleave them with position-wise feedforward networks:
+\[
+\mathrm{FFN}(x) = W_2 \sigma(W_1 x + b_1) + b_2.
+\]
+
+Residual connections and normalization stabilize optimization:
+\[
+x \mapsto \mathrm{LayerNorm}(x + \mathrm{Sublayer}(x)).
+\]
+
+This yields the modern transformer block.
+
+\subsubsection{Stage 6: Multi-head attention}
+
+Instead of using only one attention map, we use several in parallel:
+\[
+\mathrm{head}_m = \mathrm{Attention}(QW_Q^{(m)}, KW_K^{(m)}, VW_V^{(m)}).
+\]
+Then concatenate:
+\[
+\mathrm{MultiHead}(Q,K,V)
+=
+\mathrm{Concat}(\mathrm{head}_1,\dots,\mathrm{head}_H)W_O.
+\]
+
+This allows different relational patterns to be captured simultaneously, such as syntax, long-range agreement, positional cues, or semantic associations.
+
+\subsection{The Transformer Architecture}
+
+The transformer can therefore be viewed as the final step of a conceptual simplification:
+
+\begin{center}
+\begin{tabular}{c}
+Recurrent encoder-decoder \\[0.25em]
+\(\downarrow\) \\[0.25em]
+Recurrent encoder-decoder + attention \\[0.25em]
+\(\downarrow\) \\[0.25em]
+Attention abstracted as query-key-value lookup \\[0.25em]
+\(\downarrow\) \\[0.25em]
+Self-attention replaces recurrence \\[0.25em]
+\(\downarrow\) \\[0.25em]
+Transformer = self-attention + feedforward + residuals + normalization + positional encoding
+\end{tabular}
+\end{center}
+
+The original transformer introduced:
+\begin{itemize}
+    \item multi-head self-attention,
+    \item position-wise feedforward sublayers,
+    \item residual connections,
+    \item layer normalization,
+    \item positional encodings,
+    \item encoder-decoder attention for sequence transduction.
+\end{itemize}
+
+Its central slogan was apt: \emph{attention is all you need}.
+
+\subsection{Why the Transformer Was a Breakthrough}
+
+The transformer succeeded because it simultaneously solved several problems.
+
+\subsubsection{Direct long-range interaction}
+
+In an RNN, the interaction between positions \(i\) and \(j\) must propagate through \(O(|i-j|)\) recurrent steps. In self-attention, the interaction can occur in one layer. This shortens the effective path length for dependency learning.
+
+\subsubsection{Parallel computation}
+
+All token representations in a layer can be processed simultaneously. This matches modern accelerator hardware far better than recurrence.
+
+\subsubsection{Scalability}
+
+The architecture is built largely from matrix multiplications and normalization, making large-scale training much more efficient.
+
+\subsubsection{Flexible contextualization}
+
+Each token representation is dynamically constructed from all others. Context is therefore built in a highly adaptive and content-dependent manner.
+
+\subsection{Historical Timeline}
+
+We now summarize the historical development in a compact lecture-note style timeline.
+
+\begin{description}
+    \item[1980s--1990s.] Recurrent neural networks become a natural framework for sequence data, but suffer from gradient instability and long-range dependency problems.
+    
+    \item[1997.] LSTM is introduced to mitigate vanishing gradients and improve long-horizon sequence learning.
+    
+    \item[2014.] Seq2seq learning with LSTMs demonstrates that one neural network can map one sequence to another in an end-to-end fashion, especially in machine translation.
+    
+    \item[2014.] Attention-based neural machine translation introduces differentiable alignment, allowing the decoder to focus on different source positions dynamically rather than relying on a single fixed encoder vector.
+    
+    \item[2015--2016.] Attention mechanisms are refined and become standard in neural machine translation; deep residual learning and layer normalization also influence the design of trainable deep architectures.
+    
+    \item[2017.] The transformer is proposed. It removes recurrence and convolutions entirely, replacing them with self-attention, positional encoding, feedforward layers, residual connections, and normalization.
+    
+    \item[After 2017.] The architecture rapidly expands beyond translation into language modeling, representation learning, vision, multimodal learning, and large-scale generative AI.
+\end{description}
+
+\subsection{A Conceptual Interpretation}
+
+From a mathematical viewpoint, the emergence of transformers can be interpreted as the progressive externalization of memory.
+
+\begin{itemize}
+    \item In an RNN, memory is compressed into a hidden state.
+    \item In seq2seq, memory is compressed into a final encoder vector.
+    \item With attention, memory becomes an addressable collection of encoder states.
+    \item With self-attention, every token becomes both a memory item and a retrieval query.
+\end{itemize}
+
+Thus the transformer can be viewed as replacing recursive compression with learned global interaction.
+
+\subsection{Conclusion}
+
+Transformers emerged because recurrent sequence models, although powerful, faced serious optimization and scalability limitations. Seq2seq models revealed both the promise of end-to-end sequence learning and the weakness of fixed-vector compression. Attention solved the alignment bottleneck by allowing dynamic access to source representations. Self-attention then generalized this idea by allowing every token to interact directly with every other token. Once combined with positional encoding, feedforward refinement, residual connections, and normalization, this yielded the transformer architecture.
+
+In summary:
+\[
+\boxed{
+\text{Transformers emerged when attention ceased to be an auxiliary mechanism and became the main computational principle.}
+}
+\]
+
+\subsection*{Suggested References}
+\begin{thebibliography}{99}
+
+\bibitem{hochreiter1997}
+S. Hochreiter and J. Schmidhuber,
+\emph{Long Short-Term Memory},
+Neural Computation, 9(8):1735--1780, 1997.
+
+\bibitem{sutskever2014}
+I. Sutskever, O. Vinyals, and Q. V. Le,
+\emph{Sequence to Sequence Learning with Neural Networks},
+Advances in Neural Information Processing Systems, 2014.
+
+\bibitem{bahdanau2014}
+D. Bahdanau, K. Cho, and Y. Bengio,
+\emph{Neural Machine Translation by Jointly Learning to Align and Translate},
+arXiv:1409.0473, 2014.
+
+\bibitem{luong2015}
+M.-T. Luong, H. Pham, and C. D. Manning,
+\emph{Effective Approaches to Attention-Based Neural Machine Translation},
+EMNLP, 2015.
+
+\bibitem{he2015}
+K. He, X. Zhang, S. Ren, and J. Sun,
+\emph{Deep Residual Learning for Image Recognition},
+CVPR, 2016.
+
+\bibitem{ba2016}
+J. L. Ba, J. R. Kiros, and G. E. Hinton,
+\emph{Layer Normalization},
+arXiv:1607.06450, 2016.
+
+\bibitem{vaswani2017}
+A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, \L. Kaiser, and I. Polosukhin,
+\emph{Attention Is All You Need},
+Advances in Neural Information Processing Systems, 2017.
+
+\end{thebibliography}

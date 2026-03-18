@@ -1,0 +1,267 @@
+\chapter{Regularization in Deep Learning}
+
+\section{Dropout and Noise Injection}
+
+Deep neural networks are highly expressive and can easily overfit training data. Regularization techniques are therefore essential for improving generalization.
+
+\medskip
+
+\noindent
+\textbf{Dropout.}  
+Dropout is a stochastic regularization method in which units are randomly deactivated during training.
+
+\medskip
+
+\noindent
+\textbf{Mechanism.}  
+For each unit, a binary mask is sampled:
+\[
+m_i \sim \text{Bernoulli}(p),
+\]
+and activations are modified as
+\[
+\tilde{z}_i = m_i z_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Each iteration trains a different subnetwork
+    \item Prevents co-adaptation of features
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Inference.}  
+At test time, activations are scaled to account for dropout:
+\[
+z_i \leftarrow p \, z_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Improves robustness
+    \item Reduces overfitting
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Noise injection.}  
+More generally, noise can be added to inputs, activations, or parameters:
+\[
+z \leftarrow z + \varepsilon,
+\]
+where $\varepsilon$ is random noise.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Noise encourages the model to learn stable features that are insensitive to small perturbations.
+
+\section{Weight Decay}
+
+Weight decay is one of the most widely used regularization techniques in deep learning.
+
+\medskip
+
+\noindent
+\textbf{Objective.}
+\[
+\min_\theta \; \hat{R}_n(\theta) + \lambda \|\theta\|_2^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Penalizes large parameter values
+    \item Encourages simpler models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect on optimization.}  
+The update rule becomes
+\[
+\theta_{t+1} = (1 - \eta \lambda)\theta_t - \eta \nabla \hat{R}_n(\theta_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Parameters are gradually shrunk toward zero during training.
+
+\medskip
+
+\noindent
+\textbf{Connection to stability.}  
+Smaller weights often lead to smoother functions and improved generalization.
+
+\medskip
+
+\noindent
+\textbf{Bayesian interpretation.}  
+Weight decay corresponds to a Gaussian prior on parameters.
+
+\section{Data Augmentation}
+
+Data augmentation improves generalization by artificially increasing the diversity of the training data.
+
+\medskip
+
+\noindent
+\textbf{Basic idea.}  
+Generate new training examples by applying transformations:
+\[
+(x, y) \;\rightarrow\; (T(x), y),
+\]
+where $T$ preserves the label.
+
+\medskip
+
+\noindent
+\textbf{Examples (vision).}
+\begin{itemize}
+    \item Rotation, translation, scaling
+    \item Flipping, cropping
+    \item Color perturbations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples (other domains).}
+\begin{itemize}
+    \item Noise injection in inputs
+    \item Synonym replacement in text
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Encodes invariances (e.g., rotation invariance)
+    \item Expands effective dataset size
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}  
+Augmentation enlarges the region of input space associated with each label.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Data augmentation acts as a form of regularization by constraining the function to behave consistently under transformations.
+
+\section{Implicit Bias of Optimization}
+
+Regularization in deep learning is not limited to explicit techniques. Optimization itself introduces a form of implicit bias.
+
+\medskip
+
+\noindent
+\textbf{Overparameterization.}  
+Deep networks often have more parameters than data points, leading to many solutions with zero training error.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Which solution does the optimization algorithm select?
+
+\medskip
+
+\noindent
+\textbf{Implicit bias.}  
+Gradient-based methods tend to favor solutions with particular properties, such as:
+\begin{itemize}
+    \item small norms,
+    \item smooth functions,
+    \item certain structural patterns.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example (linear models).}  
+Gradient descent converges to the minimum-norm solution among all interpolating solutions.
+
+\medskip
+
+\noindent
+\textbf{Deep learning perspective.}
+\begin{itemize}
+    \item SGD noise influences the trajectory of optimization
+    \item Different optimizers lead to different solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The training process itself acts as a regularizer.
+
+\medskip
+
+\noindent
+\textbf{Interaction with explicit regularization.}  
+Implicit and explicit regularization often work together to shape the learned model.
+
+\section{A Unifying Perspective}
+
+Regularization in deep learning takes multiple forms:
+
+\begin{itemize}
+    \item \textbf{Explicit:} weight decay, dropout
+    \item \textbf{Data-driven:} augmentation
+    \item \textbf{Implicit:} optimization dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core objective.}
+\[
+\text{Fit data} \quad + \quad \text{promote generalization}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Generalization is shaped not only by the model, but by how it is trained and what data it sees.
+
+\section{Outlook}
+
+This chapter examined regularization techniques specific to deep learning:
+\begin{itemize}
+    \item dropout and noise injection,
+    \item weight decay,
+    \item data augmentation,
+    \item implicit bias of optimization.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study residual networks and skip connections, which play a key role in enabling very deep architectures.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective regularization arises from combining model structure, data transformations, and optimization dynamics.

@@ -1,0 +1,483 @@
+\section{Lecture 23: Attention Mechanisms}
+
+\subsection{Motivation}
+
+In the previous lecture, we studied sequence models based on recurrence.
+
+\medskip
+
+\noindent
+While recurrent networks can model sequential data, they suffer from key limitations:
+
+\begin{itemize}
+    \item difficulty capturing long-range dependencies,
+    \item sequential computation limits parallelism,
+    \item information is compressed into a single hidden state.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Can we design models that directly relate all elements of a sequence?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Attention mechanisms allow each element of a sequence to interact with all others.
+
+\subsection{Basic Attention Mechanism}
+
+Attention computes a weighted combination of values.
+
+\medskip
+
+\noindent
+Given:
+\begin{itemize}
+    \item queries $q$,
+    \item keys $k_i$,
+    \item values $v_i$,
+\end{itemize}
+
+define attention weights:
+\[
+\alpha_i = \frac{\exp(q \cdot k_i)}{\sum_j \exp(q \cdot k_j)}.
+\]
+
+\medskip
+
+\noindent
+Output:
+\[
+\text{Attention}(q, K, V) = \sum_i \alpha_i v_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item keys determine relevance
+    \item values carry information
+    \item query selects what to focus on
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention dynamically weights information based on relevance.
+
+\subsection{Self-Attention}
+
+In self-attention, queries, keys, and values are derived from the same sequence.
+
+\medskip
+
+\noindent
+Given inputs $\{x_1, \dots, x_T\}$:
+
+\[
+q_i = W_Q x_i, \quad k_i = W_K x_i, \quad v_i = W_V x_i.
+\]
+
+\medskip
+
+\noindent
+Each position attends to all others:
+\[
+y_i = \sum_{j=1}^{T} \alpha_{ij} v_j.
+\]
+
+\medskip
+
+\noindent
+\textbf{Key properties.}
+
+\begin{itemize}
+    \item captures global dependencies
+    \item fully parallelizable
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Self-attention replaces sequential processing with global interaction.
+
+\subsection{Scaled Dot-Product Attention}
+
+To improve stability, attention uses scaling:
+
+\[
+\alpha_{ij} =
+\frac{\exp\left(\frac{q_i \cdot k_j}{\sqrt{d}}\right)}
+{\sum_{k} \exp\left(\frac{q_i \cdot k_k}{\sqrt{d}}\right)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Reason.}
+
+\begin{itemize}
+    \item prevents large dot products
+    \item stabilizes gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Scaling ensures numerically stable similarity computation.
+
+\subsection{Multi-Head Attention}
+
+Instead of a single attention mechanism, we use multiple heads:
+
+\[
+\text{MultiHead}(Q,K,V) =
+\text{Concat}(\text{head}_1, \dots, \text{head}_h) W_O.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item each head learns different relationships
+    \item captures multiple types of dependencies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Multi-head attention enriches representation by combining diverse interactions.
+
+\subsection{Comparison with CNNs and RNNs}
+
+\textbf{CNNs:}
+\begin{itemize}
+    \item local receptive fields
+    \item limited long-range interaction
+\end{itemize}
+
+\textbf{RNNs:}
+\begin{itemize}
+    \item sequential processing
+    \item information bottleneck
+\end{itemize}
+
+\textbf{Attention:}
+\begin{itemize}
+    \item global receptive field
+    \item direct interactions between all positions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention removes structural constraints of locality and recurrence.
+
+\subsection{Computational Considerations}
+
+\textbf{Complexity.}
+
+\begin{itemize}
+    \item attention requires $O(T^2)$ operations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+
+\begin{itemize}
+    \item more expressive interactions
+    \item higher computational cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Expressivity comes at a computational cost.
+
+\subsection{Geometric Interpretation of Attention}
+
+Attention can be interpreted geometrically as measuring similarity in a feature space.
+
+\medskip
+
+\noindent
+Recall that attention weights are computed via dot products:
+\[
+\alpha_{ij} \propto \exp\left( \frac{q_i \cdot k_j}{\sqrt{d}} \right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}
+
+\begin{itemize}
+    \item $q_i$ and $k_j$ are vectors in $\mathbb{R}^d$
+    \item $q_i \cdot k_j$ measures alignment (similarity)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Normalized interpretation.}
+
+If vectors are normalized:
+\[
+q_i \cdot k_j = \|q_i\|\|k_j\|\cos\theta_{ij},
+\]
+so attention depends on the angle between vectors.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item large weight $\Rightarrow$ vectors aligned
+    \item small weight $\Rightarrow$ vectors orthogonal or opposed
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention selects information based on geometric similarity in representation space.
+
+\subsection{Matrix Formulation of Attention}
+
+Let:
+\[
+Q = [q_1, \dots, q_T]^\top, \quad
+K = [k_1, \dots, k_T]^\top, \quad
+V = [v_1, \dots, v_T]^\top.
+\]
+
+\medskip
+
+\noindent
+\textbf{Attention matrix.}
+
+\[
+A = \text{softmax}\left( \frac{QK^\top}{\sqrt{d}} \right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Output.}
+
+\[
+Y = A V.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item $QK^\top$ computes all pairwise similarities
+    \item softmax produces a row-stochastic matrix
+    \item each row of $A$ defines a weighted average over values
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key observation.}
+
+\begin{itemize}
+    \item attention is a data-dependent linear operator
+    \item weights depend on the input itself
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Self-attention performs adaptive, input-dependent linear transformations.
+
+\subsection{Attention as a Kernel Operator}
+
+The attention mechanism resembles kernel methods.
+
+\medskip
+
+\noindent
+Define a similarity function:
+\[
+k(x_i, x_j) = \exp\left( \frac{q_i \cdot k_j}{\sqrt{d}} \right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item attention computes a normalized kernel
+    \item similar to kernel regression or smoothing
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection.}
+
+\[
+y_i = \sum_j \alpha_{ij} v_j
+\]
+resembles:
+\[
+f(x_i) = \sum_j k(x_i, x_j) y_j.
+\]
+
+\medskip
+
+\noindent
+\textbf{Key difference.}
+
+\begin{itemize}
+    \item classical kernels are fixed
+    \item attention kernels are learned and data-dependent
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention generalizes kernel methods by learning the similarity function.
+
+\subsection{Continuous / Integral Operator View}
+
+In the limit of large sequences, attention can be viewed as an integral operator.
+
+\medskip
+
+\noindent
+Let $x(t)$ be a continuous input and define:
+\[
+y(t) = \int k(t,s) v(s) \, ds.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item $k(t,s)$ measures interaction between positions $t$ and $s$
+    \item $y(t)$ aggregates information across the domain
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection.}
+
+\begin{itemize}
+    \item discrete attention $\rightarrow$ finite-dimensional approximation
+    \item continuous limit $\rightarrow$ operator on function spaces
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Relation to functional analysis.}
+
+\begin{itemize}
+    \item attention acts as a linear integral operator
+    \item kernel defines the operator
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention can be viewed as a learned operator acting on functions.
+
+\subsection{Unifying Interpretation}
+
+From these perspectives, attention can be understood as:
+
+\begin{itemize}
+    \item \textbf{Geometric:} similarity in feature space
+    \item \textbf{Algebraic:} matrix-based linear transformation
+    \item \textbf{Kernel-based:} adaptive similarity operator
+    \item \textbf{Analytical:} integral operator on functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Attention is a flexible mechanism for modeling interactions across inputs.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Modern architectures can be interpreted through multiple mathematical lenses, revealing deeper structure behind empirical success.
+
+\subsection{A Unifying Perspective}
+
+Attention mechanisms provide a new paradigm:
+
+\begin{itemize}
+    \item representations are computed through interactions,
+    \item relationships between elements are learned dynamically.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning involves selecting and combining relevant information across the entire input.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Attention transforms representation learning into interaction modeling.
+
+\subsection{Outlook}
+
+In this lecture, we introduced:
+
+\begin{itemize}
+    \item attention mechanisms,
+    \item self-attention,
+    \item scaled dot-product attention,
+    \item multi-head attention.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas form the foundation of transformer architectures.
+
+\medskip
+
+\noindent
+In the next lecture, we study transformers, which build entirely on attention mechanisms and enable large-scale models.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Modeling interactions directly can overcome limitations of traditional architectures.

@@ -1,0 +1,283 @@
+\section{Lecture 5: Generalization and Overfitting}
+
+\subsection{Motivation}
+
+In previous lectures, we formulated learning as:
+\begin{itemize}
+    \item approximation of an unknown function,
+    \item estimation from random data,
+    \item optimization of an objective function.
+\end{itemize}
+
+\medskip
+
+\noindent
+However, a central challenge remains:
+
+\medskip
+
+\noindent
+\textit{Why should a model that fits the training data perform well on unseen data?}
+
+\medskip
+
+\noindent
+This question lies at the heart of machine learning and is addressed by the concept of \emph{generalization}.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Learning is successful only if performance extends beyond the training data.
+
+\subsection{Training and Test Performance}
+
+Let $\mathcal{D}_{\text{train}}$ denote the training dataset and $\mathcal{D}_{\text{test}}$ denote unseen data drawn from the same distribution.
+
+\medskip
+
+\noindent
+\textbf{Training error.}
+\[
+\hat{R}_{\text{train}}(f) = \frac{1}{n} \sum_{(x_i,y_i)\in \mathcal{D}_{\text{train}}} \ell(f(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Test error.}
+\[
+\hat{R}_{\text{test}}(f) = \frac{1}{m} \sum_{(x_j,y_j)\in \mathcal{D}_{\text{test}}} \ell(f(x_j), y_j).
+\]
+
+\medskip
+
+\noindent
+\textbf{True risk.}
+\[
+R(f) = \mathbb{E}_{(x,y)\sim P}[\ell(f(x), y)].
+\]
+
+\medskip
+
+\noindent
+\textbf{Generalization gap.}
+\[
+\hat{R}_{\text{test}}(f) - \hat{R}_{\text{train}}(f).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Training error measures fit to observed data
+    \item Test error measures predictive performance
+    \item The gap reflects overfitting
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Low training error alone is not sufficient; generalization is the true objective.
+
+\subsection{Overfitting and Underfitting}
+
+\textbf{Overfitting.}
+\begin{itemize}
+    \item Model fits training data extremely well
+    \item Captures noise rather than underlying structure
+    \item High variance, poor test performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Underfitting.}
+\begin{itemize}
+    \item Model is too simple
+    \item Fails to capture underlying patterns
+    \item High bias, poor performance on both training and test data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Typical behavior.}
+\begin{itemize}
+    \item Increasing model complexity decreases training error
+    \item Test error decreases initially, then increases (classical view)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Illustration.}
+\begin{itemize}
+    \item Simple model: smooth but inaccurate
+    \item Complex model: oscillatory, fits noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+There exists an optimal level of complexity balancing bias and variance.
+
+\subsection{Model Capacity and Complexity}
+
+\textbf{Definition.}  
+Model capacity refers to the ability of a hypothesis space to fit a wide range of functions.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Linear models: low capacity
+    \item High-degree polynomials: high capacity
+    \item Deep neural networks: extremely high capacity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Measures of capacity.}
+\begin{itemize}
+    \item Number of parameters
+    \item Flexibility of function class
+    \item Ability to fit arbitrary labels
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpolation phenomenon.}  
+High-capacity models can fit training data exactly:
+\[
+\hat{R}_{\text{train}}(f) = 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Classical view.}
+\begin{itemize}
+    \item High capacity $\Rightarrow$ overfitting
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Modern observation.}
+\begin{itemize}
+    \item Overparameterized models can still generalize well
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Capacity alone does not determine generalization; the interaction with optimization is crucial.
+
+\subsection{Informal Generalization Principles}
+
+Although a complete theory of generalization is complex, several guiding principles are useful.
+
+\medskip
+
+\noindent
+\textbf{1. Simplicity (Occam's principle).}
+\begin{itemize}
+    \item Simpler models tend to generalize better
+    \item Regularization promotes simplicity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{2. Stability.}
+\begin{itemize}
+    \item Models that are insensitive to small data changes generalize better
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{3. Margin and robustness.}
+\begin{itemize}
+    \item Larger margins in classification often improve generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{4. Implicit bias of optimization.}
+\begin{itemize}
+    \item Optimization algorithms favor certain solutions
+    \item Gradient descent often finds structured or “simple” solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{5. Data quality and representation.}
+\begin{itemize}
+    \item Better features lead to better generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Generalization depends on a combination of model structure, data, and optimization dynamics.
+
+\subsection{A Unifying Perspective}
+
+Generalization can be understood as the relationship between:
+
+\begin{itemize}
+    \item \textbf{Data:} finite samples from a distribution
+    \item \textbf{Model:} hypothesis space and capacity
+    \item \textbf{Optimization:} how solutions are selected
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning selects one solution among many that fit the data; generalization depends on which solution is chosen.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The generalization behavior of modern machine learning systems cannot be explained by model capacity alone.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item training and test performance,
+    \item overfitting and underfitting,
+    \item model capacity and complexity,
+    \item informal principles of generalization.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas motivate the need for methods that control complexity and improve generalization.
+
+\medskip
+
+\noindent
+In the next lecture, we study \emph{regularization}, which introduces explicit constraints and penalties to guide learning.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+The goal of learning is not to fit the data perfectly, but to capture the underlying structure that generates it.

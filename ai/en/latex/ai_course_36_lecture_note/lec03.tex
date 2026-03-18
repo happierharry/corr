@@ -1,0 +1,285 @@
+\section{Lecture 3: Hypothesis Spaces and Inductive Bias}
+
+\subsection{Motivation}
+
+In the previous lectures, we formulated learning as:
+\begin{itemize}
+    \item approximating an unknown function,
+    \item minimizing expected loss under a data distribution.
+\end{itemize}
+
+\medskip
+
+\noindent
+However, a fundamental question remains:
+
+\medskip
+
+\noindent
+\textit{Among all possible functions, which ones should we consider?}
+
+\medskip
+
+\noindent
+Since we only observe finite data, many functions can fit the data equally well. Without further assumptions, learning is ill-posed.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Learning requires restricting the space of possible functions and introducing assumptions about the structure of the problem.
+
+\subsection{Function Classes and Model Families}
+
+We define a \emph{hypothesis space}:
+\[
+\mathcal{H} = \{ f_\theta : \mathcal{X} \to \mathcal{Y} \mid \theta \in \Theta \}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item \textbf{Linear models:}
+    \[
+    f(x) = w^\top x
+    \]
+
+    \item \textbf{Polynomial models:}
+    \[
+    f(x) = \sum_{k=0}^d a_k x^k
+    \]
+
+    \item \textbf{Neural networks:}
+    \[
+    f(x) = \sigma(W_2 \sigma(W_1 x))
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $\mathcal{H}$ defines which functions are representable
+    \item Learning selects a function within $\mathcal{H}$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Expressivity.}  
+A richer hypothesis space can approximate more complex functions.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Small $\mathcal{H}$: limited expressivity
+    \item Large $\mathcal{H}$: risk of overfitting
+\end{itemize}
+
+\subsection{Inductive Bias and Prior Structure}
+
+The restriction to a hypothesis space introduces an \emph{inductive bias}.
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+Inductive bias is the set of assumptions that a learning algorithm uses to generalize beyond observed data.
+
+\medskip
+
+\noindent
+\textbf{Sources of inductive bias.}
+\begin{itemize}
+    \item Choice of hypothesis space
+    \item Regularization
+    \item Optimization algorithm
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example.}
+\begin{itemize}
+    \item Linear models assume linear relationships
+    \item Convolutional networks assume translation invariance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Prior structure.}  
+Inductive bias can be interpreted probabilistically as a prior over functions:
+\[
+p(f).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning is not purely data-driven; it depends critically on assumptions encoded in the model.
+
+\subsection{Bias--Variance Tradeoff (Intuition)}
+
+A central concept in learning is the tradeoff between bias and variance.
+
+\medskip
+
+\noindent
+\textbf{Bias.}
+\begin{itemize}
+    \item Error due to model assumptions
+    \item High when the model is too simple
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Variance.}
+\begin{itemize}
+    \item Sensitivity to data fluctuations
+    \item High when the model is too complex
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Qualitative decomposition.}
+\[
+\text{Error} = \text{Bias}^2 + \text{Variance} + \text{Noise}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Increasing model complexity reduces bias
+    \item Increasing model complexity increases variance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example.}
+\begin{itemize}
+    \item Linear model on nonlinear data: high bias
+    \item Highly flexible model on small dataset: high variance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Good generalization requires balancing simplicity and flexibility.
+
+\subsection{Choosing Representations}
+
+The representation of data plays a central role in learning.
+
+\medskip
+
+\noindent
+\textbf{Feature representation.}
+\begin{itemize}
+    \item Input $x$ may be transformed into features $\phi(x)$
+    \item Learning is performed on $\phi(x)$ rather than $x$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Polynomial features
+    \item Kernel mappings
+    \item Learned representations (neural networks)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+The difficulty of learning depends on the representation.
+
+\medskip
+
+\noindent
+\textbf{Linearization principle.}  
+A complex problem may become simple under the right representation.
+
+\medskip
+
+\noindent
+\textbf{Modern perspective.}
+\begin{itemize}
+    \item Deep learning automatically learns representations
+    \item Representation learning replaces manual feature design
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Choosing or learning representations is often more important than the choice of model.
+
+\subsection{A Unifying Perspective}
+
+Hypothesis spaces and inductive bias define the structure of learning:
+
+\begin{itemize}
+    \item \textbf{Hypothesis space:} what functions are possible
+    \item \textbf{Inductive bias:} which functions are preferred
+    \item \textbf{Data:} which functions are consistent with observations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning is the process of selecting a function that balances data fit with prior assumptions.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Generalization is possible only because of inductive bias; without it, learning from finite data would be impossible.
+
+\subsection{Outlook}
+
+In this lecture, we examined:
+
+\begin{itemize}
+    \item hypothesis spaces and model families,
+    \item inductive bias and prior structure,
+    \item the bias--variance tradeoff,
+    \item the role of representations.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas naturally lead to the next question:
+
+\medskip
+
+\noindent
+\textit{How do we actually find the best function within a hypothesis space?}
+
+\medskip
+
+\noindent
+In the next lecture, we study learning as an optimization problem, where parameter estimation is framed as minimizing an objective function.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+The success of learning depends as much on the choice of representation and inductive bias as on the data itself.

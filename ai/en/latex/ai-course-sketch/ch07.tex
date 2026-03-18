@@ -1,0 +1,288 @@
+\chapter{Linear Regression and Least Squares}
+
+\section{Linear Models and Projections}
+
+Linear regression is one of the simplest and most fundamental models in machine learning. Despite its simplicity, it illustrates many key ideas that extend to more complex models.
+
+\medskip
+
+\noindent
+\textbf{Model.}  
+We consider functions of the form
+\[
+f(x) = \langle w, x \rangle + b,
+\]
+where $w \in \mathbb{R}^d$ and $b \in \mathbb{R}$.
+
+\medskip
+
+Given a dataset $\{(x_i, y_i)\}_{i=1}^n$, we aim to find parameters $(w,b)$ that best fit the data.
+
+\medskip
+
+\noindent
+\textbf{Matrix formulation.}  
+Let
+\[
+X =
+\begin{bmatrix}
+- & x_1^\top & - \\
+- & x_2^\top & - \\
+& \vdots & \\
+- & x_n^\top & -
+\end{bmatrix}
+\in \mathbb{R}^{n \times d},
+\quad
+y =
+\begin{bmatrix}
+y_1 \\ y_2 \\ \vdots \\ y_n
+\end{bmatrix}.
+\]
+
+For simplicity, we incorporate the bias into the parameter vector by augmenting $x$ with a constant component. Then the model becomes
+\[
+f(x) = \langle w, x \rangle,
+\]
+and the prediction vector is
+\[
+\hat{y} = X w.
+\]
+
+\medskip
+
+\noindent
+\textbf{Geometric interpretation.}  
+The columns of $X$ span a subspace of $\mathbb{R}^n$. Linear regression seeks a vector $\hat{y}$ in this subspace that is closest to $y$.
+
+\medskip
+
+\noindent
+Thus, linear regression can be viewed as an \emph{orthogonal projection} problem.
+
+\section{Least Squares as Optimization}
+
+A natural choice of loss is the squared error:
+\[
+\ell(f(x_i), y_i) = (f(x_i) - y_i)^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Objective.}
+\[
+\min_{w} \; \frac{1}{n} \|Xw - y\|_2^2.
+\]
+
+\medskip
+
+\noindent
+This is a convex quadratic optimization problem.
+
+\medskip
+
+\noindent
+\textbf{Optimality condition.}  
+Setting the gradient to zero yields the normal equations:
+\[
+X^\top X w = X^\top y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Solution (when $X^\top X$ is invertible).}
+\[
+w^\star = (X^\top X)^{-1} X^\top y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Projection interpretation.}  
+The fitted values $\hat{y} = X w^\star$ satisfy
+\[
+y - \hat{y} \perp \mathrm{span}(X),
+\]
+meaning the residual is orthogonal to the column space of $X$.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The least squares solution is the best approximation of $y$ within the model class in terms of Euclidean distance.
+
+\medskip
+
+\noindent
+\textbf{Overparameterized case.}  
+If $X^\top X$ is not invertible (e.g., $d > n$), there are infinitely many solutions. In this case, one often selects the minimum-norm solution:
+\[
+w^\star = X^\top (X X^\top)^{-1} y.
+\]
+
+\medskip
+
+\noindent
+This solution is closely related to implicit regularization, as discussed in previous chapters.
+
+\section{Conditioning and Numerical Stability}
+
+While the closed-form solution provides insight, practical computation depends on numerical properties of the matrix $X^\top X$.
+
+\medskip
+
+\noindent
+\textbf{Conditioning.}  
+The condition number of $X^\top X$ measures sensitivity to perturbations:
+\[
+\kappa(X^\top X) = \frac{\lambda_{\max}}{\lambda_{\min}},
+\]
+where $\lambda_{\max}$ and $\lambda_{\min}$ are the largest and smallest eigenvalues.
+
+\medskip
+
+\noindent
+\textbf{Ill-conditioning.}
+\begin{itemize}
+    \item Occurs when $\lambda_{\min}$ is very small
+    \item Leads to unstable solutions
+    \item Small changes in data can produce large changes in $w$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Causes.}
+\begin{itemize}
+    \item Highly correlated features
+    \item Redundant or nearly redundant inputs
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical consequences.}
+\begin{itemize}
+    \item Numerical instability in inversion
+    \item Poor generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Remedies.}
+\begin{itemize}
+    \item Feature scaling and normalization
+    \item Removing redundant features
+    \item Regularization (discussed next)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Algorithmic note.}  
+In practice, direct inversion is often avoided in favor of more stable methods such as QR decomposition or singular value decomposition (SVD).
+
+\section{Ridge Regression}
+
+Ridge regression introduces $\ell_2$ regularization into the least squares problem.
+
+\medskip
+
+\noindent
+\textbf{Objective.}
+\[
+\min_{w} \; \|Xw - y\|_2^2 + \lambda \|w\|_2^2,
+\quad \lambda > 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\[
+w^\star = (X^\top X + \lambda I)^{-1} X^\top y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Adds stability by shifting eigenvalues of $X^\top X$
+    \item Reduces sensitivity to noise
+    \item Controls the magnitude of parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}  
+Ridge regression shrinks the solution toward the origin, balancing data fit and parameter norm.
+
+\medskip
+
+\noindent
+\textbf{Bias--variance tradeoff.}
+\begin{itemize}
+    \item Increases bias slightly
+    \item Reduces variance significantly
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to conditioning.}  
+The matrix $X^\top X + \lambda I$ is always invertible for $\lambda > 0$, improving numerical stability.
+
+\medskip
+
+\noindent
+\textbf{Bayesian interpretation.}  
+Ridge regression corresponds to assuming a Gaussian prior on $w$.
+
+\section{A Unifying Perspective}
+
+Linear regression illustrates several central themes of machine learning:
+
+\begin{itemize}
+    \item Learning as projection onto a function space
+    \item Optimization as solving structured problems
+    \item Regularization as control of complexity and stability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Three perspectives.}
+\begin{itemize}
+    \item \textbf{Geometric:} projection onto a subspace
+    \item \textbf{Algebraic:} solving normal equations
+    \item \textbf{Statistical:} estimating conditional expectation
+\end{itemize}
+
+\medskip
+
+\noindent
+These perspectives extend naturally to more complex models, including neural networks.
+
+\section{Outlook}
+
+This chapter introduced linear regression as a foundational model:
+\begin{itemize}
+    \item least squares formulation,
+    \item geometric interpretation,
+    \item numerical considerations,
+    \item regularization via ridge regression.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we extend these ideas to classification through logistic regression, where probabilistic modeling plays a central role.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Simple models often reveal deep structure. Understanding them provides insight into more complex learning systems.

@@ -1,0 +1,255 @@
+\chapter{Sequence Models}
+
+\section{Recurrent Neural Networks}
+
+Many real-world data types are sequential, including time series, text, and speech. Sequence models aim to capture dependencies across time.
+
+\medskip
+
+\noindent
+\textbf{Recurrent neural networks (RNNs).}  
+An RNN processes a sequence $(x_1, x_2, \dots, x_T)$ by maintaining a hidden state $h_t$ that evolves over time:
+\[
+h_t = \phi(W_h h_{t-1} + W_x x_t + b),
+\]
+\[
+y_t = \psi(W_y h_t + c),
+\]
+where $\phi$ and $\psi$ are nonlinear functions.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $h_t$ summarizes past information
+    \item The same parameters are reused across time steps
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Parameter sharing.}  
+Unlike feedforward networks, RNNs share weights across time, making them suitable for variable-length sequences.
+
+\medskip
+
+\noindent
+\textbf{Unrolling in time.}  
+An RNN can be viewed as a deep network with shared parameters:
+\[
+h_1 \rightarrow h_2 \rightarrow \cdots \rightarrow h_T.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+RNNs model temporal dependencies by recursively updating a hidden state.
+
+\section{Gated Architectures (LSTM, GRU)}
+
+Standard RNNs struggle to capture long-term dependencies. Gated architectures address this limitation.
+
+\subsection{Long Short-Term Memory (LSTM)}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Introduce a memory cell that can preserve information over long time periods.
+
+\medskip
+
+\noindent
+\textbf{Gates.}
+\begin{itemize}
+    \item Input gate: controls new information
+    \item Forget gate: controls what to discard
+    \item Output gate: controls what to expose
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Structure (conceptual).}
+\begin{itemize}
+    \item Cell state evolves with controlled updates
+    \item Gates regulate information flow
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Enables learning of long-term dependencies
+    \item Mitigates vanishing gradient problem
+\end{itemize}
+
+\subsection{Gated Recurrent Unit (GRU)}
+
+\medskip
+
+\noindent
+\textbf{Simplified architecture.}
+\begin{itemize}
+    \item Combines input and forget mechanisms
+    \item Fewer parameters than LSTM
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Update mechanism.}
+\begin{itemize}
+    \item Update gate controls memory retention
+    \item Reset gate controls influence of past state
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gating mechanisms allow the network to dynamically control information flow.
+
+\section{Long-Term Dependencies}
+
+A central challenge in sequence modeling is capturing dependencies across long time spans.
+
+\medskip
+
+\noindent
+\textbf{Problem.}
+\begin{itemize}
+    \item Information from early time steps may be lost
+    \item Gradients may vanish during backpropagation through time
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Backpropagation through time (BPTT).}  
+Training RNNs involves propagating gradients through many time steps:
+\[
+\frac{\partial L}{\partial h_t} = \frac{\partial L}{\partial h_T} \prod_{k=t}^{T-1} \frac{\partial h_{k+1}}{\partial h_k}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Gradient behavior.}
+\begin{itemize}
+    \item Repeated multiplication can lead to vanishing or exploding gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role of gating.}
+\begin{itemize}
+    \item Provides paths for gradients to flow more easily
+    \item Allows selective memory retention
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical techniques.}
+\begin{itemize}
+    \item Gradient clipping
+    \item Truncated backpropagation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Modeling long-term dependencies requires both architectural and optimization considerations.
+
+\section{Limitations of Recurrence}
+
+Despite their strengths, recurrent architectures have important limitations.
+
+\medskip
+
+\noindent
+\textbf{Sequential computation.}
+\begin{itemize}
+    \item Processing must occur step by step
+    \item Limits parallelization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Difficulty with long-range dependencies.}
+\begin{itemize}
+    \item Even gated architectures have limits
+    \item Information may degrade over long sequences
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Optimization challenges.}
+\begin{itemize}
+    \item Training can be unstable
+    \item Sensitive to hyperparameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Memory bottleneck.}  
+A fixed-size hidden state must summarize the entire past.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Recurrence provides a natural framework for sequences, but may not scale effectively to complex long-range dependencies.
+
+\section{A Unifying Perspective}
+
+Sequence models extend neural networks to temporal data:
+
+\begin{itemize}
+    \item \textbf{State:} hidden representation evolves over time
+    \item \textbf{Dynamics:} recursive updates define temporal behavior
+    \item \textbf{Memory:} information is stored in hidden states
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Architectural evolution.}
+\begin{itemize}
+    \item RNN $\rightarrow$ LSTM/GRU $\rightarrow$ attention-based models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The design of sequence models revolves around managing information flow across time.
+
+\section{Outlook}
+
+This chapter introduced sequence models:
+\begin{itemize}
+    \item recurrent neural networks,
+    \item gated architectures,
+    \item challenges of long-term dependencies,
+    \item limitations of recurrence.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study attention mechanisms, which address many of the limitations of recurrent models.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective sequence modeling requires mechanisms for preserving and accessing relevant information over time.

@@ -1,0 +1,593 @@
+\chapter{Geometry and Dynamics of Learning}
+
+\section{Parameter Space and Function Space}
+
+Training a neural network can be viewed from two closely related perspectives:
+\begin{itemize}
+    \item \textbf{parameter space:} the space of weights and biases,
+    \item \textbf{function space:} the space of input--output maps realized by the network.
+\end{itemize}
+
+\medskip
+
+\noindent
+If the network is parameterized by \(\theta \in \mathbb{R}^d\), then training minimizes a loss
+\[
+L(\theta) = \frac{1}{n}\sum_{i=1}^n \ell\bigl(f_\theta(x_i),y_i\bigr),
+\]
+where \(f_\theta\) is the function represented by the network.
+
+\medskip
+
+\noindent
+\textbf{Parameter-space view.}
+\begin{itemize}
+    \item A point \(\theta\) represents one specific choice of parameters
+    \item Optimization moves through a high-dimensional landscape \(L(\theta)\)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Function-space view.}
+\begin{itemize}
+    \item The object of real interest is not the parameter vector itself, but the function \(f_\theta\)
+    \item Different parameter vectors may represent similar or even identical functions
+\end{itemize}
+
+\medskip
+
+\noindent
+This distinction is important because neural networks are often highly redundant:
+\begin{itemize}
+    \item permutations of hidden units can leave the realized function unchanged,
+    \item rescalings in some architectures can produce equivalent predictions,
+    \item large motions in parameter space can correspond to small motions in function space.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Optimization takes place in parameter space, but generalization is about the learned function. Much of modern theory studies how parameter dynamics induce trajectories in function space.
+
+\section{Loss Landscapes}
+
+The loss function defines a high-dimensional landscape over parameter space:
+\[
+L(\theta): \mathbb{R}^d \to \mathbb{R}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Landscape interpretation.}
+\begin{itemize}
+    \item each point corresponds to a parameter configuration,
+    \item the height of the landscape is the loss value,
+    \item learning corresponds to moving downhill.
+\end{itemize}
+
+\medskip
+
+\noindent
+Although this picture is easy to draw in low dimensions, the true loss landscape of a neural network is extremely high-dimensional and far more intricate.
+
+\medskip
+
+\noindent
+\textbf{Critical points.}
+A point \(\theta^\ast\) is critical if
+\[
+\nabla L(\theta^\ast)=0.
+\]
+Among critical points, one distinguishes:
+\begin{itemize}
+    \item \textbf{local minima:} directions of nonnegative curvature,
+    \item \textbf{local maxima:} directions of nonpositive curvature,
+    \item \textbf{saddle points:} some directions curve upward and others downward.
+\end{itemize}
+
+\medskip
+
+\noindent
+In high dimensions, saddle points are often more prevalent than poor isolated local minima. This helps explain why optimization difficulties in deep learning are not well described simply as ``getting stuck in bad local minima.''
+
+\medskip
+
+\noindent
+\textbf{Flat and sharp regions.}
+\begin{itemize}
+    \item \textbf{Flat regions} have small curvature in many directions
+    \item \textbf{Sharp regions} have large curvature, so loss changes rapidly under perturbations
+\end{itemize}
+
+\medskip
+
+\noindent
+This matters because optimization speed, stability, and sometimes generalization behavior are strongly influenced by local geometry.
+
+\medskip
+
+\noindent
+\textbf{Caution.}
+In neural networks, geometric notions such as flatness can depend on parametrization, so they must be interpreted carefully. Still, the landscape picture remains a useful organizing idea.
+
+\section{Curvature, Hessians, and Optimization Geometry}
+
+To move beyond first-order descent intuition, one studies curvature.
+
+\subsection{Hessian Matrix}
+
+The local second-order geometry of the loss is captured by the Hessian:
+\[
+H(\theta)=\nabla^2 L(\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation of the Hessian.}
+\begin{itemize}
+    \item it measures how the gradient changes locally,
+    \item it describes curvature in different directions,
+    \item it helps distinguish minima, saddles, and flat directions.
+\end{itemize}
+
+\medskip
+
+\noindent
+For a direction \(v \in \mathbb{R}^d\), the quadratic approximation gives
+\[
+L(\theta + v) \approx L(\theta) + \nabla L(\theta)^\top v + \frac12 v^\top H(\theta) v.
+\]
+Thus the quantity
+\[
+v^\top H(\theta) v
+\]
+describes the curvature of the loss in direction \(v\).
+
+\subsection{Eigenvalue Intuition}
+
+The eigenvalues of the Hessian give local curvature scales.
+
+\begin{itemize}
+    \item Large positive eigenvalues indicate steep upward curvature
+    \item Small eigenvalues indicate nearly flat directions
+    \item Negative eigenvalues indicate descent directions and hence saddle-like structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hessian intuition.}
+Neural-network losses often exhibit:
+\begin{itemize}
+    \item a few directions of strong curvature,
+    \item many weakly curved or nearly flat directions,
+    \item occasional negative-curvature directions away from minima.
+\end{itemize}
+
+\medskip
+
+\noindent
+This suggests that optimization takes place in a highly anisotropic geometry rather than an isotropic bowl.
+
+\subsection{Curvature and Optimization}
+
+Curvature matters because gradient descent behaves differently in different directions.
+
+\medskip
+
+\noindent
+If one applies the update
+\[
+\theta_{k+1}=\theta_k-\eta \nabla L(\theta_k),
+\]
+then large curvature directions constrain the step size \(\eta\). If \(\eta\) is too large relative to local curvature, the iteration can oscillate or diverge.
+
+\medskip
+
+\noindent
+\textbf{Consequences of curvature.}
+\begin{itemize}
+    \item steep directions slow stable optimization,
+    \item flat directions lead to slow progress,
+    \item anisotropy motivates momentum, preconditioning, and adaptive methods.
+\end{itemize}
+
+\medskip
+
+\noindent
+Second-order methods explicitly try to exploit Hessian information, but in large neural networks exact Hessian computations are often too expensive. Still, Hessian-based intuition is central even when one uses only first-order optimizers.
+
+\subsection{Geometry Beyond the Hessian}
+
+The Hessian is a local object. Deep learning also involves global geometric features:
+\begin{itemize}
+    \item connected low-loss valleys,
+    \item broad basins,
+    \item ridges and plateaus,
+    \item symmetries and degeneracies of parametrization.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus optimization geometry is not merely about one critical point, but about the structure of large low-loss regions and the trajectories connecting them.
+
+\section{Gradient Flow and Dynamical Systems}
+
+Optimization can be studied not only as an iterative algorithm but also as a dynamical system.
+
+\subsection{From Gradient Descent to Gradient Flow}
+
+Discrete-time gradient descent takes the form
+\[
+\theta_{k+1}=\theta_k-\eta \nabla L(\theta_k).
+\]
+When the step size \(\eta\) is small, one is led to the continuous-time limit
+\[
+\frac{d\theta(t)}{dt} = -\nabla L(\theta(t)),
+\]
+called \textbf{gradient flow}.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+The parameter vector evolves in the direction of steepest instantaneous decrease of the loss.
+
+\subsection{Energy Dissipation}
+
+Along a gradient-flow trajectory, the loss decreases monotonically:
+\[
+\frac{d}{dt}L(\theta(t))
+=
+\nabla L(\theta(t))^\top \frac{d\theta(t)}{dt}
+=
+-\|\nabla L(\theta(t))\|^2
+\le 0.
+\]
+
+\medskip
+
+\noindent
+This identity is fundamental. It shows that gradient flow is a dissipative dynamical system: the loss acts like an energy that decreases over time.
+
+\subsection{Fixed Points and Stability}
+
+A fixed point of gradient flow satisfies
+\[
+\frac{d\theta(t)}{dt}=0,
+\]
+so necessarily
+\[
+\nabla L(\theta)=0.
+\]
+Thus critical points of the loss correspond to equilibria of the flow.
+
+\medskip
+
+\noindent
+Their stability depends on curvature:
+\begin{itemize}
+    \item minima are locally attracting under suitable conditions,
+    \item saddle points are unstable in directions of negative curvature,
+    \item flat directions can produce slow or non-isolated behavior.
+\end{itemize}
+
+\medskip
+
+\noindent
+This dynamical-systems viewpoint explains why negative curvature helps optimization escape many saddles.
+
+\subsection{Stochastic Dynamics}
+
+Stochastic gradient descent introduces noise because gradients are estimated from minibatches. At a high level, one models this by a stochastic differential equation
+\[
+d\theta(t) = -\nabla L(\theta(t))\,dt + \Sigma(\theta(t))^{1/2}\,dW_t,
+\]
+where \(W_t\) is Brownian motion and \(\Sigma\) reflects gradient noise.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+Training is no longer a deterministic flow, but a noisy dynamical process. This noise can:
+\begin{itemize}
+    \item help escape unstable regions,
+    \item bias trajectories toward some minima rather than others,
+    \item influence both optimization and generalization.
+\end{itemize}
+
+\medskip
+
+\noindent
+Hence training dynamics are shaped by both geometry and stochasticity.
+
+\section{Feature Learning vs Kernel-Like Regimes}
+
+A central modern question is whether training mainly learns new features or behaves approximately like a linear model around initialization.
+
+\subsection{Linearization Around Initialization}
+
+Let \(\theta_0\) denote the initialization. For parameters \(\theta\) near \(\theta_0\), one may linearize the network:
+\[
+f_\theta(x)
+\approx
+f_{\theta_0}(x)
++
+\nabla_\theta f_{\theta_0}(x)^\top (\theta-\theta_0).
+\]
+
+\medskip
+
+\noindent
+This approximation treats the model as locally linear in parameters. If training remains close to initialization, the behavior of the network may be well approximated by this linearized model.
+
+\subsection{Neural Tangent Kernel}
+
+The associated kernel is the \textbf{neural tangent kernel} (NTK):
+\[
+K(x,x')
+=
+\nabla_\theta f_{\theta_0}(x)^\top
+\nabla_\theta f_{\theta_0}(x').
+\]
+
+\medskip
+
+\noindent
+\textbf{High-level meaning of the NTK.}
+\begin{itemize}
+    \item it converts the network into a kernel method at initialization,
+    \item in suitable wide-network regimes, training becomes approximately linear,
+    \item predictions evolve similarly to kernel regression with kernel \(K\).
+\end{itemize}
+
+\medskip
+
+\noindent
+In the infinite-width limit, this kernel often becomes deterministic, and the dynamics simplify considerably. This regime is sometimes called \textbf{lazy training}, because the parameters move little and the network behaves almost like its first-order Taylor expansion.
+
+\subsection{Kernel-Like Regime}
+
+In a kernel-like or lazy regime:
+\begin{itemize}
+    \item features do not change much during training,
+    \item learning happens mainly through reweighting fixed random features,
+    \item analysis is simpler and often mathematically tractable.
+\end{itemize}
+
+\medskip
+
+\noindent
+This regime is important because it connects deep learning to classical kernel methods and yields rigorous results in some asymptotic settings.
+
+\subsection{Feature-Learning Regime}
+
+In practical deep learning, however, networks often do more than linearized fitting.
+
+\medskip
+
+\noindent
+\textbf{Feature learning} means that internal representations evolve significantly during training. Hidden layers reshape the geometry of the data so that later layers can solve the task more easily.
+
+\medskip
+
+\noindent
+In this regime:
+\begin{itemize}
+    \item the tangent features themselves change,
+    \item the network moves far enough from initialization that linearization becomes incomplete,
+    \item representation learning becomes central to performance.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key contrast.}
+\begin{itemize}
+    \item \textbf{kernel-like view:} learning acts on nearly fixed features,
+    \item \textbf{feature-learning view:} learning changes the features themselves.
+\end{itemize}
+
+\medskip
+
+\noindent
+A major theme of modern theory is understanding when each regime dominates and how they interact.
+
+\section{Representation Geometry in Trained Networks}
+
+Deep learning is not only about reducing loss. It also changes the internal geometry of data representations.
+
+\subsection{Representation as Geometry}
+
+For an intermediate layer \(h_\theta(x)\), inputs are mapped into a feature space. Training changes this map, and hence changes the geometry of the dataset in representation space.
+
+\medskip
+
+\noindent
+\textbf{Representation geometry asks:}
+\begin{itemize}
+    \item which examples become closer or farther apart,
+    \item which directions are expanded or compressed,
+    \item how class structure becomes more separable,
+    \item how invariances are formed.
+\end{itemize}
+
+\subsection{Separation and Flattening}
+
+Empirically, trained networks often transform data so that:
+\begin{itemize}
+    \item examples from the same class cluster more tightly,
+    \item examples from different classes become more separated,
+    \item nuisance variations are suppressed,
+    \item task-relevant directions are amplified.
+\end{itemize}
+
+\medskip
+
+\noindent
+This can be viewed as a geometric simplification of the learning problem.
+
+\subsection{Feature Learning Geometry}
+
+\textbf{Feature learning geometry} refers to how the network reshapes the data manifold during training.
+
+\medskip
+
+\noindent
+At a high level, one may think of hidden layers as performing successive geometric operations:
+\begin{itemize}
+    \item disentangling factors of variation,
+    \item flattening or straightening class manifolds,
+    \item aligning representations with decision boundaries,
+    \item creating coordinates in which simple classifiers work well.
+\end{itemize}
+
+\medskip
+
+\noindent
+This viewpoint helps explain why deep networks can outperform fixed-feature methods: they do not merely fit outputs; they actively reorganize the input geometry.
+
+\subsection{Residual Networks and Dynamical Depth}
+
+Residual networks provide an especially suggestive bridge between geometry and dynamics. A residual block has the form
+\[
+h_{k+1}=h_k + \Phi_k(h_k),
+\]
+which resembles a discretized differential equation.
+
+\medskip
+
+\noindent
+Thus depth can be interpreted as time in a representation flow. Under this view:
+\begin{itemize}
+    \item layers evolve features gradually,
+    \item deeper models implement longer geometric transformations,
+    \item representation learning becomes a controlled dynamical process.
+\end{itemize}
+
+\medskip
+
+\noindent
+This is one reason dynamical-systems language is so natural in modern deep learning theory.
+
+\section{A Unifying Perspective}
+
+The geometry and dynamics of learning can be organized around several complementary viewpoints:
+
+\begin{itemize}
+    \item \textbf{loss landscapes:} the global and local structure of \(L(\theta)\),
+    \item \textbf{curvature and Hessians:} second-order information shaping optimization,
+    \item \textbf{gradient flow:} continuous-time evolution of parameters,
+    \item \textbf{kernel-like regimes:} linearized training near initialization,
+    \item \textbf{feature learning:} task-dependent evolution of representations,
+    \item \textbf{representation geometry:} how the network restructures data internally.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}
+Understanding deep learning requires studying both where optimization moves in parameter space and how those motions change the function and representation geometry seen by the data.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}
+Modern learning theory is not only about approximation or statistics. It is also about geometry, dynamics, and the evolving structure of learned representations.
+
+\section{Outlook}
+
+This chapter developed a richer picture of learning by combining geometric and dynamical viewpoints:
+\begin{itemize}
+    \item parameter space versus function space,
+    \item loss landscapes and high-dimensional critical structure,
+    \item curvature, Hessian intuition, and optimization geometry,
+    \item continuous-time gradient flow and stochastic dynamics,
+    \item NTK and lazy-training perspectives,
+    \item feature learning and representation geometry.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}
+Learning is not merely the search for low loss. It is a structured dynamical process that moves through parameter space while reshaping the geometry of functions and representations.
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item \textbf{Parameter space and function space.}
+    Explain why two very different parameter vectors \(\theta\) and \(\theta'\) may correspond to similar functions \(f_\theta\) and \(f_{\theta'}\). Give at least two reasons this can happen in neural networks.
+
+    \item \textbf{Quadratic approximation.}
+    Starting from the second-order Taylor approximation
+    \[
+    L(\theta+v)\approx L(\theta)+\nabla L(\theta)^\top v+\frac12 v^\top H(\theta)v,
+    \]
+    explain the meaning of the Hessian term. What does it tell us about curvature in the direction \(v\)?
+
+    \item \textbf{Eigenvalue interpretation.}
+    Suppose the Hessian at a point has one negative eigenvalue, several large positive eigenvalues, and many near-zero eigenvalues. What does this suggest about the local geometry of the loss?
+
+    \item \textbf{Simple gradient flow.}
+    Consider the one-dimensional loss
+    \[
+    L(\theta)=\frac12 \theta^2.
+    \]
+    Write the gradient-flow equation and solve it explicitly. Show that the loss decreases monotonically along the trajectory.
+
+    \item \textbf{Another gradient flow.}
+    Consider
+    \[
+    L(\theta)=\frac14 \theta^4.
+    \]
+    Write the gradient-flow equation. Compare qualitatively its convergence near \(\theta=0\) with the quadratic case.
+
+    \item \textbf{Fixed points and stability.}
+    Let gradient flow satisfy
+    \[
+    \frac{d\theta}{dt}=-\nabla L(\theta).
+    \]
+    Why are critical points of \(L\) fixed points of the flow? How does curvature help distinguish stable equilibria from unstable ones?
+
+    \item \textbf{Linearized training.}
+    Derive the first-order Taylor approximation
+    \[
+    f_\theta(x)\approx f_{\theta_0}(x)+\nabla_\theta f_{\theta_0}(x)^\top(\theta-\theta_0).
+    \]
+    In what sense does this approximation lead to a kernel method?
+
+    \item \textbf{NTK versus feature learning.}
+    Compare the following two views:
+    \begin{itemize}
+        \item training as kernel-like regression with nearly fixed features,
+        \item training as feature learning in which internal representations evolve.
+    \end{itemize}
+    What kinds of behavior can the second view explain that the first may miss?
+
+    \item \textbf{Representation geometry.}
+    Describe how training might change the geometry of hidden representations in a classification network. What does it mean for class manifolds to become more separable?
+
+    \item \textbf{Residual networks and dynamics.}
+    Consider the residual update
+    \[
+    h_{k+1}=h_k+\Phi_k(h_k).
+    \]
+    Explain why this resembles a discretized differential equation. What insight does this give into the role of depth?
+
+    \item \textbf{Flat and sharp regions.}
+    Why might flatness be related to robustness of a minimum? Why should one nevertheless be cautious about using flatness as a definitive explanation of generalization?
+
+    \item \textbf{Synthesis.}
+    Write a short essay comparing two pictures of deep learning:
+    \begin{itemize}
+        \item the optimization of a complicated loss landscape in parameter space,
+        \item the gradual evolution of useful representations in function space.
+    \end{itemize}
+    Explain why both pictures are needed.
+\end{enumerate}

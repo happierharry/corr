@@ -1,0 +1,841 @@
+\chapter{Practical System Design}
+
+\section{Framing ML as a Systems Problem}
+
+Machine learning is often presented as a problem of choosing a model and minimizing a loss. In practice, however, useful machine learning systems are much larger than the model itself. They involve data collection, labeling, storage, training infrastructure, evaluation, deployment, monitoring, and continual maintenance.
+
+\medskip
+
+\noindent
+\textbf{Core viewpoint.}
+A machine learning system is not just a function
+\[
+x \mapsto \hat{y},
+\]
+but a pipeline that connects:
+\begin{itemize}
+    \item raw data,
+    \item human decisions and labels,
+    \item training and validation workflows,
+    \item deployed inference services,
+    \item monitoring and feedback loops.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Why this matters.}
+A theoretically strong model can still fail in practice if:
+\begin{itemize}
+    \item the data pipeline is unreliable,
+    \item the evaluation setup is flawed,
+    \item the system violates latency or memory constraints,
+    \item deployment conditions differ from training conditions,
+    \item failures are not detected after launch.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus practical machine learning must be framed as a \emph{systems problem}, not merely an optimization problem.
+
+\medskip
+
+\noindent
+\textbf{Main system components.}
+\begin{itemize}
+    \item \textbf{Data infrastructure:} collection, storage, cleaning, labeling, versioning
+    \item \textbf{Training infrastructure:} preprocessing, batching, training, validation, checkpointing
+    \item \textbf{Experiment infrastructure:} metrics, logs, hyperparameters, comparisons
+    \item \textbf{Serving infrastructure:} model packaging, inference, latency, scaling
+    \item \textbf{Monitoring infrastructure:} drift detection, error analysis, feedback collection
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+In real-world ML, system quality is determined by the weakest link in the pipeline, not only by the sophistication of the learning algorithm.
+
+\section{Data Collection, Cleaning, and Labeling}
+
+Data is the foundation of a machine learning system. In many applications, the quality of the dataset matters more than small differences between model architectures.
+
+\subsection{Data Collection}
+
+The first step is to gather data relevant to the task.
+
+\medskip
+
+\noindent
+\textbf{Typical sources.}
+\begin{itemize}
+    \item sensors and devices,
+    \item user interactions,
+    \item logs and transaction records,
+    \item public datasets,
+    \item manually curated examples.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key concerns.}
+\begin{itemize}
+    \item Does the data represent the target population?
+    \item Does it cover the range of situations the model will face?
+    \item Are rare but important cases included?
+\end{itemize}
+
+\medskip
+
+\noindent
+A common failure is \emph{sampling mismatch}: the collected data is easier, cleaner, or less diverse than real deployment data.
+
+\subsection{Cleaning and Preprocessing}
+
+Raw data is rarely ready for immediate use. Practical systems require systematic preprocessing.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item removing duplicates,
+    \item handling missing values,
+    \item correcting corrupted records,
+    \item normalizing units and formats,
+    \item standardizing text, images, or numerical features.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Feature preprocessing.}
+Depending on the modality, one may apply:
+\begin{itemize}
+    \item normalization or scaling,
+    \item tokenization,
+    \item image resizing and augmentation,
+    \item categorical encoding,
+    \item filtering and denoising.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Pipeline principle.}
+Preprocessing should be automated and reproducible. Ad hoc manual transformations create hidden inconsistencies between training and deployment.
+
+\subsection{Labeling}
+
+Supervised learning depends on labels, and labeling quality is often a major bottleneck.
+
+\medskip
+
+\noindent
+\textbf{Label sources.}
+\begin{itemize}
+    \item expert annotation,
+    \item crowd annotation,
+    \item user-provided outcomes,
+    \item weak or heuristic labels,
+    \item labels inferred from downstream events.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Common labeling issues.}
+\begin{itemize}
+    \item inconsistent annotation standards,
+    \item ambiguous examples,
+    \item class imbalance,
+    \item noisy labels,
+    \item delayed or missing ground truth.
+\end{itemize}
+
+\medskip
+
+\noindent
+Because models learn the structure of labels, poor labeling policy often leads to systematic model failure.
+
+\subsection{Train, Validation, and Test Infrastructure}
+
+A robust system requires careful separation of datasets.
+
+\medskip
+
+\noindent
+\textbf{Training set.}
+Used to fit model parameters.
+
+\medskip
+
+\noindent
+\textbf{Validation set.}
+Used to tune hyperparameters, choose architectures, and make model-selection decisions.
+
+\medskip
+
+\noindent
+\textbf{Test set.}
+Used only for final evaluation. It should remain isolated from repeated experimentation.
+
+\medskip
+
+\noindent
+\textbf{Why the split matters.}
+If the validation or test data leaks into training decisions, performance estimates become overly optimistic.
+
+\medskip
+
+\noindent
+\textbf{Practical infrastructure concerns.}
+\begin{itemize}
+    \item prevent duplicate or near-duplicate examples across splits,
+    \item ensure time-based splits when future prediction is the goal,
+    \item preserve group boundaries when examples are correlated,
+    \item version the exact train/val/test partitions.
+\end{itemize}
+
+\medskip
+
+\noindent
+A train/validation/test split is not only a statistical idea but also an engineering artifact that must be stored, reproduced, and audited.
+
+\subsection{Data Pipelines}
+
+A \textbf{data pipeline} transforms raw data into model-ready inputs and labels.
+
+\medskip
+
+\noindent
+A concrete pipeline may include:
+\begin{enumerate}
+    \item ingest raw records,
+    \item validate schema and basic integrity,
+    \item clean and standardize values,
+    \item join multiple sources,
+    \item generate features or encodings,
+    \item write processed data to storage for training or serving.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Batch versus streaming pipelines.}
+\begin{itemize}
+    \item \textbf{Batch pipelines} process data periodically in large jobs
+    \item \textbf{Streaming pipelines} process examples continuously as they arrive
+\end{itemize}
+
+\medskip
+
+\noindent
+The correct choice depends on the application. Offline recommendation retraining may tolerate batch updates, while fraud detection may require continuous ingestion.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Reliable data pipelines are essential because every downstream stage depends on their correctness.
+
+\section{Training Pipelines and Experiment Management}
+
+Training a model in practice involves much more than running gradient descent. One needs infrastructure for repeatable experiments, efficient compute use, and trustworthy comparisons.
+
+\subsection{Training Pipelines}
+
+A training pipeline coordinates data loading, optimization, evaluation, and checkpointing.
+
+\medskip
+
+\noindent
+\textbf{Typical stages.}
+\begin{enumerate}
+    \item read processed training data,
+    \item construct batches,
+    \item compute forward pass,
+    \item evaluate loss,
+    \item compute gradients,
+    \item update parameters,
+    \item periodically evaluate on validation data,
+    \item save checkpoints and logs.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Operational requirements.}
+\begin{itemize}
+    \item training must resume after interruption,
+    \item failed jobs should be recoverable,
+    \item metrics should be stored continuously,
+    \item model artifacts should be versioned.
+\end{itemize}
+
+\subsection{Experiment Tracking}
+
+Modern model development requires many runs with different hyperparameters, architectures, and preprocessing choices.
+
+\medskip
+
+\noindent
+\textbf{Experiment tracking should record:}
+\begin{itemize}
+    \item code version,
+    \item dataset version,
+    \item train/val/test split,
+    \item hyperparameters,
+    \item optimizer settings,
+    \item metrics and curves,
+    \item final model artifact.
+\end{itemize}
+
+\medskip
+
+\noindent
+Without systematic experiment tracking, it becomes difficult to answer basic questions such as:
+\begin{itemize}
+    \item Which change improved performance?
+    \item Which dataset version was used?
+    \item Can this result be reproduced?
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical principle.}
+Every important result should be traceable to a specific configuration of data, code, and compute.
+
+\subsection{Hyperparameter Search}
+
+Training quality often depends strongly on hyperparameters such as:
+\begin{itemize}
+    \item learning rate,
+    \item regularization strength,
+    \item batch size,
+    \item architecture depth or width,
+    \item augmentation policy.
+\end{itemize}
+
+\medskip
+
+\noindent
+Common strategies include:
+\begin{itemize}
+    \item grid search,
+    \item random search,
+    \item adaptive methods such as Bayesian optimization,
+    \item multi-fidelity methods with early stopping.
+\end{itemize}
+
+\medskip
+
+\noindent
+Hyperparameter tuning is itself a systems task because it requires scheduler logic, job parallelism, budget control, and fair comparison criteria.
+
+\subsection{Checkpointing and Recovery}
+
+Long training jobs require checkpointing.
+
+\medskip
+
+\noindent
+\textbf{Why checkpointing matters.}
+\begin{itemize}
+    \item it prevents loss of progress,
+    \item it enables later evaluation or fine-tuning,
+    \item it allows rollback to earlier model states,
+    \item it supports comparison of intermediate learning stages.
+\end{itemize}
+
+\medskip
+
+\noindent
+A checkpoint commonly stores:
+\begin{itemize}
+    \item model parameters,
+    \item optimizer state,
+    \item scheduler state,
+    \item training step or epoch count,
+    \item metadata about the run.
+\end{itemize}
+
+\subsection{Distributed Training}
+
+Large-scale models may exceed the capacity of a single device.
+
+\medskip
+
+\noindent
+\textbf{Two major patterns.}
+\begin{itemize}
+    \item \textbf{Data parallelism:} replicate the model across devices and split batches
+    \item \textbf{Model parallelism:} split the model itself across devices
+\end{itemize}
+
+\medskip
+
+\noindent
+These choices affect throughput, communication cost, memory use, and engineering complexity.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Efficient training pipelines make experimentation faster, more reliable, and easier to interpret.
+
+\section{Serving, Inference, and Latency Constraints}
+
+A trained model is only useful if it can be deployed in a form compatible with real-world constraints.
+
+\subsection{Serving}
+
+\textbf{Serving} is the process of making model predictions available to downstream users or applications.
+
+\medskip
+
+\noindent
+Deployment may occur in several ways:
+\begin{itemize}
+    \item \textbf{online serving:} predictions are generated on request,
+    \item \textbf{batch inference:} predictions are computed periodically for many items,
+    \item \textbf{on-device inference:} the model runs locally on edge hardware.
+\end{itemize}
+
+\medskip
+
+\noindent
+Each setting imposes different requirements on memory, throughput, latency, and reliability.
+
+\subsection{Inference Constraints}
+
+At training time one often optimizes predictive accuracy. At serving time, additional constraints become central:
+\begin{itemize}
+    \item inference latency,
+    \item throughput,
+    \item memory footprint,
+    \item power consumption,
+    \item hardware compatibility,
+    \item cost per prediction.
+\end{itemize}
+
+\medskip
+
+\noindent
+A model with slightly better accuracy may be impractical if it is too slow or too expensive to serve.
+
+\subsection{Latency}
+
+\textbf{Inference latency} is the time required to produce a prediction after an input arrives.
+
+\medskip
+
+\noindent
+Latency matters especially in:
+\begin{itemize}
+    \item interactive systems,
+    \item ranking and recommendation,
+    \item autonomous systems,
+    \item real-time anomaly or fraud detection.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Sources of latency.}
+\begin{itemize}
+    \item preprocessing time,
+    \item feature retrieval,
+    \item network communication,
+    \item model execution,
+    \item postprocessing and business logic.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus latency is a property of the entire system, not only of the model.
+
+\subsection{Deployment Optimizations}
+
+Common ways to reduce inference cost include:
+\begin{itemize}
+    \item model pruning,
+    \item quantization,
+    \item distillation,
+    \item caching frequent predictions,
+    \item batching requests when possible,
+    \item specialized hardware acceleration.
+\end{itemize}
+
+\medskip
+
+\noindent
+These methods trade off accuracy, complexity, and operational efficiency.
+
+\subsection{Training--Serving Skew}
+
+A major practical problem is \textbf{training--serving skew}: the model is trained on one data representation but receives a different one in deployment.
+
+\medskip
+
+\noindent
+This can happen if:
+\begin{itemize}
+    \item feature definitions differ between pipelines,
+    \item missing values are handled differently,
+    \item preprocessing code is duplicated inconsistently,
+    \item online feature stores are out of sync with offline data.
+\end{itemize}
+
+\medskip
+
+\noindent
+A robust system should minimize the gap between training and serving pipelines.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Deployment success depends not only on predictive quality, but on whether the model fits operational constraints and receives the inputs it was designed for.
+
+\section{Monitoring Drift, Failures, and Feedback Loops}
+
+Deployment is not the end of the machine learning lifecycle. Models must be monitored continuously after release.
+
+\subsection{Why Monitoring Is Necessary}
+
+Real environments change over time:
+\begin{itemize}
+    \item user behavior changes,
+    \item sensors degrade,
+    \item markets shift,
+    \item interfaces change,
+    \item upstream systems evolve.
+\end{itemize}
+
+\medskip
+
+\noindent
+A model that performed well at launch may deteriorate later if the data distribution changes.
+
+\subsection{Drift}
+
+A central monitoring concern is \textbf{drift}.
+
+\medskip
+
+\noindent
+\textbf{Covariate drift.}
+The distribution of inputs changes:
+\[
+P_{\mathrm{train}}(x) \neq P_{\mathrm{deploy}}(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Label or concept drift.}
+The relationship between inputs and targets changes:
+\[
+P_{\mathrm{train}}(y \mid x) \neq P_{\mathrm{deploy}}(y \mid x).
+\]
+
+\medskip
+
+\noindent
+Both types of drift can degrade performance.
+
+\subsection{Operational Monitoring}
+
+A deployed system should monitor:
+\begin{itemize}
+    \item input distributions,
+    \item prediction distributions,
+    \item latency and throughput,
+    \item system errors and timeouts,
+    \item downstream task metrics when ground truth becomes available.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples of warning signs.}
+\begin{itemize}
+    \item sudden change in average predicted score,
+    \item missing or malformed input features,
+    \item growing disagreement with human review,
+    \item increased response time,
+    \item drop in business or task outcomes.
+\end{itemize}
+
+\subsection{Failures and Silent Errors}
+
+Some ML failures are obvious, but many are silent.
+
+\medskip
+
+\noindent
+\textbf{Examples of silent failures.}
+\begin{itemize}
+    \item shifted label semantics,
+    \item broken feature extraction,
+    \item incorrect join logic in pipelines,
+    \item stale cached features,
+    \item model serving the wrong version.
+\end{itemize}
+
+\medskip
+
+\noindent
+Because such errors may not crash the system, explicit monitoring is essential.
+
+\subsection{Feedback Loops}
+
+ML systems often influence the very data they later receive.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item a recommendation system changes what users see and click,
+    \item a ranking model changes exposure of content,
+    \item a fraud model changes which transactions are investigated,
+    \item a predictive system influences human decisions and labels.
+\end{itemize}
+
+\medskip
+
+\noindent
+This creates \textbf{feedback loops}, in which deployment changes future training data.
+
+\medskip
+
+\noindent
+Feedback loops can create:
+\begin{itemize}
+    \item selection bias,
+    \item reinforcing errors,
+    \item reduced exploration,
+    \item instability over long horizons.
+\end{itemize}
+
+\medskip
+
+\noindent
+Therefore monitoring should include not only raw performance, but also how the model changes the environment in which it operates.
+
+\section{Engineering Tradeoffs in Real-World ML}
+
+Practical machine learning always involves tradeoffs rather than a single objective.
+
+\subsection{Accuracy versus Simplicity}
+
+A larger model may achieve slightly better validation accuracy, but a smaller model may be preferable if it is:
+\begin{itemize}
+    \item easier to debug,
+    \item easier to deploy,
+    \item faster to serve,
+    \item more stable across retraining runs.
+\end{itemize}
+
+\subsection{Latency versus Quality}
+
+In real-time applications, one may sacrifice some predictive accuracy to satisfy strict latency budgets.
+
+\medskip
+
+\noindent
+For example, a two-stage architecture may use:
+\begin{itemize}
+    \item a fast model for candidate filtering,
+    \item a more expensive model for final reranking.
+\end{itemize}
+
+\subsection{Freshness versus Stability}
+
+Frequent retraining may adapt quickly to new data, but it can also introduce instability and make debugging harder.
+
+\medskip
+
+\noindent
+Less frequent retraining is more stable, but may fail to adapt to drift.
+
+\subsection{Reproducibility versus Performance}
+
+Deterministic execution improves reproducibility, but can reduce throughput or hardware efficiency.
+
+\medskip
+
+\noindent
+Thus engineering teams often choose a balance:
+\begin{itemize}
+    \item maximize reproducibility in development and evaluation,
+    \item allow some nondeterminism in large-scale production training when necessary.
+\end{itemize}
+
+\subsection{Automation versus Human Oversight}
+
+Automation speeds up iteration, but some high-stakes tasks require human review, fallback rules, or manual escalation paths.
+
+\medskip
+
+\noindent
+A strong ML system often combines:
+\begin{itemize}
+    \item statistical predictions,
+    \item business logic,
+    \item rule-based safeguards,
+    \item human intervention when uncertainty is high.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Debugging as a systems activity.}
+Debugging in ML is broader than debugging code. One must diagnose:
+\begin{itemize}
+    \item data bugs,
+    \item label bugs,
+    \item optimization failures,
+    \item evaluation leakage,
+    \item serving mismatches,
+    \item monitoring blind spots.
+\end{itemize}
+
+\medskip
+
+\noindent
+Useful debugging tools include:
+\begin{itemize}
+    \item training and validation curves,
+    \item confusion matrices or error breakdowns,
+    \item gradient and activation statistics,
+    \item feature-distribution checks,
+    \item ablation studies,
+    \item inspection of individual failures.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical debugging principle.}
+When a system fails, simplify the pipeline, isolate components, verify assumptions, and test each stage independently before adding complexity back.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Real-world ML design is governed by engineering constraints as much as by learning theory.
+
+\section{A Unifying Perspective}
+
+Practical machine learning systems integrate many layers of infrastructure:
+\begin{itemize}
+    \item \textbf{data pipelines} for collection, cleaning, labeling, and versioning,
+    \item \textbf{evaluation infrastructure} for train/validation/test separation,
+    \item \textbf{training pipelines} for optimization, checkpointing, and scaling,
+    \item \textbf{experiment tracking} for reproducibility and comparison,
+    \item \textbf{serving systems} for inference under latency and cost constraints,
+    \item \textbf{monitoring systems} for drift, failures, and feedback loops.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}
+A successful ML application is an end-to-end system whose components must work together reliably over time.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}
+The practical effectiveness of machine learning depends not only on the model, but on how data, infrastructure, deployment, and monitoring are designed as a coherent system.
+
+\section{Outlook}
+
+This chapter presented machine learning as an engineering and systems discipline:
+\begin{itemize}
+    \item framing ML as a systems problem,
+    \item building data pipelines and dataset splits,
+    \item managing training workflows and experiments,
+    \item designing serving systems under inference constraints,
+    \item monitoring drift, failures, and feedback loops,
+    \item navigating real-world engineering tradeoffs.
+\end{itemize}
+
+\medskip
+
+This concludes the book.
+
+\medskip
+
+\noindent
+\textbf{Final guiding principle.}
+Machine learning succeeds in practice when mathematical models, data pipelines, and engineering systems are designed together rather than in isolation.
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item \textbf{End-to-end pipeline design.}
+    Choose one application:
+    \begin{itemize}
+        \item spam detection,
+        \item medical image classification,
+        \item product recommendation,
+        \item fraud detection.
+    \end{itemize}
+    Design a complete ML pipeline for the task, including:
+    \begin{itemize}
+        \item data collection,
+        \item cleaning and preprocessing,
+        \item labeling,
+        \item train/validation/test splitting,
+        \item training and experiment tracking,
+        \item deployment,
+        \item monitoring after launch.
+    \end{itemize}
+
+    \item \textbf{Split design.}
+    Explain why random splitting may be inappropriate in a time-dependent prediction task. Propose a better train/validation/test strategy.
+
+    \item \textbf{Label quality.}
+    Give three examples of labeling noise or ambiguity. For each, explain how it could affect model behavior.
+
+    \item \textbf{Training--serving skew.}
+    Describe a scenario in which the preprocessing used during serving differs from the preprocessing used in training. What failure might this create?
+
+    \item \textbf{Inference latency.}
+    A model has excellent validation accuracy but is too slow for real-time use. List several ways to reduce latency and explain the tradeoffs.
+
+    \item \textbf{Experiment management.}
+    Why is it not enough to record only final validation accuracy? What additional information should be tracked for each run?
+
+    \item \textbf{Monitoring drift.}
+    Explain the difference between covariate drift and concept drift. Give an example of each.
+
+    \item \textbf{Feedback loops.}
+    Describe how a recommendation system can create a feedback loop that changes future training data. Why can this make evaluation more difficult?
+
+    \item \textbf{Deployment failure analysis.}
+    Consider a deployed classifier whose measured accuracy suddenly drops. List at least five possible failure points in the end-to-end system, not limited to the model itself.
+
+    \item \textbf{Debugging workflow.}
+    Suppose training loss decreases, but validation performance is poor and unstable across runs. Give a systematic debugging plan that checks data, optimization, evaluation, and infrastructure.
+
+    \item \textbf{Engineering tradeoff essay.}
+    Write a short essay on one of the following tradeoffs:
+    \begin{itemize}
+        \item accuracy versus latency,
+        \item reproducibility versus training speed,
+        \item model complexity versus ease of deployment.
+    \end{itemize}
+    Explain why there is no universally optimal choice.
+
+    \item \textbf{Real-world systems reflection.}
+    Explain why practical ML should be viewed as a systems discipline rather than only a modeling discipline.
+\end{enumerate}

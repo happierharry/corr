@@ -1,0 +1,280 @@
+\section{Lecture 16: Training Deep Networks}
+
+\subsection{Motivation}
+
+In the previous lecture, we introduced backpropagation as an efficient method for computing gradients.
+
+\medskip
+
+\noindent
+However, in practice, training deep neural networks presents significant challenges.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Why is training deep networks difficult, and how can we address these challenges?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Training behavior depends on initialization, gradient dynamics, and optimization structure.
+
+\subsection{Initialization Strategies}
+
+Neural networks are typically initialized randomly:
+\[
+W_\ell \sim \text{random distribution}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Why initialization matters.}
+
+\begin{itemize}
+    \item Affects scale of activations
+    \item Influences gradient flow
+    \item Determines training stability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Poor initialization.}
+
+\begin{itemize}
+    \item Too small:
+    \begin{itemize}
+        \item Signals vanish across layers
+    \end{itemize}
+
+    \item Too large:
+    \begin{itemize}
+        \item Activations and gradients explode
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Principle of variance preservation.}
+
+\begin{itemize}
+    \item Choose initialization so that:
+    \begin{itemize}
+        \item activations maintain stable variance across layers
+        \item gradients do not shrink or explode
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Initialization sets the starting geometry of optimization.
+
+\subsection{Vanishing and Exploding Gradients}
+
+During backpropagation, gradients are multiplied repeatedly:
+
+\[
+\frac{\partial L}{\partial x} =
+\prod_{\ell} W_\ell^\top \cdot \sigma'(z_\ell).
+\]
+
+\medskip
+
+\noindent
+\textbf{Vanishing gradients.}
+\begin{itemize}
+    \item Gradients shrink exponentially
+    \item Early layers learn very slowly
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Exploding gradients.}
+\begin{itemize}
+    \item Gradients grow exponentially
+    \item Training becomes unstable
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Causes.}
+\begin{itemize}
+    \item Repeated matrix multiplications
+    \item Activation functions with small or large derivatives
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Consequences.}
+\begin{itemize}
+    \item Difficulty training deep networks
+    \item Sensitivity to hyperparameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradient flow degrades as depth increases.
+
+\subsection{Optimization Challenges}
+
+Deep learning optimization differs from classical settings.
+
+\medskip
+
+\noindent
+\textbf{Non-convexity.}
+\begin{itemize}
+    \item Many local minima and saddle points
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Ill-conditioning.}
+\begin{itemize}
+    \item Different directions have different curvature
+    \item Slows convergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Coupled parameters.}
+\begin{itemize}
+    \item Layers interact in complex ways
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Empirical observation.}
+\begin{itemize}
+    \item Gradient-based methods often work well despite theoretical difficulty
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization landscapes are complex but structured.
+
+\subsection{Empirical Training Behavior}
+
+In practice, several patterns emerge:
+
+\medskip
+
+\noindent
+\textbf{Rapid initial progress.}
+\begin{itemize}
+    \item Loss decreases quickly early in training
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Plateaus.}
+\begin{itemize}
+    \item Slow progress due to flat regions or saddle points
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Generalization behavior.}
+\begin{itemize}
+    \item Training loss may continue decreasing
+    \item Test performance may peak earlier (overfitting)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role of SGD.}
+\begin{itemize}
+    \item Noise helps escape poor regions
+    \item Encourages flatter solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Training dynamics are influenced by both optimization and stochasticity.
+
+\subsection{Practical Remedies (Preview)}
+
+Several techniques address training challenges:
+
+\begin{itemize}
+    \item Careful initialization
+    \item Choice of activation functions
+    \item Normalization methods
+    \item Architectural design (e.g., residual connections)
+\end{itemize}
+
+\medskip
+
+\noindent
+These will be studied in subsequent lectures.
+
+\subsection{A Unifying Perspective}
+
+Training deep networks involves:
+
+\begin{itemize}
+    \item \textbf{Initialization:} setting the starting point
+    \item \textbf{Gradient flow:} propagation of learning signals
+    \item \textbf{Optimization dynamics:} navigating complex landscapes
+    \item \textbf{Stochasticity:} shaping generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Effective training requires controlling both signal propagation and optimization dynamics.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Depth introduces both expressive power and optimization difficulty.
+
+\subsection{Outlook}
+
+In this lecture, we examined:
+
+\begin{itemize}
+    \item initialization strategies,
+    \item vanishing and exploding gradients,
+    \item optimization challenges,
+    \item empirical training behavior.
+\end{itemize}
+
+\medskip
+
+\noindent
+To address these issues, we introduce techniques that stabilize training.
+
+\medskip
+
+\noindent
+In the next lecture, we study activation functions and architectural design choices that improve performance.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Successful deep learning requires both expressive models and stable training dynamics.

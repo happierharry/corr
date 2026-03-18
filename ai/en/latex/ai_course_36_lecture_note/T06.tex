@@ -1,0 +1,300 @@
+\section{Tutorial 6: Optimization Behavior}
+
+\subsection{Objectives}
+
+This tutorial develops intuition for how optimization behaves in practice:
+
+\begin{itemize}
+    \item Understand the behavior of gradient descent vs SGD
+    \item Analyze the effect of learning rate and batch size
+    \item Study conditioning and convergence speed
+    \item Connect optimization dynamics to generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Go beyond formulas and understand how optimization behaves in real training.
+
+\subsection{Exercise 1: Gradient Descent on a Quadratic}
+
+Consider:
+\[
+f(w) = \frac{1}{2} w^\top A w,
+\]
+where $A$ is symmetric positive definite.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Write the gradient descent update.
+    \item Describe convergence behavior in terms of eigenvalues of $A$.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Update:
+\[
+w_{t+1} = w_t - \eta A w_t.
+\]
+
+\item Let eigenvalues of $A$ be $\lambda_1 \leq \cdots \leq \lambda_d$.
+
+\begin{itemize}
+    \item Convergence rate depends on condition number:
+    \[
+    \kappa = \frac{\lambda_{\max}}{\lambda_{\min}}.
+    \]
+    \item Large $\kappa$ $\Rightarrow$ slow convergence
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Ill-conditioning leads to slow and anisotropic convergence.
+
+\subsection{Exercise 2: Effect of Learning Rate}
+
+Consider gradient descent with step size $\eta$.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens if $\eta$ is too small?
+    \item What happens if $\eta$ is too large?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Small $\eta$:
+\begin{itemize}
+    \item Slow convergence
+\end{itemize}
+
+\item Large $\eta$:
+\begin{itemize}
+    \item Oscillations or divergence
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Learning rate critically controls stability and speed.
+
+\subsection{Exercise 3: SGD vs Full Gradient}
+
+Consider minimizing:
+\[
+L(\theta) = \frac{1}{n} \sum_{i=1}^n \ell_i(\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compare full gradient descent and SGD updates.
+    \item Why does SGD introduce noise?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item 
+\begin{itemize}
+    \item GD uses full gradient
+    \item SGD uses a single sample or mini-batch
+\end{itemize}
+
+\item Noise arises because:
+\[
+\nabla \ell_i(\theta) \neq \nabla L(\theta)
+\]
+for a single sample.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+SGD trades accuracy of gradients for efficiency.
+
+\subsection{Exercise 4: Role of Batch Size}
+
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens as batch size increases?
+    \item How does batch size affect generalization?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Larger batch:
+\begin{itemize}
+    \item Lower variance gradient
+    \item More stable updates
+\end{itemize}
+
+\item Smaller batch:
+\begin{itemize}
+    \item More noise
+    \item Often better generalization
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Noise in SGD can act as implicit regularization.
+
+\subsection{Exercise 5: Momentum Interpretation}
+
+Consider momentum updates:
+\[
+v_{t+1} = \beta v_t + \nabla L(\theta_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Explain the role of $\beta$.
+    \item Why does momentum help in ill-conditioned problems?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item $\beta$ controls how much past gradients influence updates.
+
+\item Momentum:
+\begin{itemize}
+    \item Accelerates movement in consistent directions
+    \item Reduces oscillations in narrow valleys
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Momentum smooths optimization trajectories.
+
+\subsection{Exercise 6: Implicit Regularization of SGD}
+
+\textbf{Question.}  
+Why might SGD generalize better than deterministic gradient descent?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Noise helps escape sharp minima
+    \item Prefers flatter regions of the loss landscape
+    \item Acts as implicit regularization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization dynamics influence the solutions found.
+
+\subsection{Exercise 7: Early Stopping as Regularization}
+
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Why can training too long lead to overfitting?
+    \item How does early stopping help?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Long training:
+\begin{itemize}
+    \item Model fits noise
+\end{itemize}
+
+\item Early stopping:
+\begin{itemize}
+    \item Limits effective complexity
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Training time controls model complexity.
+
+\subsection{Exercise 8 (Discussion): Flat vs Sharp Minima}
+
+\textbf{Question.}  
+Why are flat minima often associated with better generalization?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Robustness to perturbations
+    \item Stability under noise
+    \item Relation to SGD dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Geometry of the loss landscape affects generalization.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Optimization behavior depends on learning rate, batch size, and conditioning
+    \item SGD introduces noise that affects both convergence and generalization
+    \item Momentum and adaptive methods improve optimization efficiency
+    \item Optimization dynamics act as implicit regularization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now study numerical and statistical stability, examining how scaling and noise affect learning behavior.

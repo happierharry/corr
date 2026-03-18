@@ -1,0 +1,339 @@
+\chapter{Generalization and Overfitting}
+
+\section{Training and Test Performance}
+
+In previous chapters, we formulated learning as minimizing empirical risk and studied how optimization algorithms find solutions. However, a central question remains:
+
+\medskip
+
+\noindent
+\textbf{Why should a model that fits the training data well perform well on unseen data?}
+
+\medskip
+
+To address this, we distinguish between two types of performance.
+
+\medskip
+
+\noindent
+\textbf{Training error.}
+\[
+\hat{R}_n(f) = \frac{1}{n} \sum_{i=1}^n \ell(f(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Test error (generalization error).}
+\[
+R(f) = \mathbb{E}_{(x,y)\sim P} \big[ \ell(f(x), y) \big].
+\]
+
+\medskip
+
+\noindent
+\textbf{Key distinction.}
+\begin{itemize}
+    \item Training error measures fit to observed data
+    \item Test error measures performance on new data
+\end{itemize}
+
+\medskip
+
+\noindent
+A model generalizes well if its training error is close to its test error.
+
+\medskip
+
+\noindent
+\textbf{Generalization gap.}
+\[
+R(f) - \hat{R}_n(f).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Minimizing training error alone is not sufficient. The goal of learning is to minimize \emph{test error}, which is not directly observable.
+
+\medskip
+
+\noindent
+\textbf{Practical approach.}  
+We approximate test performance using a \emph{validation set}, separate from the training data.
+
+\section{Overfitting and Underfitting}
+
+The relationship between training and test error leads to two fundamental failure modes.
+
+\medskip
+
+\noindent
+\textbf{Underfitting.}
+\begin{itemize}
+    \item Model is too simple to capture the structure of the data
+    \item High training error
+    \item High test error
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Overfitting.}
+\begin{itemize}
+    \item Model fits training data too closely, including noise
+    \item Very low training error
+    \item High test error
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Illustration.}  
+A highly flexible model may interpolate all training points but behave erratically between them.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}  
+As model complexity increases:
+\begin{itemize}
+    \item training error typically decreases,
+    \item test error may decrease initially, then increase.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Classical picture.}  
+There exists an optimal level of complexity that balances underfitting and overfitting.
+
+\medskip
+
+\noindent
+\textbf{Remark (modern perspective).}  
+In deep learning, models often operate far beyond this classical regime, achieving low training error without necessarily suffering from poor generalization. This phenomenon will be revisited later.
+
+\section{Model Capacity and Complexity}
+
+To understand overfitting, we must quantify the expressive power of a model.
+
+\medskip
+
+\noindent
+\textbf{Model capacity.}  
+The ability of a hypothesis space $\mathcal{H}$ to fit a wide range of functions.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Linear models: low capacity
+    \item High-degree polynomials: high capacity
+    \item Deep neural networks: very high capacity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Qualitative effects of capacity.}
+\begin{itemize}
+    \item Low capacity $\rightarrow$ high bias, low variance
+    \item High capacity $\rightarrow$ low bias, high variance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Complexity measures (informal).}
+\begin{itemize}
+    \item Number of parameters
+    \item Depth and width of networks
+    \item Norms of parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Important insight.}  
+Capacity is not determined solely by the number of parameters. The structure of the model and the learning algorithm also play a crucial role.
+
+\medskip
+
+\noindent
+\textbf{Example.}  
+Two neural networks with the same number of parameters may behave very differently depending on:
+\begin{itemize}
+    \item architecture,
+    \item initialization,
+    \item optimization dynamics.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus, capacity should be viewed as a combination of representation, parameterization, and training procedure.
+
+\section{Informal Generalization Principles}
+
+Although a complete theory of generalization in modern machine learning is still evolving, several guiding principles are widely observed in practice.
+
+\medskip
+
+\noindent
+\textbf{1. Simpler models tend to generalize better.}
+
+\medskip
+
+\noindent
+This principle is often referred to as \emph{Occam's razor}: among models that fit the data, simpler ones are preferred.
+
+\medskip
+
+\noindent
+Simplicity can take different forms:
+\begin{itemize}
+    \item fewer parameters,
+    \item smaller norms,
+    \item smoother functions.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{2. Regularization improves generalization.}
+
+\medskip
+
+\noindent
+Regularization introduces additional constraints or penalties that favor simpler solutions.
+
+\medskip
+
+\noindent
+Examples include:
+\begin{itemize}
+    \item weight decay,
+    \item dropout,
+    \item early stopping.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{3. More data improves generalization.}
+
+\medskip
+
+\noindent
+As the sample size increases:
+\begin{itemize}
+    \item empirical risk better approximates true risk,
+    \item estimation error decreases.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{4. Inductive bias is essential.}
+
+\medskip
+
+\noindent
+Generalization depends on assumptions built into the model:
+\begin{itemize}
+    \item smoothness,
+    \item invariance,
+    \item compositional structure.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{5. Optimization influences generalization.}
+
+\medskip
+
+\noindent
+The choice of optimization algorithm can affect which solution is found, even when multiple solutions achieve low training error.
+
+\medskip
+
+\noindent
+This phenomenon is known as \emph{implicit regularization}.
+
+\medskip
+
+\noindent
+\textbf{6. Noise can be beneficial.}
+
+\medskip
+
+\noindent
+Stochasticity in training (e.g., SGD) can help avoid overfitting by preventing convergence to overly complex solutions.
+
+\medskip
+
+\noindent
+\textbf{Summary insight.}  
+Generalization is not determined by a single factor, but by the interaction between:
+\begin{itemize}
+    \item model capacity,
+    \item data,
+    \item inductive bias,
+    \item optimization.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+We can now reinterpret learning as the problem of balancing two objectives:
+\begin{itemize}
+    \item fitting the training data,
+    \item maintaining the ability to generalize.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core tension.}  
+\[
+\text{Fit the data} \quad \text{vs} \quad \text{avoid overfitting}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Practical strategy.}
+\begin{enumerate}
+    \item Choose an appropriate model class
+    \item Control capacity through regularization
+    \item Use validation to guide model selection
+    \item Monitor training and test performance
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Modern viewpoint.}  
+Deep learning systems operate in regimes where classical intuitions are only partially valid, yet the underlying principles of inductive bias and structure remain essential.
+
+\section{Outlook}
+
+This chapter introduced generalization as a central challenge in learning:
+\begin{itemize}
+    \item distinguishing training and test performance,
+    \item understanding overfitting and underfitting,
+    \item relating model capacity to generalization.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study regularization methods in greater detail, focusing on how to control model complexity in practice.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+A good model is not one that fits the data perfectly, but one that captures the underlying structure in a way that extends beyond the observed examples.

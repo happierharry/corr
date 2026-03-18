@@ -1,0 +1,316 @@
+\chapter{Support Vector Machines}
+
+\section{Introduction}
+
+Support vector machines are among the most important geometric methods in supervised learning. They begin with a simple idea: among all separating hyperplanes, prefer the one that separates the classes with the largest margin. This turns classification into an optimization problem with a strong geometric interpretation.
+
+SVMs are also important conceptually. They connect linear classification, convex optimization, duality, sparsity in the decision rule, and kernels. In this chapter we develop the hard-margin and soft-margin formulations, explain the role of support vectors, and show how kernels extend SVMs to nonlinear classification.
+
+\section{Linear Separability and Geometric Margin}
+
+Consider binary classification with labels
+\[
+y_i\in\{-1,+1\},
+\qquad i=1,\dots,n,
+\]
+and inputs $x_i\in\mathbb R^d$. A linear classifier has the form
+\[
+f(x)=\operatorname{sign}(w^\top x+b).
+\]
+
+The decision boundary is the hyperplane
+\[
+w^\top x+b=0.
+\]
+The prediction depends on which side of this hyperplane the point lies.
+
+\subsection{Functional and Geometric Margin}
+
+For a labeled example $(x_i,y_i)$, the \emph{functional margin} is
+\[
+y_i(w^\top x_i+b).
+\]
+This is positive if the point is correctly classified and larger when it lies farther from the boundary in score units.
+
+Because scaling $(w,b)$ changes this quantity, one introduces the geometric notion.
+
+\begin{definition}[Geometric Margin]
+The geometric margin of $(x_i,y_i)$ with respect to $(w,b)$ is
+\[
+\gamma_i=\frac{y_i(w^\top x_i+b)}{\|w\|}.
+\]
+The margin of the classifier on the dataset is
+\[
+\gamma=\min_{1\le i\le n}\frac{y_i(w^\top x_i+b)}{\|w\|}.
+\]
+\end{definition}
+
+This quantity is scale-invariant and measures the signed Euclidean distance to the decision boundary.
+
+\subsection{Why Margin Matters}
+
+A larger margin means the classifier separates the classes more robustly. Geometrically, it places a wider empty region between the two classes. Statistically, large margins are often associated with better generalization.
+
+\section{Hard-Margin SVM}
+
+Assume first that the data are linearly separable, so there exists $(w,b)$ such that
+\[
+y_i(w^\top x_i+b)>0
+\qquad\text{for all } i.
+\]
+Since scaling does not change the classifier, we may normalize so that
+\[
+y_i(w^\top x_i+b)\ge 1
+\qquad\text{for all } i.
+\]
+Under this normalization, the geometric margin is
+\[
+\gamma=\frac{1}{\|w\|}.
+\]
+Thus maximizing the margin is equivalent to minimizing $\|w\|$.
+
+\begin{definition}[Hard-Margin SVM]
+The hard-margin support vector machine solves
+\[
+\min_{w,b}\; \frac12\|w\|^2
+\qquad\text{subject to}\qquad
+y_i(w^\top x_i+b)\ge 1,\quad i=1,\dots,n.
+\]
+\end{definition}
+
+This is a convex quadratic optimization problem with linear constraints.
+
+\subsection{Geometry}
+
+The constraints
+\[
+y_i(w^\top x_i+b)\ge 1
+\]
+define two supporting hyperplanes:
+\[
+w^\top x+b=1
+\qquad\text{and}\qquad
+w^\top x+b=-1.
+\]
+The decision boundary lies halfway between them. The distance between these two margin hyperplanes is
+\[
+\frac{2}{\|w\|}.
+\]
+So minimizing $\|w\|^2$ maximizes the separation width.
+
+\section{Soft-Margin SVM and Slack Variables}
+
+Perfect linear separability is often unrealistic. Some points may overlap, be noisy, or be mislabeled. To allow controlled violations, one introduces slack variables $\xi_i\ge 0$.
+
+\begin{definition}[Soft-Margin SVM]
+The soft-margin SVM solves
+\[
+\min_{w,b,\xi}\;
+\frac12\|w\|^2 + C\sum_{i=1}^n \xi_i
+\]
+subject to
+\[
+y_i(w^\top x_i+b)\ge 1-\xi_i,\qquad \xi_i\ge 0,\quad i=1,\dots,n.
+\]
+\end{definition}
+
+Here:
+- $\frac12\|w\|^2$ encourages a large margin,
+- $\sum_i \xi_i$ penalizes violations,
+- $C>0$ controls the tradeoff.
+
+If $\xi_i=0$, the point satisfies the margin constraint.  
+If $0<\xi_i\le 1$, it is correctly classified but inside the margin.  
+If $\xi_i>1$, it is misclassified.
+
+\subsection{Hinge Loss Form}
+
+The soft-margin problem is equivalent to the unconstrained optimization problem
+\[
+\min_{w,b}\;
+\frac12\|w\|^2
++
+C\sum_{i=1}^n \max\bigl(0,1-y_i(w^\top x_i+b)\bigr).
+\]
+The function
+\[
+\ell_{\mathrm{hinge}}(z)=\max(0,1-z)
+\]
+is called the hinge loss.
+
+This makes SVMs comparable to logistic regression:
+- logistic regression uses logistic loss,
+- SVMs use hinge loss.
+
+\section{Duality and Support Vectors}
+
+The SVM has an especially important dual formulation. For the hard-margin case, the Lagrangian is
+\[
+\mathcal L(w,b,\alpha)
+=
+\frac12\|w\|^2
+-
+\sum_{i=1}^n \alpha_i\bigl(y_i(w^\top x_i+b)-1\bigr),
+\qquad \alpha_i\ge 0.
+\]
+
+Setting derivatives with respect to $w$ and $b$ to zero gives
+\[
+w=\sum_{i=1}^n \alpha_i y_i x_i,
+\qquad
+\sum_{i=1}^n \alpha_i y_i=0.
+\]
+Substituting back yields the dual problem:
+\[
+\max_{\alpha}
+\sum_{i=1}^n \alpha_i
+-
+\frac12\sum_{i,j=1}^n \alpha_i\alpha_j y_i y_j\, x_i^\top x_j
+\]
+subject to
+\[
+\alpha_i\ge 0,
+\qquad
+\sum_{i=1}^n \alpha_i y_i=0.
+\]
+
+\subsection{Primal-to-Dual Sketch}
+
+The dual is useful because:
+- it depends only on inner products $x_i^\top x_j$,
+- it expresses the classifier as a combination of training points,
+- it leads directly to kernels.
+
+Once $\alpha$ is found, the classifier is
+\[
+f(x)=\operatorname{sign}\!\left(\sum_{i=1}^n \alpha_i y_i\, x_i^\top x + b\right).
+\]
+
+\subsection{Support Vectors}
+
+Only points with $\alpha_i>0$ appear in the decision rule. These are the \emph{support vectors}. They are the training points that lie on or inside the margin and therefore determine the classifier.
+
+Points far from the boundary typically have $\alpha_i=0$ and do not affect the final decision function.
+
+This sparsity is one of the distinctive features of SVMs.
+
+\subsection{KKT Interpretation}
+
+The Karush--Kuhn--Tucker conditions provide an accessible interpretation. In the hard-margin case, they include
+\[
+\alpha_i\ge 0,
+\qquad
+y_i(w^\top x_i+b)-1\ge 0,
+\qquad
+\alpha_i\bigl(y_i(w^\top x_i+b)-1\bigr)=0.
+\]
+The last condition is called complementary slackness.
+
+Its meaning is simple:
+- if a point lies strictly outside the margin, then $\alpha_i=0$;
+- if $\alpha_i>0$, then the point lies exactly on the margin.
+
+So support vectors are precisely the active geometric constraints.
+
+\section{Kernel SVMs}
+
+The dual formulation depends on the training data only through inner products $x_i^\top x_j$. This makes the kernel extension immediate.
+
+Let
+\[
+K(x,x')=\langle \phi(x),\phi(x')\rangle
+\]
+be a kernel corresponding to a feature map $\phi$. Replacing inner products by kernels gives the decision rule
+\[
+f(x)=\operatorname{sign}\!\left(\sum_{i=1}^n \alpha_i y_i\, K(x_i,x)+b\right).
+\]
+
+Thus the classifier is linear in feature space but nonlinear in the original input space.
+
+\subsection{Kernel SVM Optimization}
+
+The dual becomes
+\[
+\max_{\alpha}
+\sum_{i=1}^n \alpha_i
+-
+\frac12\sum_{i,j=1}^n \alpha_i\alpha_j y_i y_j\, K(x_i,x_j)
+\]
+subject to the same constraints
+\[
+\alpha_i\ge 0,
+\qquad
+\sum_{i=1}^n \alpha_i y_i=0
+\]
+for the hard-margin case, with additional upper bounds in the soft-margin setting.
+
+\subsection{Why Kernels Fit Naturally Here}
+
+Kernels are not an add-on to SVMs; they fit naturally because the dual depends only on similarities. This makes SVMs one of the clearest examples of implicit nonlinear learning through feature space geometry.
+
+Common choices include:
+\[
+K(x,x')=(x^\top x' + c)^r
+\]
+for polynomial kernels, and
+\[
+K(x,x')=\exp\!\left(-\frac{\|x-x'\|^2}{2\sigma^2}\right)
+\]
+for Gaussian RBF kernels.
+
+\section{Worked Geometric and Optimization Examples}
+
+\subsection{Margin in a Toy Example}
+
+Suppose two classes in one dimension are separated by the threshold $x=0$, with the closest positive point at $x=1$ and the closest negative point at $x=-1$. Then one possible classifier is
+\[
+f(x)=\operatorname{sign}(x).
+\]
+Here $w=1$, $b=0$, and the margin is
+\[
+\gamma=\frac{1}{\|w\|}=1.
+\]
+The width between the margin hyperplanes is
+\[
+\frac{2}{\|w\|}=2.
+\]
+
+\subsection{Role of Support Vectors}
+
+If many training points lie far from the decision boundary and only a few lie near it, then only the near-boundary points matter for the SVM solution. Removing a non-support-vector often leaves the classifier unchanged, while moving a support vector can change the boundary substantially.
+
+This is why the method is called a support vector machine.
+
+\subsection{Hinge vs Logistic Loss}
+
+For a score $z=y(w^\top x+b)$:
+- hinge loss is
+\[
+\max(0,1-z),
+\]
+- logistic loss is
+\[
+\log(1+e^{-z}).
+\]
+
+Both penalize small margins and misclassification, but they differ:
+- hinge loss becomes exactly zero once $z\ge 1$,
+- logistic loss remains smooth and positive for all finite $z$.
+
+Thus SVMs emphasize margin constraints sharply, while logistic regression gives a probabilistic smooth penalty.
+
+\section{A Unifying Perspective}
+
+SVMs unify geometry, optimization, and similarity-based learning. Their central principle is:
+\[
+\text{choose the separating hyperplane with maximum margin.}
+\]
+This leads to a convex optimization problem, a sparse decision rule determined by support vectors, and a natural kernel extension for nonlinear classification.
+
+SVMs are therefore more than just another classifier. They are a clean illustration of how inductive bias, convexity, duality, and feature-space geometry come together in supervised learning.
+
+\section{Summary}
+
+In this chapter we introduced support vector machines through the geometry of margin maximization. We defined the geometric margin, formulated the hard-margin and soft-margin SVM optimization problems, and interpreted slack variables as controlled violations of separability. We then sketched the dual formulation, explained why support vectors alone determine the decision rule, and used the KKT conditions to interpret active constraints.
+
+Finally, we showed how kernels extend SVMs to nonlinear classification by replacing inner products with similarities in feature space. This makes SVMs one of the most elegant bridges between linear classification and nonlinear learning.

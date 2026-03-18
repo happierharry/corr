@@ -1,0 +1,245 @@
+\chapter{Residual Networks and Skip Connections}
+
+\section{The Degradation Problem}
+
+As neural networks become deeper, one might expect their performance to improve due to increased expressivity. However, in practice, deeper networks can be harder to train.
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+Increasing depth may lead to higher training error, even though the deeper model can represent the same functions as a shallower one.
+
+\medskip
+
+\noindent
+\textbf{Degradation problem.}
+\begin{itemize}
+    \item Deeper networks perform worse than shallower counterparts
+    \item Not due to overfitting, but due to optimization difficulty
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Intuition.}  
+In principle, additional layers could learn the identity mapping and preserve performance. However, standard training procedures struggle to discover such solutions.
+
+\medskip
+
+\noindent
+\textbf{Connection to gradients.}
+\begin{itemize}
+    \item Deep compositions amplify vanishing and exploding gradients
+    \item Information may degrade across layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth increases expressivity, but also introduces optimization challenges that must be addressed through architectural design.
+
+\section{Residual Learning}
+
+Residual networks (ResNets) address the degradation problem by introducing \emph{skip connections}.
+
+\medskip
+
+\noindent
+\textbf{Residual block.}
+\[
+z^{(\ell+1)} = z^{(\ell)} + F(z^{(\ell)}),
+\]
+where $F$ is a learnable transformation.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Instead of learning a mapping $H(z)$, the network learns a residual:
+    \[
+    F(z) = H(z) - z
+    \]
+    \item The full mapping becomes $H(z) = z + F(z)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+\begin{itemize}
+    \item Easier to learn small perturbations of identity
+    \item Improves gradient flow across layers
+    \item Reduces degradation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Gradient propagation.}  
+Gradients can flow directly through the identity connection:
+\[
+\frac{\partial z^{(\ell+1)}}{\partial z^{(\ell)}} = I + \frac{\partial F}{\partial z^{(\ell)}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Skip connections provide alternative paths for information and gradients, stabilizing training.
+
+\section{Dynamical Systems Perspective}
+
+Residual networks admit an interpretation as discrete dynamical systems.
+
+\medskip
+
+\noindent
+\textbf{Discrete dynamics.}
+\[
+z^{(\ell+1)} = z^{(\ell)} + F(z^{(\ell)}).
+\]
+
+\medskip
+
+\noindent
+\textbf{Continuous-time analogy.}  
+This resembles a discretization of an ordinary differential equation:
+\[
+\frac{dz(t)}{dt} = F(z(t)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Euler discretization.}  
+With step size $\Delta t = 1$,
+\[
+z(t + \Delta t) \approx z(t) + \Delta t \, F(z(t)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Layers correspond to time steps
+    \item Network depth corresponds to evolution over time
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stability.}  
+Residual connections help maintain stable trajectories in representation space.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Viewing neural networks as dynamical systems provides a framework for understanding depth, stability, and training dynamics.
+
+\section{Very Deep Architectures}
+
+Residual connections enable the training of extremely deep networks.
+
+\medskip
+
+\noindent
+\textbf{Empirical observation.}
+\begin{itemize}
+    \item Networks with hundreds or thousands of layers can be trained successfully
+    \item Performance improves with depth when using residual connections
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Architectural patterns.}
+\begin{itemize}
+    \item Stacking residual blocks
+    \item Combining with normalization layers
+    \item Using bottleneck structures for efficiency
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Scaling behavior.}
+\begin{itemize}
+    \item Deeper models capture more complex patterns
+    \item Training remains stable due to skip connections
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Generalization.}  
+Residual networks often generalize well despite large capacity.
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item Increased computational cost
+    \item Architectural complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Careful architectural design makes depth practically usable.
+
+\section{A Unifying Perspective}
+
+Residual networks illustrate how architectural innovations can address fundamental challenges in deep learning.
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+\begin{itemize}
+    \item Skip connections
+    \item Residual mappings
+    \item Stable gradient flow
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core ideas.}
+\begin{itemize}
+    \item Learn perturbations rather than full transformations
+    \item Facilitate optimization through identity mappings
+    \item Interpret networks as dynamical systems
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Architectural design can fundamentally change the behavior of learning algorithms.
+
+\section{Outlook}
+
+This chapter introduced residual networks and skip connections:
+\begin{itemize}
+    \item the degradation problem in deep networks,
+    \item residual learning as a solution,
+    \item connections to dynamical systems,
+    \item enabling very deep architectures.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study convolutional neural networks, which exploit spatial structure in data.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective architectures combine mathematical structure with practical considerations to make deep learning feasible at scale.

@@ -1,0 +1,364 @@
+\section{PAC Learning, VC Dimension, and PAC-Bayesian Theory}
+\label{sec:pac-vc-pacbayes}
+
+\subsection{Introduction}
+
+One of the central questions in machine learning is the following:
+
+\begin{quote}
+When can a learning algorithm be trusted to perform well on new unseen data?
+\end{quote}
+
+Training accuracy alone is not enough, since a model may fit the training data very well and still fail to generalize. Statistical learning theory develops mathematical frameworks to study this issue. Among the most influential are:
+\begin{itemize}
+    \item PAC learning,
+    \item VC dimension theory,
+    \item PAC-Bayesian theory.
+\end{itemize}
+
+These frameworks are closely related, but they answer the generalization question from somewhat different perspectives.
+
+\subsection{PAC Learning: Probably Approximately Correct}
+
+The acronym \emph{PAC} stands for
+\[
+\textbf{P}robably \ \textbf{A}pproximately \ \textbf{C}orrect.
+\]
+
+The basic idea is to formalize what it means for a learner to succeed from finitely many examples.
+
+\subsubsection{Setup}
+
+Let:
+\begin{itemize}
+    \item \(X\) be the input space,
+    \item \(Y=\{0,1\}\) be the label space for binary classification,
+    \item \(\mathcal{H}\) be a hypothesis class,
+    \item \(\mathcal{D}\) be an unknown data distribution on \(X \times Y\).
+\end{itemize}
+
+A training sample is
+\[
+S = \{(x_1,y_1),\dots,(x_n,y_n)\},
+\]
+drawn independently from \(\mathcal{D}\).
+
+For a hypothesis \(h \in \mathcal{H}\), its \emph{true risk} or \emph{generalization error} is
+\[
+R(h)=\Pr_{(x,y)\sim \mathcal{D}}[h(x)\neq y].
+\]
+
+Its \emph{empirical risk} or \emph{training error} is
+\[
+\hat{R}_S(h)=\frac{1}{n}\sum_{i=1}^n \mathbf{1}\{h(x_i)\neq y_i\}.
+\]
+
+\subsubsection{Meaning of ``Probably Approximately Correct''}
+
+PAC learning introduces two parameters:
+\begin{itemize}
+    \item \(\varepsilon > 0\), the desired accuracy,
+    \item \(\delta > 0\), the desired confidence level.
+\end{itemize}
+
+A learner is said to be PAC if, after seeing sufficiently many examples, it outputs a hypothesis \(h\) such that
+\[
+\Pr\big(R(h)\le \varepsilon\big)\ge 1-\delta.
+\]
+
+This means:
+\begin{itemize}
+    \item \emph{approximately correct}: the true error is at most \(\varepsilon\),
+    \item \emph{probably}: this event occurs with probability at least \(1-\delta\) over the random sample.
+\end{itemize}
+
+Thus PAC learning makes the idea of successful generalization precise.
+
+\subsection{Realizable and Agnostic PAC Learning}
+
+There are two main versions of PAC learning.
+
+\subsubsection{Realizable PAC learning}
+
+In the \emph{realizable case}, one assumes that there exists some target concept \(h^* \in \mathcal{H}\) with zero true error. In other words, the hypothesis class contains a perfect predictor.
+
+The task is then to find a hypothesis that is consistent with the data and also has small true error.
+
+A classical finite-class sample complexity bound states that, roughly, if \(\mathcal{H}\) is finite, then
+\[
+n \gtrsim \frac{1}{\varepsilon}\left(\log |\mathcal{H}| + \log \frac{1}{\delta}\right)
+\]
+samples are sufficient for PAC learning.
+
+This tells us that the number of required examples depends on:
+\begin{itemize}
+    \item the desired accuracy \(1/\varepsilon\),
+    \item the confidence parameter \(\log(1/\delta)\),
+    \item the size or complexity of the hypothesis class.
+\end{itemize}
+
+\subsubsection{Agnostic PAC learning}
+
+The realizable assumption is often unrealistic. In practice:
+\begin{itemize}
+    \item labels may be noisy,
+    \item the true labeling rule may not belong to \(\mathcal{H}\),
+    \item the model class may only approximate reality.
+\end{itemize}
+
+This leads to \emph{agnostic PAC learning}. Here the learner seeks a hypothesis whose true error is close to the best possible within \(\mathcal{H}\):
+\[
+R(h)\le \inf_{g\in \mathcal{H}} R(g) + \varepsilon
+\]
+with probability at least \(1-\delta\).
+
+Thus agnostic PAC learning asks the learner to compete with the best available hypothesis in the class, rather than to recover a perfect target.
+
+\subsection{What PAC Learning Is Really About}
+
+PAC learning is fundamentally about the relationship among:
+\begin{itemize}
+    \item sample size,
+    \item hypothesis-class complexity,
+    \item and generalization guarantees.
+\end{itemize}
+
+Its main questions are:
+\begin{itemize}
+    \item How many examples are needed to learn?
+    \item Which hypothesis classes are learnable?
+    \item How does model complexity affect generalization?
+\end{itemize}
+
+In this sense, PAC learning is one of the foundational frameworks of statistical learning theory.
+
+\subsection{VC Dimension}
+
+For finite hypothesis classes, complexity may be measured by \(|\mathcal{H}|\). But many natural hypothesis classes are infinite, so a more refined complexity measure is needed. This leads to the \emph{VC dimension}, named after Vapnik and Chervonenkis.
+
+\subsubsection{Intuition}
+
+The VC dimension measures how expressive a hypothesis class is. Roughly speaking, it asks:
+
+\begin{quote}
+How many points can the class classify in all possible ways?
+\end{quote}
+
+\subsubsection{Definition}
+
+A set of points \(\{x_1,\dots,x_m\}\subseteq X\) is said to be \emph{shattered} by \(\mathcal{H}\) if for every labeling \((y_1,\dots,y_m)\in\{0,1\}^m\), there exists some \(h\in\mathcal{H}\) such that
+\[
+h(x_i)=y_i
+\qquad \text{for all } i=1,\dots,m.
+\]
+
+The \emph{VC dimension} of \(\mathcal{H}\), denoted \(\mathrm{VC}(\mathcal{H})\), is the largest integer \(m\) such that some set of \(m\) points is shattered by \(\mathcal{H}\).
+
+\subsubsection{Why VC dimension matters}
+
+A major theorem of learning theory states that, for binary classification, finite VC dimension is essentially the right condition for PAC learnability.
+
+Thus VC dimension provides a structural measure of complexity that replaces simple counting when \(\mathcal{H}\) is infinite.
+
+\subsection{PAC-Bayesian Theory}
+
+PAC-Bayesian theory is a later framework that combines PAC-style generalization guarantees with Bayesian language.
+
+Instead of analyzing a single hypothesis \(h\), PAC-Bayes studies a \emph{distribution over hypotheses}.
+
+\subsubsection{Prior and posterior}
+
+Suppose:
+\begin{itemize}
+    \item \(P\) is a prior distribution over hypotheses, chosen before seeing the data,
+    \item \(Q\) is a posterior distribution over hypotheses, chosen after seeing the data.
+\end{itemize}
+
+The learner is then analyzed through the posterior \(Q\), rather than through a single deterministic predictor.
+
+A typical PAC-Bayes bound has schematic form
+\[
+R(Q)
+\lesssim
+\hat{R}_S(Q)
++
+\sqrt{\frac{\mathrm{KL}(Q\|P)+\log(1/\delta)}{n}},
+\]
+where:
+\begin{itemize}
+    \item \(R(Q)\) is the true risk averaged under the posterior,
+    \item \(\hat{R}_S(Q)\) is the empirical risk averaged under the posterior,
+    \item \(\mathrm{KL}(Q\|P)\) is the Kullback--Leibler divergence from posterior to prior.
+\end{itemize}
+
+\subsubsection{Interpretation}
+
+This bound says, roughly:
+
+\begin{quote}
+If the posterior \(Q\) fits the training data well and does not move too far from the prior \(P\), then the generalization error is small.
+\end{quote}
+
+So PAC-Bayes balances two terms:
+\begin{itemize}
+    \item data fit,
+    \item complexity measured by deviation from the prior.
+\end{itemize}
+
+\subsubsection{Why PAC-Bayes is useful}
+
+PAC-Bayesian theory is often more flexible than classical VC-based bounds because it can provide:
+\begin{itemize}
+    \item data-dependent guarantees,
+    \item posterior-specific bounds,
+    \item finer control than worst-case capacity measures.
+\end{itemize}
+
+This makes PAC-Bayes particularly attractive in modern machine learning, where raw parameter count is often too crude to explain generalization.
+
+\subsection{An Intuitive Summary of the Three Frameworks}
+
+The three frameworks may be summarized informally as follows.
+
+\begin{itemize}
+    \item \textbf{PAC learning:} asks whether a class of predictors can be learned from finitely many examples with high probability and small error.
+    \item \textbf{VC dimension:} measures the expressive power of a hypothesis class and characterizes learnability in classical binary classification.
+    \item \textbf{PAC-Bayes:} gives generalization bounds for learned distributions over predictors, using empirical fit plus a KL complexity penalty relative to a prior.
+\end{itemize}
+
+\subsection{PAC vs.\ VC vs.\ PAC-Bayes}
+
+We now compare the three perspectives more directly.
+
+\subsubsection{PAC learning}
+
+PAC learning is the broad framework. It asks for guarantees of the form:
+\[
+\Pr\big(R(h)\le \varepsilon\big)\ge 1-\delta
+\]
+or, in the agnostic setting,
+\[
+\Pr\left(R(h)\le \inf_{g\in\mathcal{H}}R(g)+\varepsilon\right)\ge 1-\delta.
+\]
+
+Its focus is on learnability, sample complexity, and generalization.
+
+\subsubsection{VC theory}
+
+VC theory provides one of the most important tools for PAC learning. It tells us that complexity is governed not only by the number of hypotheses, but by the combinatorial richness of the class.
+
+Thus VC theory is not separate from PAC learning in spirit; rather, it is one of its central mathematical instruments.
+
+\subsubsection{PAC-Bayes}
+
+PAC-Bayes changes the viewpoint from:
+\begin{itemize}
+    \item a single chosen hypothesis,
+\end{itemize}
+to
+\begin{itemize}
+    \item a posterior distribution over hypotheses.
+\end{itemize}
+
+It measures complexity through \(\mathrm{KL}(Q\|P)\) instead of VC dimension and often yields more refined, predictor-dependent bounds.
+
+\subsection{Comparison Table}
+
+\[
+\begin{array}{|l|l|l|l|}
+\hline
+\textbf{Aspect} & \textbf{PAC Learning} & \textbf{VC Theory} & \textbf{PAC-Bayes} \\
+\hline
+Main object &
+\text{learnability of a class} &
+\text{complexity of a class} &
+\text{generalization of a posterior} \\
+\hline
+Typical predictor &
+\text{single hypothesis } h &
+\text{single hypothesis } h &
+\text{distribution } Q \text{ over hypotheses} \\
+\hline
+Main question &
+\text{Can we learn well?} &
+\text{How rich is the class?} &
+\text{How well does } Q \text{ generalize?} \\
+\hline
+Complexity measure &
+\text{sample complexity / class size} &
+\text{VC dimension} &
+\mathrm{KL}(Q\|P) \\
+\hline
+Style of guarantee &
+\text{high-probability} &
+\text{uniform convergence / shattering} &
+\text{high-probability, data-dependent} \\
+\hline
+Typical setting &
+\text{classical learning theory} &
+\text{binary classification theory} &
+\text{stochastic/posterior predictors} \\
+\hline
+Strength &
+\text{foundational learnability} &
+\text{sharp combinatorial theory} &
+\text{finer predictor-specific bounds} \\
+\hline
+Weakness &
+\text{may be abstract} &
+\text{often worst-case and coarse} &
+\text{depends on prior choice and bound form} \\
+\hline
+\end{array}
+\]
+
+\subsection{How They Fit Together}
+
+The relation among the three may be summarized as follows:
+\begin{itemize}
+    \item PAC learning is the broad conceptual framework of learnability.
+    \item VC dimension is one of the classical tools for characterizing PAC learnability.
+    \item PAC-Bayes is a more refined generalization framework that uses priors, posteriors, and KL divergence.
+\end{itemize}
+
+Thus:
+\[
+\text{PAC learning} \quad \supset \quad \text{VC theory as a classical tool},
+\]
+while PAC-Bayes offers a different but related route to generalization guarantees.
+
+\subsection{Why These Ideas Matter for Modern Learning}
+
+These theories are central because they formalize the idea that good generalization requires more than low training error.
+
+They all embody, in different forms, the principle
+\[
+\text{generalization} \approx \text{empirical fit} + \text{complexity control}.
+\]
+
+However, modern deep learning has challenged the sufficiency of classical worst-case complexity measures. Deep neural networks can have huge parameter counts and yet generalize well. For this reason, modern theory often looks beyond classical PAC/VC theory toward:
+\begin{itemize}
+    \item PAC-Bayes,
+    \item norm-based bounds,
+    \item stability-based analysis,
+    \item compression,
+    \item implicit bias of optimization.
+\end{itemize}
+
+Still, PAC learning and VC theory remain foundational, and PAC-Bayes provides one of the most important bridges from classical learning theory to more modern generalization analyses.
+
+\subsection{Conclusion}
+
+PAC learning, VC dimension, and PAC-Bayesian theory are all frameworks for understanding generalization in machine learning.
+
+\begin{itemize}
+    \item PAC learning formalizes what it means to learn reliably from data.
+    \item VC dimension measures the expressive power of a hypothesis class and characterizes classical learnability.
+    \item PAC-Bayes refines the picture by studying posterior distributions over hypotheses and controlling complexity through KL divergence.
+\end{itemize}
+
+A good one-line summary is:
+
+\begin{quote}
+PAC learning asks whether learning is possible, VC theory explains one classical notion of complexity behind it, and PAC-Bayes gives a more flexible posterior-based approach to generalization bounds.
+\end{quote}

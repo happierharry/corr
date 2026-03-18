@@ -1,0 +1,254 @@
+
+\chapter{Learning as Function Approximation}
+
+\section{Learning Problems and Data}
+
+Artificial intelligence, in its modern form, is largely concerned with the problem of \emph{learning from data}. At a high level, we are given observations of the world and asked to construct a system that can make predictions, decisions, or generate new data.
+
+We formalize this as follows. Let
+\[
+\mathcal{X} \subseteq \mathbb{R}^d
+\]
+denote the \emph{input space} and
+\[
+\mathcal{Y}
+\]
+the \emph{output space}. A dataset is a collection of samples
+\[
+\mathcal{D} = \{(x_i, y_i)\}_{i=1}^n, \quad x_i \in \mathcal{X}, \; y_i \in \mathcal{Y}.
+\]
+
+The goal of learning is to construct a function
+\[
+f : \mathcal{X} \to \mathcal{Y}
+\]
+that captures the relationship between inputs and outputs.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item In \emph{regression}, $\mathcal{Y} \subseteq \mathbb{R}$.
+    \item In \emph{classification}, $\mathcal{Y} = \{1, \dots, K\}$.
+    \item In \emph{generative modeling}, $\mathcal{Y} = \mathcal{X}$, and the goal is to model the data distribution.
+\end{itemize}
+
+\medskip
+
+While this formulation appears simple, it hides the central challenge of machine learning: we only observe finitely many samples, yet we seek a function that performs well on unseen data.
+
+\section{Functions, Models, and Representations}
+
+A learning algorithm does not search over all possible functions. Instead, it selects a function from a \emph{model class} (or \emph{hypothesis space})
+\[
+\mathcal{H} = \{ f_\theta : \theta \in \Theta \}.
+\]
+
+Here:
+\begin{itemize}
+    \item $\theta$ denotes parameters,
+    \item $\Theta$ is the parameter space,
+    \item $f_\theta$ is a function determined by $\theta$.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example (Linear model).}
+\[
+f_\theta(x) = \langle w, x \rangle + b, \quad \theta = (w, b).
+\]
+
+\medskip
+
+\noindent
+\textbf{Example (Neural network).}
+\[
+f_\theta(x) = W_L \sigma\big( W_{L-1} \sigma( \cdots \sigma(W_1 x) ) \big),
+\]
+where $\sigma$ is a nonlinear activation function.
+
+\medskip
+
+The choice of $\mathcal{H}$ encodes assumptions about the structure of the problem. This is known as \emph{inductive bias}, a concept we will revisit in later chapters.
+
+\medskip
+
+\noindent
+\textbf{Representation matters.}  
+Two models may represent the same class of functions but behave very differently in practice due to:
+\begin{itemize}
+    \item optimization properties,
+    \item numerical stability,
+    \item generalization behavior.
+\end{itemize}
+
+Thus, a model is not just a function class—it is also a \emph{computational and statistical object}.
+
+\section{Approximation as the Core Paradigm}
+
+At its heart, machine learning is an approximation problem.
+
+\medskip
+
+\noindent
+We assume that there exists an unknown function
+\[
+f^\star : \mathcal{X} \to \mathcal{Y}
+\]
+that governs the data:
+\[
+y = f^\star(x) + \text{noise}.
+\]
+
+Since $f^\star$ is unknown, we seek an approximation $f_\theta$ such that
+\[
+f_\theta \approx f^\star.
+\]
+
+\medskip
+
+\noindent
+To quantify this approximation, we introduce a \emph{loss function}
+\[
+\ell : \mathcal{Y} \times \mathcal{Y} \to \mathbb{R}.
+\]
+
+The quality of $f$ is measured by the \emph{risk}
+\[
+R(f) = \mathbb{E}_{(x,y)} \big[ \ell(f(x), y) \big].
+\]
+
+Since the data distribution is unknown, we instead minimize the \emph{empirical risk}
+\[
+\hat{R}_n(f) = \frac{1}{n} \sum_{i=1}^n \ell(f(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Learning problem.}
+\[
+\min_{\theta \in \Theta} \; \hat{R}_n(f_\theta).
+\]
+
+\medskip
+
+This simple optimization problem is the foundation of nearly all modern machine learning algorithms.
+
+\section{Examples from Regression and Classification}
+
+\subsection{Regression}
+
+In regression, the output space is $\mathcal{Y} = \mathbb{R}$.
+
+A common choice of loss is the squared error:
+\[
+\ell(f(x), y) = (f(x) - y)^2.
+\]
+
+The empirical risk becomes
+\[
+\hat{R}_n(f) = \frac{1}{n} \sum_{i=1}^n (f(x_i) - y_i)^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Penalizes large deviations strongly
+    \item Leads to analytically tractable solutions for linear models
+\end{itemize}
+
+\subsection{Classification}
+
+In classification, $\mathcal{Y} = \{1, \dots, K\}$.
+
+Instead of predicting labels directly, models often output scores or probabilities:
+\[
+f(x) \in \mathbb{R}^K.
+\]
+
+A common loss is the cross-entropy loss:
+\[
+\ell(f(x), y) = -\log p_\theta(y \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Encourages correct class probabilities
+    \item Strong connection to maximum likelihood estimation
+\end{itemize}
+
+\section{From Approximation to Generalization}
+
+A central issue arises: minimizing empirical risk does not guarantee good performance on new data.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Why should a function that fits the training data well also perform well on unseen data?
+
+\medskip
+
+This question leads to the study of:
+\begin{itemize}
+    \item generalization,
+    \item model complexity,
+    \item regularization,
+    \item inductive bias.
+\end{itemize}
+
+\medskip
+
+These ideas form the theoretical backbone of machine learning and will be developed throughout this book.
+
+\section{A Unifying Perspective}
+
+We summarize the learning process:
+
+\begin{enumerate}
+    \item Choose a model class $\mathcal{H}$
+    \item Define a loss function $\ell$
+    \item Solve an optimization problem
+    \item Evaluate on unseen data
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Three interacting components:}
+\begin{itemize}
+    \item \textbf{Approximation} (model expressivity)
+    \item \textbf{Optimization} (ability to find good parameters)
+    \item \textbf{Generalization} (performance on new data)
+\end{itemize}
+
+\medskip
+
+Modern artificial intelligence, particularly deep learning, succeeds because it balances these three aspects at scale.
+
+\section{Outlook}
+
+This chapter introduced the central viewpoint of this book: learning as function approximation under uncertainty.
+
+\medskip
+
+In the next chapter, we develop the probabilistic framework underlying learning, connecting empirical risk minimization to statistical inference.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Throughout this text, we will emphasize:
+\begin{itemize}
+    \item intuition grounded in mathematics,
+    \item models as structured approximations,
+    \item and algorithms as computational realizations of these ideas.
+\end{itemize}

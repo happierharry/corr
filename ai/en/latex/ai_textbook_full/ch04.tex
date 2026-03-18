@@ -1,0 +1,287 @@
+\chapter{Learning as Optimization}
+
+\section{Introduction}
+
+Learning is often described as finding a good predictor from data. In most modern formulations, this search is expressed as an optimization problem: choose parameters or functions that minimize a loss on the observed sample, possibly together with a regularization term. This viewpoint is central because it connects statistical modeling with algorithms. A model is not only a family of functions; it is also an objective to be minimized and a landscape to be navigated.
+
+This chapter introduces the optimization view of learning in a mathematically grounded but compact form. We define empirical risk minimization, derive gradient-based updates, discuss convex and nonconvex objectives, and explain the relation between constrained and penalized formulations. We also distinguish optimization error from statistical error, since a model may fail either because the objective was not minimized well or because the data do not support accurate generalization.
+
+\section{From Learning Objectives to Optimization Problems}
+
+Let $\mathcal{H}$ be a hypothesis class and let
+\[
+\ell:\mathcal{A}\times\mathcal{Y}\to[0,\infty)
+\]
+be a loss function. Given data
+\[
+(x_1,y_1),\dots,(x_n,y_n),
+\]
+the empirical risk of a predictor $f$ is
+\[
+\widehat{R}_n(f)=\frac1n\sum_{i=1}^n \ell(f(x_i),y_i).
+\]
+
+\begin{definition}[Empirical Risk Minimization]
+Empirical risk minimization (ERM) chooses a predictor by solving
+\[
+\min_{f\in\mathcal{H}} \widehat{R}_n(f).
+\]
+\end{definition}
+
+In practice, one often parameterizes the hypothesis class by a parameter vector $\theta\in\mathbb{R}^p$, writing $f_\theta$. Then the learning problem becomes
+\[
+\min_{\theta\in\mathbb{R}^p} J(\theta),
+\qquad
+J(\theta)=\frac1n\sum_{i=1}^n \ell(f_\theta(x_i),y_i).
+\]
+
+Regularization is commonly added:
+\[
+\min_{\theta} \; J(\theta)+\lambda \Omega(\theta),
+\]
+where $\Omega(\theta)$ penalizes complexity, such as large norms or lack of sparsity.
+
+Thus learning typically becomes the minimization of an objective function
+\[
+F(\theta)=\text{data fit}+\text{regularization}.
+\]
+
+\section{Gradient Descent as Local Linearization}
+
+When the objective is differentiable, the gradient indicates the local direction of steepest increase. To decrease the objective, one moves in the opposite direction.
+
+\begin{definition}[Gradient Descent Update]
+Given a differentiable objective $F:\mathbb{R}^p\to\mathbb{R}$, gradient descent updates parameters by
+\[
+\theta_{t+1}=\theta_t-\eta_t \nabla F(\theta_t),
+\]
+where $\eta_t>0$ is the step size or learning rate.
+\end{definition}
+
+Why does this make sense? By first-order Taylor expansion,
+\[
+F(\theta+\Delta)\approx F(\theta)+\nabla F(\theta)^\top \Delta.
+\]
+If we choose $\Delta=-\eta \nabla F(\theta)$, then
+\[
+F(\theta+\Delta)\approx F(\theta)-\eta \|\nabla F(\theta)\|^2,
+\]
+so for small enough $\eta$, the objective decreases locally.
+
+This gives a geometric interpretation: gradient descent repeatedly linearizes the objective and moves in the direction that most rapidly decreases this local approximation.
+
+\section{Worked Examples}
+
+\subsection{Least Squares}
+
+For linear regression with prediction
+\[
+f_\theta(x)=x^\top \theta,
+\]
+the least-squares objective is
+\[
+J(\theta)=\frac1n\sum_{i=1}^n (x_i^\top \theta-y_i)^2.
+\]
+If $X\in\mathbb{R}^{n\times p}$ is the design matrix and $y\in\mathbb{R}^n$ the target vector, then
+\[
+J(\theta)=\frac1n \|X\theta-y\|^2.
+\]
+Its gradient is
+\[
+\nabla J(\theta)=\frac{2}{n}X^\top (X\theta-y).
+\]
+Hence gradient descent takes the form
+\[
+\theta_{t+1}=\theta_t-\eta \frac{2}{n}X^\top (X\theta_t-y).
+\]
+
+\subsection{Logistic Loss}
+
+For binary classification with labels $y_i\in\{0,1\}$ and score $z_i=x_i^\top\theta$, the logistic model predicts
+\[
+\sigma(z_i)=\frac{1}{1+e^{-z_i}}.
+\]
+The average logistic loss is
+\[
+J(\theta)= -\frac1n\sum_{i=1}^n \Big(y_i\log \sigma(z_i)+(1-y_i)\log(1-\sigma(z_i))\Big).
+\]
+Its gradient is
+\[
+\nabla J(\theta)=\frac1n\sum_{i=1}^n (\sigma(x_i^\top\theta)-y_i)x_i.
+\]
+This has a natural interpretation: prediction minus target, weighted by the input.
+
+\subsection{Ridge Regression}
+
+Ridge regression adds an $\ell_2$ penalty:
+\[
+J_{\lambda}(\theta)=\frac1n\|X\theta-y\|^2+\lambda \|\theta\|^2.
+\]
+Its gradient is
+\[
+\nabla J_{\lambda}(\theta)=\frac{2}{n}X^\top(X\theta-y)+2\lambda \theta.
+\]
+Thus the penalty pulls the solution toward smaller parameter norms.
+
+\section{Convex and Nonconvex Landscapes}
+
+Optimization behavior depends strongly on the geometry of the objective.
+
+\begin{definition}[Convex Function]
+A function $F:\mathbb{R}^p\to\mathbb{R}$ is convex if for all $\theta,\phi\in\mathbb{R}^p$ and all $\lambda\in[0,1]$,
+\[
+F(\lambda \theta +(1-\lambda)\phi)
+\le
+\lambda F(\theta)+(1-\lambda)F(\phi).
+\]
+\end{definition}
+
+Geometrically, the graph of a convex function lies below the line segment joining any two points on the graph.
+
+\begin{definition}[Strongly Convex Function]
+A differentiable function $F$ is $\mu$-strongly convex if there exists $\mu>0$ such that for all $\theta,\phi$,
+\[
+F(\phi)\ge F(\theta)+\nabla F(\theta)^\top(\phi-\theta)+\frac{\mu}{2}\|\phi-\theta\|^2.
+\]
+\end{definition}
+
+Strong convexity implies a unique minimizer and gives stronger convergence guarantees for gradient methods.
+
+\subsection{Why Convexity Matters}
+
+For convex objectives:
+\begin{itemize}
+    \item every local minimum is a global minimum,
+    \item the landscape is more predictable,
+    \item convergence theory is cleaner.
+\end{itemize}
+
+Least squares and logistic regression are convex in their parameters. Ridge regression is strongly convex when the penalty is present.
+
+\subsection{Nonconvex Objectives}
+
+Deep neural networks typically produce nonconvex objectives. In that case, the landscape may contain:
+\begin{itemize}
+    \item multiple local minima,
+    \item saddle points,
+    \item flat and sharp regions,
+    \item symmetries due to parameterization.
+\end{itemize}
+
+Despite this, gradient-based methods often work well in practice. Understanding why is one of the important themes of modern deep learning theory.
+
+\section{Constraints, Penalties, and Lagrangians}
+
+Learning problems can often be written either as constrained optimization problems or as unconstrained penalized problems.
+
+A constrained form is
+\[
+\min_{\theta} J(\theta)
+\quad \text{subject to} \quad \Omega(\theta)\le c.
+\]
+A penalized form is
+\[
+\min_{\theta} J(\theta)+\lambda \Omega(\theta).
+\]
+
+The first says: fit the data as well as possible while staying within a complexity budget. The second says: fit the data, but pay a cost for complexity.
+
+These formulations are closely related. The bridge is given by the Lagrangian
+\[
+\mathcal{L}(\theta,\lambda)=J(\theta)+\lambda(\Omega(\theta)-c),
+\qquad \lambda\ge 0.
+\]
+Under suitable conditions, solving the constrained problem corresponds to solving a penalized problem for an appropriate value of $\lambda$.
+
+\subsection{Interpretation}
+
+This equivalence is conceptually important:
+\begin{itemize}
+    \item constraints encode hard limits,
+    \item penalties encode soft preferences,
+    \item both express inductive bias.
+\end{itemize}
+
+Ridge regression is the penalized counterpart of constraining the parameter norm.
+
+\section{Optimization Error and Statistical Error}
+
+When a trained model performs poorly, the reason may not be purely statistical. It may simply be that the optimizer failed to find a good minimizer.
+
+It is useful to separate:
+\begin{itemize}
+    \item \textbf{optimization error:} the gap between the achieved objective value and the best value within the hypothesis class;
+    \item \textbf{estimation/statistical error:} the gap between the best empirical or in-class solution and the true population optimum.
+\end{itemize}
+
+Very roughly,
+\[
+\text{total error}
+\approx
+\text{approximation error}
++
+\text{statistical error}
++
+\text{optimization error}.
+\]
+
+This distinction matters because different remedies address different failures:
+\begin{itemize}
+    \item large optimization error suggests better algorithms, initialization, or tuning;
+    \item large statistical error suggests more data, better regularization, or a better-matched hypothesis class.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+The optimization view of learning turns model fitting into a precise mathematical problem. A hypothesis class gives the search space, a loss function gives the data-fit criterion, and regularization or constraints add structural preference. The resulting objective defines a landscape, and learning algorithms move through that landscape in search of low-risk solutions.
+
+This viewpoint also clarifies an important fact: good learning requires both a sensible statistical formulation and a workable optimization procedure. A model may be theoretically well motivated but computationally hard to train, or easy to optimize but statistically too rigid.
+
+\section{Summary}
+
+In this chapter we formulated learning as optimization. We defined empirical risk minimization, introduced gradient descent as local linearization of the objective, and studied three basic examples: least squares, logistic loss, and ridge regression. We also defined convexity and strong convexity, explained why convex objectives are easier to analyze, and contrasted them with the nonconvex landscapes common in deep learning.
+
+Finally, we compared constrained and penalized formulations through the Lagrangian viewpoint and distinguished optimization error from statistical error. These ideas will recur throughout the book, especially when we study large-scale training methods and deep neural networks.
+
+\section{Exercises}
+
+\begin{enumerate}
+    \item Let
+    \[
+    J(\theta)=\frac1n\sum_{i=1}^n (x_i^\top\theta-y_i)^2.
+    \]
+    Compute $\nabla J(\theta)$.
+
+    \item Derive the gradient descent update for least squares.
+
+    \item For logistic regression with
+    \[
+    J(\theta)= -\frac1n\sum_{i=1}^n \Big(y_i\log \sigma(x_i^\top\theta)+(1-y_i)\log(1-\sigma(x_i^\top\theta))\Big),
+    \]
+    show that
+    \[
+    \nabla J(\theta)=\frac1n\sum_{i=1}^n (\sigma(x_i^\top\theta)-y_i)x_i.
+    \]
+
+    \item Write the gradient descent update for ridge regression.
+
+    \item Give the definition of a convex function. Why does convexity simplify optimization?
+
+    \item Give the definition of strong convexity. What additional consequence does it have compared with ordinary convexity?
+
+    \item Compare the constrained problem
+    \[
+    \min_\theta J(\theta)\quad \text{subject to } \|\theta\|^2\le c
+    \]
+    with the penalized problem
+    \[
+    \min_\theta J(\theta)+\lambda \|\theta\|^2.
+    \]
+    Explain the difference in interpretation.
+
+    \item What is optimization error? How is it different from statistical error?
+
+    \item Explain why gradient descent can be interpreted as minimizing a local linear approximation.
+
+    \item Give one example of a convex learning objective and one example of a nonconvex learning objective.
+\end{enumerate}

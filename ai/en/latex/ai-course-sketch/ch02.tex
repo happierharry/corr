@@ -1,0 +1,313 @@
+\chapter{A Probabilistic View of Learning}
+
+\section{Randomness and Data Generation}
+
+In Chapter 1, we introduced learning as the problem of approximating an unknown function from data. We now refine this perspective by incorporating \emph{uncertainty}.
+
+\medskip
+
+Data is not deterministic. Even when a true relationship exists, observations are subject to noise, variability, and incomplete information. A natural way to model this is through probability.
+
+\medskip
+
+\noindent
+We assume that data is generated according to an unknown probability distribution
+\[
+P \quad \text{on} \quad \mathcal{X} \times \mathcal{Y}.
+\]
+
+A dataset
+\[
+\mathcal{D} = \{(x_i, y_i)\}_{i=1}^n
+\]
+is modeled as independent samples drawn from $P$:
+\[
+(x_i, y_i) \sim P.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The distribution $P$ captures all properties of the data-generating process.
+    \item The dataset is only a finite, noisy observation of this process.
+\end{itemize}
+
+\medskip
+
+This viewpoint shifts the goal of learning: instead of fitting a dataset, we aim to learn properties of the underlying distribution.
+
+\section{Conditional Structure and Prediction}
+
+A useful decomposition of $P$ is given by
+\[
+P(x,y) = P(y \mid x) P(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Key object:} the conditional distribution $P(y \mid x)$.
+
+\medskip
+
+\noindent
+Prediction can be understood as estimating this conditional relationship.
+
+\medskip
+
+\noindent
+\textbf{Example (Regression).}
+\[
+y = f^\star(x) + \varepsilon, \quad \mathbb{E}[\varepsilon \mid x] = 0.
+\]
+Then
+\[
+f^\star(x) = \mathbb{E}[y \mid x].
+\]
+
+\medskip
+
+\noindent
+\textbf{Example (Classification).}
+\[
+P(y = k \mid x), \quad k = 1, \dots, K.
+\]
+Prediction corresponds to choosing the most probable class:
+\[
+\hat{y} = \arg\max_k P(y = k \mid x).
+\]
+
+\medskip
+
+Thus, many learning problems reduce to estimating conditional expectations or probabilities.
+
+\section{Bayes' Theorem and Inference}
+
+Bayes' theorem provides a fundamental relationship between conditional probabilities:
+\[
+P(y \mid x) = \frac{P(x \mid y) P(y)}{P(x)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $P(y)$ is the prior belief about $y$,
+    \item $P(x \mid y)$ is the likelihood of observing $x$ given $y$,
+    \item $P(y \mid x)$ is the posterior belief after observing $x$.
+\end{itemize}
+
+\medskip
+
+In practice, Bayes' theorem suggests two complementary approaches:
+\begin{itemize}
+    \item \textbf{Discriminative modeling:} directly model $P(y \mid x)$
+    \item \textbf{Generative modeling:} model $P(x \mid y)$ and $P(y)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Engineering perspective.}
+\begin{itemize}
+    \item Discriminative models often yield better predictive performance.
+    \item Generative models provide richer structure and can generate data.
+\end{itemize}
+
+\section{Loss Functions as Statistical Objectives}
+
+In Chapter 1, we introduced loss functions as measures of error. From a probabilistic viewpoint, loss functions arise naturally from statistical principles.
+
+\medskip
+
+\noindent
+Consider a model $f_\theta$ that defines a conditional distribution $p_\theta(y \mid x)$.
+
+\medskip
+
+\noindent
+\textbf{Negative log-likelihood.}
+\[
+\ell(f_\theta(x), y) = -\log p_\theta(y \mid x).
+\]
+
+\medskip
+
+Minimizing the empirical risk
+\[
+\frac{1}{n} \sum_{i=1}^n -\log p_\theta(y_i \mid x_i)
+\]
+is equivalent to maximizing the likelihood:
+\[
+\max_\theta \prod_{i=1}^n p_\theta(y_i \mid x_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Gaussian noise $\Rightarrow$ squared loss
+    \item Categorical distribution $\Rightarrow$ cross-entropy loss
+\end{itemize}
+
+\medskip
+
+Thus, many commonly used loss functions are not arbitrary—they correspond to probabilistic assumptions about the data.
+
+\section{Risk and Expected Loss}
+
+The true objective of learning is to minimize the \emph{expected loss} (or \emph{risk})
+\[
+R(f) = \mathbb{E}_{(x,y) \sim P} \big[ \ell(f(x), y) \big].
+\]
+
+\medskip
+
+\noindent
+\textbf{Ideal problem.}
+\[
+\min_{f \in \mathcal{H}} R(f).
+\]
+
+\medskip
+
+However, $P$ is unknown, so $R(f)$ cannot be computed exactly.
+
+\medskip
+
+\noindent
+Instead, we approximate it using the empirical risk:
+\[
+\hat{R}_n(f) = \frac{1}{n} \sum_{i=1}^n \ell(f(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Empirical Risk Minimization (ERM).}
+\[
+\min_{f \in \mathcal{H}} \hat{R}_n(f).
+\]
+
+\medskip
+
+ERM is the central principle underlying most machine learning algorithms.
+
+\section{Approximation, Estimation, and Optimization}
+
+The probabilistic formulation reveals three distinct sources of error:
+
+\medskip
+
+\noindent
+\textbf{1. Approximation error}  
+The model class $\mathcal{H}$ may not contain the true function.
+
+\medskip
+
+\noindent
+\textbf{2. Estimation error}  
+We only observe a finite sample from $P$.
+
+\medskip
+
+\noindent
+\textbf{3. Optimization error}  
+We may not find the exact minimizer of the empirical risk.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Modern machine learning systems are effective because they balance these three errors.
+
+\section{Conditional Expectation as an Optimal Predictor}
+
+A key theoretical result provides insight into the structure of optimal predictors.
+
+\medskip
+
+\noindent
+\textbf{Proposition.}  
+For squared loss, the function that minimizes the risk is
+\[
+f^\star(x) = \mathbb{E}[y \mid x].
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The optimal prediction is the conditional mean.
+    \item Learning aims to approximate this conditional expectation.
+\end{itemize}
+
+\medskip
+
+\noindent
+This result explains why regression models focus on estimating averages, even when data is noisy.
+
+\section{From Probabilities to Algorithms}
+
+While the probabilistic framework provides clarity, practical algorithms must operate under constraints:
+\begin{itemize}
+    \item limited data,
+    \item high-dimensional inputs,
+    \item computational limitations.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus, models are designed not only to be statistically sound, but also:
+\begin{itemize}
+    \item computationally efficient,
+    \item numerically stable,
+    \item scalable to large datasets.
+\end{itemize}
+
+\medskip
+
+\noindent
+This interplay between probability and computation is a defining feature of modern machine learning.
+
+\section{A Unifying Perspective}
+
+We can now refine the learning pipeline:
+
+\begin{enumerate}
+    \item Assume data is generated from an unknown distribution $P$
+    \item Choose a model $p_\theta(y \mid x)$ or function $f_\theta$
+    \item Define a loss derived from probabilistic principles
+    \item Minimize empirical risk
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Learning is the process of approximating conditional distributions from finite samples.
+
+\section{Outlook}
+
+This chapter introduced the probabilistic foundation of learning:
+\begin{itemize}
+    \item data as samples from a distribution,
+    \item prediction as estimating conditional structure,
+    \item loss functions as statistical objectives.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study \emph{hypothesis spaces} and \emph{inductive bias}, which determine what kinds of functions can be learned and how generalization becomes possible.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Probability provides the language of uncertainty, but successful learning requires combining it with structure, computation, and approximation.

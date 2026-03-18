@@ -1,0 +1,199 @@
+\chapter{Convolutional Neural Networks}
+
+\section{Introduction}
+
+Convolutional neural networks (CNNs) are designed to exploit spatial structure in data, particularly images. Unlike fully connected networks, CNNs incorporate locality, weight sharing, and translation equivariance directly into their architecture.
+
+This chapter develops CNNs from a mathematical perspective. We interpret convolution as a structured linear operator, formalize translation equivariance, and discuss pooling and receptive fields. We also briefly connect convolution to the Fourier domain.
+
+\section{Convolution as a Local Linear Operator}
+
+A convolution layer applies a linear operator with a special structure.
+
+\subsection{Discrete Convolution}
+
+For a 1D signal $x \in \mathbb{R}^n$ and kernel $k \in \mathbb{R}^r$, the discrete convolution is:
+\[
+(y * k)_i = \sum_{j=0}^{r-1} k_j \, x_{i-j}.
+\]
+
+In 2D (for images), with input $x$ and kernel $k$:
+\[
+(y * k)_{i,j} = \sum_{u,v} k_{u,v} \, x_{i-u, j-v}.
+\]
+
+\subsection{Structured Linear Map}
+
+Convolution can be written as a matrix-vector product:
+\[
+y = K x,
+\]
+where $K$ is a Toeplitz (or block Toeplitz) matrix. Unlike a fully connected layer, $K$ has:
+\begin{itemize}
+    \item repeated entries (weight sharing),
+    \item sparse local structure.
+\end{itemize}
+
+Thus convolution is a linear map with strong structural constraints.
+
+\section{Weight Sharing and Equivariance}
+
+\subsection{Weight Sharing}
+
+In convolution, the same kernel is applied across all spatial locations. This drastically reduces the number of parameters compared to fully connected layers.
+
+\subsection{Translation Equivariance}
+
+\begin{definition}[Translation Operator]
+Let $T_\tau$ shift an input by $\tau$. For example:
+\[
+(T_\tau x)_i = x_{i-\tau}.
+\]
+\end{definition}
+
+\begin{proposition}[Equivariance of Convolution]
+For a convolution operator $C$, we have:
+\[
+C(T_\tau x) = T_\tau (C x).
+\]
+\end{proposition}
+
+\subsection{Interpretation}
+
+A shift in the input produces a corresponding shift in the output. Thus convolution preserves spatial structure.
+
+This is a key inductive bias:
+\begin{itemize}
+    \item features detected in one location are detected everywhere,
+    \item the model is robust to translations.
+\end{itemize}
+
+\section{Pooling, Receptive Fields, and Hierarchy}
+
+\subsection{Pooling}
+
+Pooling reduces spatial resolution:
+\begin{itemize}
+    \item max pooling selects the maximum in a local region,
+    \item average pooling computes local averages.
+\end{itemize}
+
+Pooling introduces:
+\begin{itemize}
+    \item invariance to small translations,
+    \item reduced computational cost.
+\end{itemize}
+
+\subsection{Receptive Fields}
+
+The receptive field of a unit is the region of the input that influences it.
+
+\begin{itemize}
+    \item early layers: small receptive fields (local features),
+    \item deeper layers: larger receptive fields (global structure).
+\end{itemize}
+
+Stacking convolution and pooling layers increases the effective receptive field.
+
+\subsection{Hierarchical Representation}
+
+CNNs build hierarchical features:
+\begin{itemize}
+    \item edges and textures in early layers,
+    \item shapes and parts in intermediate layers,
+    \item objects in deeper layers.
+\end{itemize}
+
+This mirrors the compositional structure of visual data.
+
+\section{CNN Architectures in Vision}
+
+Typical CNN architectures combine:
+\begin{itemize}
+    \item convolution layers,
+    \item nonlinear activations,
+    \item pooling or strided convolutions,
+    \item normalization,
+    \item fully connected or global pooling layers.
+\end{itemize}
+
+Modern architectures often incorporate:
+\begin{itemize}
+    \item residual connections,
+    \item bottleneck blocks,
+    \item deeper hierarchies.
+\end{itemize}
+
+These design choices reflect tradeoffs between expressivity, efficiency, and trainability.
+
+\section{Spectral/Fourier Perspective}
+
+Convolution has a natural interpretation in the frequency domain.
+
+\subsection{Convolution Theorem}
+
+For suitable signals:
+\[
+\mathcal{F}(x * k) = \mathcal{F}(x) \cdot \mathcal{F}(k),
+\]
+where $\mathcal{F}$ denotes the Fourier transform.
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item convolution in space corresponds to multiplication in frequency,
+    \item kernels act as frequency filters,
+    \item CNNs can be viewed as learning filters in the spectral domain.
+\end{itemize}
+
+For example:
+\begin{itemize}
+    \item edge detectors emphasize high frequencies,
+    \item smoothing filters suppress high frequencies.
+\end{itemize}
+
+Thus CNNs can be interpreted as adaptive filter banks.
+
+\section{Worked Examples}
+
+\subsection{Feature Map Size}
+
+For input size $n$, kernel size $r$, and stride $s$, the output size is approximately:
+\[
+\left\lfloor \frac{n - r}{s} \right\rfloor + 1.
+\]
+
+Padding can adjust this to preserve spatial dimensions.
+
+\subsection{Equivariance Example}
+
+Let $x$ be a signal and $T_\tau$ a shift. Then:
+\[
+(Cx)_i = \sum_j k_j x_{i-j},
+\]
+\[
+(C(T_\tau x))_i = \sum_j k_j x_{i-j-\tau} = (Cx)_{i-\tau}.
+\]
+Thus:
+\[
+C(T_\tau x) = T_\tau(Cx).
+\]
+
+\section{A Unifying Perspective}
+
+CNNs impose strong structural assumptions:
+\begin{itemize}
+    \item locality: interactions are local,
+    \item weight sharing: same features across space,
+    \item equivariance: structure preserved under translation.
+\end{itemize}
+
+These assumptions reduce the hypothesis space while aligning it with natural image structure.
+
+From a linear-algebra viewpoint, convolution is a structured matrix. From a signal-processing viewpoint, it is filtering. From a learning viewpoint, it encodes inductive bias.
+
+\section{Summary}
+
+In this chapter we developed convolutional neural networks from a mathematical perspective. We defined discrete convolution as a structured linear operator and showed how weight sharing leads to translation equivariance. We discussed pooling, receptive fields, and hierarchical feature construction.
+
+We also introduced the Fourier viewpoint, interpreting convolution as frequency-domain filtering. CNNs illustrate how architectural structure can encode powerful inductive biases for specific data domains.

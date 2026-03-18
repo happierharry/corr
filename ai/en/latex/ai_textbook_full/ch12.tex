@@ -1,0 +1,215 @@
+\chapter{Optimization in Practice}
+
+\section{Introduction}
+
+Most modern learning problems are solved with gradient-based optimization, often at large scale. While Chapter 4 introduced gradient descent in a deterministic setting, practical optimization is typically stochastic, noisy, and implemented with heuristic enhancements such as momentum and adaptive learning rates.
+
+This chapter develops a practical but mathematically interpretable view of optimization in machine learning. We introduce stochastic gradient descent (SGD), explain the role of noise and batch size, and study common variants such as momentum and Adam. We also discuss learning-rate schedules and their effect on convergence and generalization.
+
+\section{Full-Batch vs Mini-Batch Optimization}
+
+Let the objective be
+\[
+J(\theta)=\frac1n\sum_{i=1}^n \ell_i(\theta),
+\]
+where $\ell_i(\theta)=\ell(f_\theta(x_i),y_i)$.
+
+\subsection{Full-Batch Gradient Descent}
+
+Full-batch gradient descent computes
+\[
+\nabla J(\theta)=\frac1n\sum_{i=1}^n \nabla \ell_i(\theta),
+\]
+and updates
+\[
+\theta_{t+1}=\theta_t-\eta \nabla J(\theta_t).
+\]
+This uses all data at every step, which is computationally expensive for large datasets.
+
+\subsection{Mini-Batch Gradient Descent}
+
+Instead, one samples a subset (mini-batch) $B_t\subset\{1,\dots,n\}$ and uses
+\[
+g_t=\frac{1}{|B_t|}\sum_{i\in B_t} \nabla \ell_i(\theta_t),
+\]
+leading to
+\[
+\theta_{t+1}=\theta_t-\eta g_t.
+\]
+This reduces computation per step and introduces stochasticity.
+
+\section{Stochastic Gradients and Noise}
+
+\begin{proposition}[Unbiased Gradient Estimate]
+If the mini-batch is sampled uniformly, then
+\[
+\mathbb{E}[g_t \mid \theta_t]=\nabla J(\theta_t).
+\]
+\end{proposition}
+
+Thus the stochastic gradient is an unbiased estimator of the true gradient.
+
+\subsection{Variance of the Gradient Estimate}
+
+Although unbiased, $g_t$ has variance:
+\[
+\mathrm{Var}(g_t) \propto \frac{1}{|B_t|}.
+\]
+Smaller batches produce noisier gradients, while larger batches reduce variance.
+
+\subsection{Stochastic Optimization Intuition}
+
+The update
+\[
+\theta_{t+1}=\theta_t-\eta g_t
+\]
+can be viewed as following the true gradient plus noise. This noise has two effects:
+\begin{itemize}
+    \item it introduces randomness in the trajectory,
+    \item it may help escape shallow local minima or saddle points.
+\end{itemize}
+
+Thus stochasticity is not only a computational necessity but can also be beneficial.
+
+\section{Batch Size Effects}
+
+Batch size controls the tradeoff between computational efficiency and gradient accuracy.
+
+\subsection{Small Batches}
+
+\begin{itemize}
+    \item high variance gradients,
+    \item more frequent updates,
+    \item potentially better generalization due to noise.
+\end{itemize}
+
+\subsection{Large Batches}
+
+\begin{itemize}
+    \item low variance gradients,
+    \item more stable updates,
+    \item may converge faster in terms of iterations but not always in wall-clock time,
+    \item sometimes worse generalization.
+\end{itemize}
+
+\subsection{Worked Example: Effect of Batch Size}
+
+On a simple quadratic objective, small batches produce a noisy trajectory that oscillates around the optimum, while large batches follow a smoother path. In high-dimensional nonconvex problems, small-batch noise can help explore the landscape more effectively.
+
+\section{Momentum and Acceleration}
+
+Plain SGD can be slow, especially when gradients vary across directions. Momentum accelerates optimization by accumulating past gradients.
+
+\subsection{Momentum Update}
+
+Define a velocity variable $v_t$:
+\[
+v_{t+1}=\beta v_t + g_t,
+\qquad
+\theta_{t+1}=\theta_t-\eta v_{t+1},
+\]
+where $\beta\in[0,1)$ is the momentum parameter.
+
+\subsection{Intuition}
+
+Momentum averages gradients over time:
+\begin{itemize}
+    \item in directions where gradients are consistent, it accelerates,
+    \item in directions with oscillation, it dampens noise.
+\end{itemize}
+
+This is analogous to a physical system with inertia, where updates build up velocity in consistent directions.
+
+\subsection{Trajectory Example}
+
+On an elongated quadratic surface, gradient descent zigzags across steep directions. Momentum smooths this motion and follows the valley more directly, leading to faster convergence.
+
+\section{Adaptive Methods}
+
+Adaptive methods scale updates differently across coordinates based on past gradients.
+
+\subsection{Adam Optimizer}
+
+Adam maintains exponential moving averages of gradients and squared gradients:
+\[
+m_{t+1}=\beta_1 m_t + (1-\beta_1) g_t,
+\]
+\[
+v_{t+1}=\beta_2 v_t + (1-\beta_2) g_t^2,
+\]
+and updates
+\[
+\theta_{t+1}=\theta_t-\eta \frac{m_{t+1}}{\sqrt{v_{t+1}}+\varepsilon}.
+\]
+
+\subsection{Interpretation}
+
+Adam adapts the learning rate per coordinate:
+\begin{itemize}
+    \item large-gradient coordinates get smaller steps,
+    \item small-gradient coordinates get larger steps.
+\end{itemize}
+
+This can improve stability and reduce the need for manual tuning.
+
+\subsection{Tradeoffs}
+
+Adaptive methods:
+\begin{itemize}
+    \item often converge quickly,
+    \item are robust to scaling of features,
+    \item may generalize worse than SGD with momentum in some settings.
+\end{itemize}
+
+\section{Learning-Rate Schedules and Warmup}
+
+The learning rate $\eta$ plays a crucial role in optimization.
+
+\subsection{Constant Learning Rate}
+
+A fixed $\eta$ may work initially but can lead to oscillation or slow convergence near the optimum.
+
+\subsection{Decay Schedules}
+
+Common schedules reduce $\eta$ over time:
+\begin{itemize}
+    \item step decay,
+    \item exponential decay,
+    \item cosine annealing.
+\end{itemize}
+
+Reducing the learning rate allows finer convergence.
+
+\subsection{Warmup}
+
+In large-scale training, it is common to start with a small learning rate and increase it gradually:
+\[
+\eta_t \uparrow \text{ over initial iterations}.
+\]
+This stabilizes early training when gradients may be poorly scaled.
+
+\subsection{Intuition}
+
+Learning-rate schedules balance exploration and refinement:
+\begin{itemize}
+    \item large $\eta$: explore the landscape quickly,
+    \item small $\eta$: refine near good solutions.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Practical optimization is not just about following gradients, but about managing noise, curvature, and scale. The key ingredients are:
+\begin{itemize}
+    \item stochastic gradients for efficiency,
+    \item momentum for acceleration,
+    \item adaptive scaling for stability,
+    \item learning-rate schedules for convergence.
+\end{itemize}
+
+These components interact. For example, batch size affects gradient noise, which interacts with learning rate and momentum. Understanding these interactions is crucial for effective training.
+
+\section{Summary}
+
+In this chapter we studied practical optimization methods used in modern machine learning. We introduced stochastic gradient descent as an unbiased but noisy approximation of full gradients, analyzed the effect of batch size, and discussed how noise influences optimization.
+
+We then introduced momentum as a method for acceleration and adaptive optimizers such as Adam for coordinate-wise scaling. Finally, we examined learning-rate schedules and warmup strategies. Together, these ideas form the core toolkit for training large-scale models.

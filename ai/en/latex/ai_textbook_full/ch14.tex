@@ -1,0 +1,160 @@
+\chapter{From Classical Models to Neural Networks}
+
+\section{Introduction}
+
+Classical supervised learning models—linear regression, logistic regression, and kernel methods—provide a powerful and mathematically elegant framework. However, their performance often depends critically on the choice of representation. When the representation is inadequate, these models may plateau in performance even as more data are provided.
+
+This chapter motivates neural networks as a response to these representational limitations. The key idea is to move from \emph{fixed} feature maps to \emph{learned} feature maps. Neural networks can be viewed as systems that learn hierarchical representations of data, enabling them to capture complex nonlinear structure.
+
+\section{Why Classical Models Plateau}
+
+Linear models operate in a fixed feature space. Even when extended through feature maps or kernels, their effectiveness depends on the choice of representation.
+
+Two key limitations arise:
+\begin{itemize}
+    \item \textbf{Representation bottleneck:} if the feature map $\phi(x)$ does not capture relevant structure, no linear model on top can recover it.
+    \item \textbf{Manual design burden:} constructing effective features often requires domain expertise and significant effort.
+\end{itemize}
+
+Even with sophisticated kernels, performance may plateau because:
+\begin{itemize}
+    \item the representation is not adapted to the data,
+    \item computational cost grows with data size,
+    \item flexibility is limited by the chosen feature family.
+\end{itemize}
+
+This motivates models that \emph{learn representations from data}.
+
+\section{Hand-Designed Features vs Learned Representations}
+
+In classical approaches, one first chooses a feature map $\phi(x)$ and then learns a linear model:
+\[
+f(x)=w^\top \phi(x).
+\]
+
+In neural networks, the feature map itself is parameterized and learned:
+\[
+f(x)=w^\top \phi_\theta(x),
+\]
+where $\phi_\theta$ is a composition of transformations depending on parameters $\theta$.
+
+Thus:
+\begin{itemize}
+    \item classical models: fixed $\phi$, learn $w$,
+    \item neural networks: learn both $\phi_\theta$ and $w$.
+\end{itemize}
+
+This shift transforms learning from selecting coefficients in a fixed space to discovering useful representations automatically.
+
+\section{Hidden Layers as Adaptive Feature Maps}
+
+A neural network with one hidden layer has the form
+\[
+f(x)=\sum_{j=1}^m w_j \sigma(a_j^\top x + b_j),
+\]
+where $\sigma$ is a nonlinear activation function.
+
+This can be interpreted as:
+\begin{itemize}
+    \item computing features $\phi_j(x)=\sigma(a_j^\top x + b_j)$,
+    \item combining them linearly.
+\end{itemize}
+
+Thus hidden units act as learned basis functions. Unlike classical basis expansions, both the shape and location of these features are learned from data.
+
+\subsection{Adaptive Representation}
+
+Each hidden unit detects a pattern in the input space. The network adjusts these detectors during training so that they become useful for the task. This makes neural networks flexible and data-driven.
+
+\section{Depth, Hierarchy, and Composition}
+
+Deeper networks stack multiple layers:
+\[
+x \;\mapsto\; h^{(1)} \;\mapsto\; h^{(2)} \;\mapsto\; \cdots \;\mapsto\; f(x).
+\]
+
+Each layer applies a transformation of the form
+\[
+h^{(\ell)} = \sigma(W^{(\ell)} h^{(\ell-1)} + b^{(\ell)}).
+\]
+
+\subsection{Compositional Functions}
+
+A deep network represents a composition of functions:
+\[
+f = f^{(L)} \circ f^{(L-1)} \circ \cdots \circ f^{(1)}.
+\]
+This compositional structure allows the model to build complex features from simpler ones.
+
+\subsection{Hierarchical Representation}
+
+Lower layers capture simple patterns, while higher layers combine them into more abstract features. This hierarchy is particularly effective in domains such as vision and language.
+
+\begin{example}[Hierarchical Visual Features]
+In image processing:
+\begin{itemize}
+    \item early layers detect edges,
+    \item intermediate layers detect shapes,
+    \item higher layers detect objects.
+\end{itemize}
+\end{example}
+
+Thus depth enables structured representation learning.
+
+\section{Worked Examples}
+
+\subsection{XOR Problem}
+
+Consider the XOR dataset in $\mathbb R^2$:
+\[
+(0,0)\mapsto 0,\quad (1,1)\mapsto 0,\quad (1,0)\mapsto 1,\quad (0,1)\mapsto 1.
+\]
+
+No linear classifier can separate these points. However, a network with a hidden layer can represent XOR by transforming the input into a space where it becomes linearly separable.
+
+This illustrates that shallow linear models fail on simple nonlinear tasks, while even small neural networks can succeed.
+
+\subsection{Piecewise Nonlinear Decision Boundaries}
+
+A network with ReLU activations
+\[
+\sigma(z)=\max(0,z)
+\]
+produces piecewise linear functions. Even a single hidden layer can create decision boundaries composed of multiple linear segments, allowing flexible classification.
+
+\subsection{Feature Composition}
+
+Consider a function that depends on interactions between variables, such as
+\[
+f(x_1,x_2,x_3)=g(x_1+x_2, x_2+x_3).
+\]
+A deep network can represent this efficiently by computing intermediate sums and reusing them, illustrating the benefit of compositional structure.
+
+\section{The Historical Transition to Modern Deep Learning}
+
+Early neural network research recognized the importance of nonlinear representations, but training deep models was difficult due to optimization challenges and limited data.
+
+The modern resurgence of deep learning was driven by:
+\begin{itemize}
+    \item improved optimization methods (e.g., SGD variants),
+    \item larger datasets,
+    \item increased computational power,
+    \item architectural innovations.
+\end{itemize}
+
+These developments made it practical to learn deep hierarchical representations at scale.
+
+\section{A Unifying Perspective}
+
+Neural networks extend classical models by replacing fixed feature maps with learned ones. The central shift is:
+\[
+\text{learning a predictor} \quad \longrightarrow \quad \text{learning a representation and a predictor}.
+\]
+
+Hidden layers act as adaptive feature maps, and depth enables hierarchical composition. This allows neural networks to overcome the representational limits of linear models and fixed feature expansions.
+
+\section{Summary}
+
+In this chapter we motivated neural networks from the limitations of classical models. We showed that linear models depend critically on feature design and may fail on simple nonlinear tasks such as XOR. Neural networks address this by learning feature maps through hidden layers.
+
+We interpreted hidden units as adaptive basis functions and explained how depth enables compositional and hierarchical representations. These ideas form the conceptual foundation for the deep learning models studied in the following chapters.

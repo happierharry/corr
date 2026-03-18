@@ -1,0 +1,614 @@
+\chapter{Hypothesis Spaces and Inductive Bias}
+
+\section{Introduction}
+
+In the previous two chapters, we developed two foundational perspectives on machine learning. Chapter 1 presented learning as the construction of a mapping from inputs to outputs, while Chapter 2 placed this process in a probabilistic setting by modeling data as samples from an unknown distribution and evaluating predictors through expected loss. These viewpoints clarify what learning is and how prediction error should be measured. But they also expose a deep problem: the data alone do not determine what should be learned.
+
+If we are given only a finite sample, then many different functions may agree perfectly with the observations. Some of these functions may capture meaningful regularities in the underlying phenomenon, while others may behave arbitrarily away from the training points. Thus learning cannot consist merely in fitting the sample. It must also involve deciding which of the many data-consistent explanations should be preferred. This is the central role of \emph{hypothesis spaces} and \emph{inductive bias}.
+
+A hypothesis space is the set of candidate functions the learner is allowed to consider. Inductive bias is the collection of assumptions, preferences, structural constraints, or algorithmic tendencies that guide the learner toward some hypotheses rather than others. These ideas are not secondary implementation details. They are what make learning possible in the first place. Without restricting the search space or preferring some solutions over others, generalization from finite data would be hopeless.
+
+This chapter develops these ideas in detail. We begin by explaining why unrestricted learning is impossible in any meaningful sense. We then introduce hypothesis classes formally and discuss how they define the search space of learning. From there, we distinguish between explicit and implicit forms of inductive bias, and study common structural assumptions such as sparsity, smoothness, locality, and compositionality. We then examine how bias appears in both classical models and modern deep architectures. Throughout, we emphasize that model design is not simply about expressive power; it is about choosing a structured class of functions whose biases align with the problem at hand.
+
+Conceptually, this chapter is one of the anchors of the book. It explains why architecture matters, why optimization affects generalization, why representation choices are consequential, and why the same dataset can yield very different models depending on the assumptions imposed. Later chapters on regularization, kernels, convolutional networks, transformers, and generalization theory all build on the ideas introduced here.
+
+\section{Why Unrestricted Learning Is Impossible}
+
+A natural first thought is that a sufficiently powerful learner should simply search over all possible functions and choose the one that best matches the data. This idea is appealing because it seems to avoid restrictive modeling assumptions. But in fact it fails for a fundamental reason: with finite data, unrestricted function learning is underdetermined.
+
+\subsection{Finite Data Impose Finite Constraints}
+
+Suppose we observe a supervised dataset
+\[
+(x_1,y_1), \dots, (x_n,y_n),
+\]
+where the inputs $x_i$ are distinct. If the space of candidate functions is very large, then there will generally be many functions $f$ such that
+\[
+f(x_i)=y_i \qquad \text{for all } i=1,\dots,n.
+\]
+These functions agree on the observed data but may differ dramatically on unseen inputs. Nothing in the sample itself determines which continuation beyond the sample is preferable.
+
+This is not a rare pathology. It is the generic situation whenever the function class has more flexibility than the finite sample can constrain.
+
+\begin{proposition}[Finite Samples Do Not Determine a Unique Rule]
+Let $\{(x_i,y_i)\}_{i=1}^n$ be a finite dataset with distinct inputs. If the hypothesis space contains all functions from $\mathcal{X}$ to $\mathcal{Y}$, then in general there exist many distinct functions $f:\mathcal{X}\to\mathcal{Y}$ such that
+\[
+f(x_i)=y_i \qquad \text{for all } i=1,\dots,n.
+\]
+Therefore the training data alone do not determine a unique predictor.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+A finite sample constrains the value of a candidate function only on finitely many points. On all other inputs, the function may be specified arbitrarily. Thus one may construct many different functions that agree on the sample and differ elsewhere.
+\end{proof}
+
+This proposition seems elementary, but it captures one of the most important facts in machine learning: data fitting alone is insufficient for learning.
+
+\subsection{Interpolation Is Easy; Generalization Is Hard}
+
+If unrestricted memorization were the goal, learning would often be trivial. A sufficiently rich system can simply store the training examples or interpolate them exactly. The real challenge is to produce a predictor that works on new data.
+
+This distinction is essential. A learner is useful not because it reproduces the past, but because it extracts patterns that persist beyond the observed sample. Generalization therefore requires assumptions about the structure of the target relationship. Without such assumptions, extrapolation is not justified.
+
+\subsection{No-Free-Lunch Intuition}
+
+The impossibility of unrestricted learning is closely related to the so-called \emph{no-free-lunch} intuition. Informally, if one averages over all possible target functions with equal weight, then no learner can outperform any other in a universal sense. Success on some problems must come at the price of being better suited to some functions than others.
+
+\begin{statement}[No-Free-Lunch Intuition]
+A learning algorithm can generalize only by favoring some target functions over others. If all possible target functions are treated as equally plausible, then no algorithm has a universal advantage across all problems.
+\end{statement}
+
+This is not yet a formal theorem in the strongest sense, but it expresses an indispensable principle: every successful learner embodies preferences. These preferences are exactly what we call inductive bias.
+
+\subsection{Why This Is Good News Rather Than Bad News}
+
+At first, the impossibility of unbiased unrestricted learning may seem discouraging. In fact, it is the reason model design matters. It means that the choice of hypothesis class, architecture, prior, regularizer, and training procedure is not arbitrary. These choices encode beliefs about what kinds of functions are likely to arise in the world. When those beliefs align with the task, learning becomes possible.
+
+\section{Function Classes and Search Spaces}
+
+Since unrestricted learning is impossible, we must restrict the set of candidate predictors. This leads to the notion of a hypothesis class.
+
+\begin{definition}[Hypothesis Class]
+A hypothesis class is a set
+\[
+\mathcal{H} \subseteq \{f : \mathcal{X}\to\mathcal{Y}\}
+\]
+of candidate functions from the input space $\mathcal{X}$ to the output space $\mathcal{Y}$.
+\end{definition}
+
+The learner chooses a predictor from $\mathcal{H}$ rather than from the space of all conceivable functions.
+
+\subsection{Hypothesis Classes as Search Spaces}
+
+One can think of the hypothesis class as the \emph{search space} of learning. It determines what kinds of solutions are even expressible. If a function is not in $\mathcal{H}$, then no amount of data or optimization can recover it exactly. Conversely, if $\mathcal{H}$ is extremely large, then the learning problem may become statistically or computationally difficult.
+
+Thus the choice of $\mathcal{H}$ is a balance:
+\begin{itemize}
+    \item too small, and the class may miss important structure;
+    \item too large, and the class may fit noise or require too much data to identify a good solution.
+\end{itemize}
+
+This is one of the most fundamental modeling tradeoffs in all of machine learning.
+
+\subsection{Examples of Hypothesis Classes}
+
+Different models correspond to different hypothesis classes.
+
+\paragraph{Linear models.}
+A linear hypothesis class on $\mathbb{R}^d$ is
+\[
+\mathcal{H}_{\mathrm{lin}} = \{x \mapsto w^\top x + b : w\in\mathbb{R}^d,\; b\in\mathbb{R}\}.
+\]
+This class assumes that prediction is a linear function of the chosen features.
+
+\paragraph{Polynomial models.}
+A polynomial hypothesis class of degree at most $m$ consists of functions with bounded polynomial complexity. This class is more expressive than linear functions but still highly structured.
+
+\paragraph{Kernel methods.}
+Kernel methods define hypothesis spaces of functions that are linear in a possibly high-dimensional feature space. Although these spaces may be infinite-dimensional, they are structured by the chosen kernel.
+
+\paragraph{Neural networks.}
+A neural network architecture specifies a family of functions formed by compositions of affine maps and nonlinearities. The architecture determines what kinds of interactions and representations are easy or efficient to express.
+
+\subsection{Expressivity Is Not the Whole Story}
+
+It is tempting to compare models only by expressive power. Certainly, a richer class can represent more complicated functions. But expressivity alone does not determine learning quality. Two hypothesis classes may both contain an excellent predictor, yet one may be easier to learn from finite data because its internal structure better matches the problem.
+
+This means that the question
+\[
+\text{``Can the class represent the target?''}
+\]
+is important, but incomplete. We must also ask:
+\[
+\text{``Does the class encourage the right kinds of functions?''}
+\]
+
+\subsection{Approximation and Search}
+
+The hypothesis class also interacts with optimization. A model family may in principle contain excellent solutions, but the parameterization or training procedure may make them difficult to find. Thus the search space has both:
+\begin{itemize}
+    \item a \emph{representational} aspect, which determines what functions exist in the class;
+    \item an \emph{algorithmic} aspect, which determines what functions are accessible under training.
+\end{itemize}
+
+This distinction leads naturally to the notion of implicit bias, which we will study shortly.
+
+\section{Inductive Bias: What It Is and Why It Is Necessary}
+
+If learning from finite data requires preferences among hypotheses, then those preferences must be encoded somewhere. This is the role of inductive bias.
+
+\begin{definition}[Inductive Bias]
+An inductive bias is any assumption, preference, restriction, prior, or algorithmic tendency that causes a learning system to favor some hypotheses over others beyond what is logically implied by the training data alone.
+\end{definition}
+
+Inductive bias tells the learner how to extend observed regularities to unseen cases.
+
+\subsection{Bias Is Not a Defect}
+
+In everyday language, the word ``bias'' often has a negative connotation. In machine learning, inductive bias is not inherently bad. It is necessary. Without it, a learner could not generalize. The important question is not whether a model has bias, but whether its bias is appropriate for the task.
+
+For example:
+\begin{itemize}
+    \item a linear model assumes approximate linearity in the features;
+    \item a smoothness prior assumes nearby inputs should have similar outputs;
+    \item a CNN assumes local patterns and translation structure matter;
+    \item a transformer assumes that token-token interactions can be mediated by attention.
+\end{itemize}
+
+These are all forms of bias. They can help enormously when aligned with the problem and hinder badly when misaligned.
+
+\subsection{Inductive Bias Statement}
+
+A useful abstract statement is the following.
+
+\begin{statement}[Inductive Bias Principle]
+Generalization from finite data is possible only if the learner prefers some hypotheses over others in ways not fully determined by the sample.
+\end{statement}
+
+This principle is not merely philosophical. It explains why all successful machine learning systems involve constraints, regularities, architectures, or priors.
+
+\subsection{Bias and Generalization}
+
+Suppose two functions fit the training data equally well. Which one should the learner choose? The answer depends on bias. A learner may prefer the smoother function, the lower-norm function, the simpler function, the more compressible function, or the one compatible with architectural symmetries. In each case, the learning system is selecting according to some notion of plausibility beyond the sample.
+
+Later chapters will formalize some of these ideas through regularization, norm control, margins, and complexity measures. At this stage, the key message is conceptual: inductive bias is the bridge from finite evidence to future prediction.
+
+\section{Explicit and Implicit Inductive Bias}
+
+Inductive bias can arise in more than one way. A useful distinction is between \emph{explicit} and \emph{implicit} bias.
+
+\subsection{Explicit Bias}
+
+Explicit inductive bias is built directly into the formulation of the model or objective. It is visible and intentional.
+
+Examples include:
+\begin{itemize}
+    \item restricting to a linear hypothesis class,
+    \item adding an $\ell_2$ penalty to prefer small weights,
+    \item imposing sparsity through an $\ell_1$ penalty,
+    \item choosing a convolutional architecture to encode locality and translation structure,
+    \item choosing a kernel that encodes smoothness or similarity.
+\end{itemize}
+
+These biases are easy to identify because they appear directly in the model class or training objective.
+
+\subsection{Implicit Bias}
+
+Implicit inductive bias arises from the training algorithm, parameterization, initialization, data ordering, optimization dynamics, or numerical properties of the learning system, even when the objective does not explicitly state a preference.
+
+Examples include:
+\begin{itemize}
+    \item gradient descent tending toward certain low-complexity solutions,
+    \item optimization favoring large-margin separators in separable settings,
+    \item initialization affecting which minima are found,
+    \item parameterization changing which representations are easy to reach.
+\end{itemize}
+
+Implicit bias is especially important in deep learning. Neural networks are often highly overparameterized, so many solutions fit the data well. Yet the training algorithm does not select arbitrarily among them. It often prefers structured solutions, and these preferences can strongly affect generalization.
+
+\subsection{Why the Distinction Matters}
+
+Two models with identical representational power may behave differently because their optimization procedures impose different implicit biases. Conversely, two models with different explicit structure may end up behaving similarly if trained in a way that induces comparable preferences.
+
+Thus one cannot understand generalization by examining the hypothesis class alone. One must also ask how the training dynamics navigate that class.
+
+\section{Structural Assumptions in Learning}
+
+Many inductive biases can be understood as assumptions about structure in the target function or the data. Some of the most important are sparsity, smoothness, locality, and compositionality.
+
+\subsection{Sparsity}
+
+A sparse model assumes that only a small number of features, parameters, or interactions are truly important. Sparsity is attractive when the data are high-dimensional but the underlying mechanism is simple.
+
+Examples:
+\begin{itemize}
+    \item linear regression with only a few relevant variables,
+    \item compressed sensing,
+    \item feature selection through $\ell_1$ regularization.
+\end{itemize}
+
+A sparse inductive bias prefers explanations that use few active components. This can improve interpretability and statistical efficiency when the assumption is reasonable.
+
+\subsection{Smoothness}
+
+A smoothness bias assumes that small changes in the input should produce small changes in the output. This is common in regression, physical modeling, and many kernel methods.
+
+Smoothness can be encoded through:
+\begin{itemize}
+    \item regularization on derivatives,
+    \item kernels favoring smooth functions,
+    \item neighborhood-based assumptions,
+    \item architectural continuity.
+\end{itemize}
+
+Smoothness is often one of the most natural assumptions for interpolation between nearby observations.
+
+\subsection{Locality}
+
+A locality bias assumes that prediction depends primarily on nearby or local patterns rather than arbitrary global interactions. This is particularly important in images, audio, and spatial data.
+
+Convolutional neural networks encode locality by restricting filters to small receptive fields and reusing them across positions. This bias dramatically reduces the number of parameters and emphasizes local pattern detection.
+
+\subsection{Compositionality}
+
+A compositionality bias assumes that complex patterns can be built from simpler reusable parts. This is one of the guiding ideas behind deep learning. Rather than representing a task as a monolithic flat computation, deep networks construct layered features in which higher-level representations are composed from lower-level ones.
+
+Examples include:
+\begin{itemize}
+    \item edges $\to$ textures $\to$ objects in vision,
+    \item phonemes $\to$ words $\to$ phrases in language,
+    \item subroutines composed into larger algorithms.
+\end{itemize}
+
+Compositional structure is one of the main reasons depth can be so powerful.
+
+\subsection{Invariance and Equivariance}
+
+Another important family of structural assumptions concerns symmetries.
+
+\begin{definition}[Invariance]
+A predictor $f$ is invariant to a transformation $T$ if
+\[
+f(Tx)=f(x)
+\]
+for all relevant inputs $x$.
+\end{definition}
+
+\begin{definition}[Equivariance]
+A representation map $\phi$ is equivariant to a transformation $T$ if there exists a corresponding transformation $S$ such that
+\[
+\phi(Tx)=S\phi(x).
+\]
+\end{definition}
+
+Invariance says that a transformation should not change the prediction. Equivariance says that transformations of the input should induce structured transformations in the representation.
+
+Examples:
+\begin{itemize}
+    \item image classification often seeks approximate translation invariance,
+    \item convolution layers are translation equivariant,
+    \item permutation-invariant models are useful for sets,
+    \item graph neural networks encode symmetries of graph structure.
+\end{itemize}
+
+These symmetry assumptions can dramatically reduce sample complexity by building known structure directly into the model.
+
+\section{Simplicity Assumptions and Occam-Type Preferences}
+
+A pervasive idea in learning is that among hypotheses that explain the data equally well, simpler ones should often be preferred. This is related to Occam's razor: do not multiply complexity beyond necessity.
+
+\subsection{What Simplicity Can Mean}
+
+In machine learning, simplicity may refer to many different things:
+\begin{itemize}
+    \item fewer parameters,
+    \item smaller norm,
+    \item smoother behavior,
+    \item sparser representation,
+    \item shallower or more regular structure,
+    \item shorter description length,
+    \item lower effective complexity.
+\end{itemize}
+
+There is no single universal definition of simplicity, and different mathematical frameworks formalize it differently. But the underlying intuition is that regular explanations are more plausible than arbitrary ones.
+
+\subsection{Why Simplicity Helps}
+
+A function that fits the training data in an extremely irregular way may be exploiting accidental features of the sample. A simpler function is often more likely to reflect a genuine pattern that extends beyond the observations. This is why regularization methods, norm penalties, smooth kernels, and architectural constraints often improve generalization.
+
+However, simplicity must be understood relative to the problem. A linear rule may be simple in one representation and highly complicated in another. Thus simplicity is not absolute; it is tied to the language in which the model is expressed.
+
+\subsection{Simplicity and Representation}
+
+This point is worth emphasizing. The same target relation may be simple under one representation and complex under another. For instance, a problem that is not linearly separable in raw input coordinates may become linearly separable after a suitable feature transformation. In this sense, representation learning may be viewed as the search for coordinates in which the task becomes simple.
+
+\section{Bias in Classical Models}
+
+Inductive bias is not unique to deep learning. Classical machine learning models are full of strong structural assumptions.
+
+\subsection{Linear Models}
+
+Linear regression and logistic regression assume that the output depends linearly on the chosen features. This is a major bias. It is powerful when the representation is appropriate and limiting when important nonlinear interactions are present.
+
+The linear bias has several appealing consequences:
+\begin{itemize}
+    \item interpretability,
+    \item computational tractability,
+    \item relatively low variance,
+    \item clear geometric structure.
+\end{itemize}
+
+But it also means that success depends heavily on feature design.
+
+\subsection{Kernel Methods}
+
+Kernel methods encode bias through a notion of similarity. A kernel chooses what it means for two inputs to be close or related. For example, the radial basis function kernel favors smooth functions with nearby inputs behaving similarly.
+
+Thus the inductive bias is not only in the predictor but in the geometry imposed on the input space. Kernel methods can be highly expressive, but they remain structured by the chosen similarity measure.
+
+\subsection{Nearest-Neighbor and Local Methods}
+
+Methods based on neighborhoods encode a local smoothness bias: nearby points should have similar outputs. This can be effective in low-dimensional settings or when distance is meaningful, but it may fail in high-dimensional spaces where local neighborhoods become unstable.
+
+\subsection{Regularized Linear Models}
+
+Ridge regression and lasso illustrate how explicit regularization creates explicit bias:
+\begin{itemize}
+    \item ridge prefers small coefficients,
+    \item lasso prefers sparse coefficients.
+\end{itemize}
+These are not merely numerical stabilizers. They express beliefs about what kinds of predictors are plausible.
+
+\section{Bias in Deep Models}
+
+Deep learning often appears flexible and universal, but it is deeply structured. Each architecture embodies a family of inductive biases.
+
+\subsection{Multilayer Perceptrons}
+
+A multilayer perceptron assumes that the target function can be represented as a composition of affine transformations and nonlinearities. This encodes a compositional bias, but without specialized spatial or sequential structure.
+
+As a result, multilayer perceptrons are general-purpose but may be statistically inefficient when the task has stronger known structure that could be exploited.
+
+\subsection{Convolutional Neural Networks}
+
+Convolutional neural networks embody several powerful biases:
+\begin{itemize}
+    \item \textbf{locality:} filters operate on local neighborhoods;
+    \item \textbf{weight sharing:} the same filter is reused across positions;
+    \item \textbf{translation equivariance:} shifting the input shifts intermediate feature maps in a structured way;
+    \item \textbf{hierarchical composition:} local features combine into larger patterns.
+\end{itemize}
+
+These biases make CNNs highly effective for images and other spatially structured data. They dramatically reduce the number of parameters compared with fully connected models and align well with the structure of visual signals.
+
+\begin{example}[CNN Bias]
+In image classification, an edge detector that is useful in the top-left corner is usually also useful in the bottom-right corner. Convolution exploits this by reusing the same filter everywhere. This is an explicit translation-related inductive bias.
+\end{example}
+
+\subsection{Transformers}
+
+Transformers encode a different family of assumptions:
+\begin{itemize}
+    \item inputs are sequences or sets of tokens,
+    \item relationships among positions are important,
+    \item relevant dependencies may be long-range,
+    \item attention can adaptively select which tokens matter.
+\end{itemize}
+
+Unlike CNNs, transformers do not impose strict locality by default. Instead, they assume that flexible pairwise interactions mediated by attention are useful. Positional encodings add information about order, reflecting the belief that sequence position matters even though attention itself is permutation-equivariant before positional information is added.
+
+\begin{example}[Transformer Bias]
+In language modeling, the next token may depend strongly on a word that appeared many positions earlier. A transformer is biased toward capturing such long-range contextual interactions through attention.
+\end{example}
+
+\subsection{Recurrent Models}
+
+Recurrent neural networks encode a sequential-state bias: information is processed progressively through a hidden state. This bias is natural for time series and streaming problems, though it can struggle with long-range dependencies compared with attention-based models.
+
+\subsection{Architecture as Inductive Bias}
+
+These examples illustrate a central thesis:
+
+\begin{statement}[Architecture as Inductive Bias]
+The architecture of a model determines not only what functions can be represented, but also what regularities are easy to express, parameter-efficient to learn, and statistically favored.
+\end{statement}
+
+Architecture is therefore not just an implementation choice. It is a mathematical and statistical assumption about structure in the task.
+
+\section{Priors, Regularization, and Preferences Over Functions}
+
+Inductive bias can also be expressed through priors and regularization.
+
+\subsection{Priors}
+
+In Bayesian language, a prior distribution over parameters or functions expresses beliefs about plausible solutions before seeing the data. A prior may prefer:
+\begin{itemize}
+    \item small weights,
+    \item smooth functions,
+    \item sparse representations,
+    \item hierarchical structure.
+\end{itemize}
+
+From this viewpoint, learning updates prior beliefs using the observed data.
+
+\subsection{Regularization as Encoded Preference}
+
+In optimization-based learning, regularization terms play a similar role. A training objective of the form
+\[
+\widehat{R}_n(f) + \lambda \,\Omega(f)
+\]
+combines data fit with a penalty that discourages certain forms of complexity. The term $\Omega(f)$ encodes preference. For example:
+\begin{itemize}
+    \item $\|w\|_2^2$ prefers smaller weights,
+    \item $\|w\|_1$ prefers sparsity,
+    \item derivative penalties prefer smoothness.
+\end{itemize}
+
+Although Bayesian priors and regularization are not identical in every setting, they are closely related conceptually: both express which hypotheses are regarded as more plausible.
+
+\subsection{Bias Through the Learning Pipeline}
+
+More broadly, inductive bias enters through many parts of the pipeline:
+\begin{itemize}
+    \item the representation of inputs,
+    \item the hypothesis class,
+    \item the architecture,
+    \item the prior or regularizer,
+    \item the optimization algorithm,
+    \item the augmentation strategy,
+    \item the evaluation metric.
+\end{itemize}
+
+Thus bias is not located in just one component. It is distributed throughout the learning system.
+
+\section{Comparing Hypothesis Classes for a Task}
+
+A natural question is how to compare two hypothesis classes for a given task. There is no single universal criterion, but several considerations are important.
+
+\subsection{Alignment with Problem Structure}
+
+The first question is whether the class reflects known regularities of the task. For image data, convolution may be more appropriate than a generic fully connected network because the task has spatial structure. For sequence data with long-range dependencies, attention-based models may be better aligned than purely local models.
+
+\subsection{Expressivity vs Efficiency}
+
+A more expressive class can represent more functions, but that does not mean it is always preferable. Sometimes a less expressive but better structured class learns faster, generalizes better, and requires fewer examples.
+
+\subsection{Statistical and Computational Tradeoffs}
+
+A model class should be judged not only by what it can represent but also by:
+\begin{itemize}
+    \item how much data it needs,
+    \item how stable it is,
+    \item how hard it is to optimize,
+    \item whether its inductive biases match the domain.
+\end{itemize}
+
+The ``best'' hypothesis class is therefore task-dependent.
+
+\begin{example}[Two Classes for Image Classification]
+Consider the task of image classification. Compare:
+\begin{enumerate}
+    \item a fully connected multilayer perceptron on raw pixels;
+    \item a convolutional neural network.
+\end{enumerate}
+Both may be expressive enough in principle, but the CNN builds in locality and translation structure. This typically makes it more parameter-efficient and better aligned with the geometry of images.
+\end{example}
+
+\begin{example}[Two Classes for Tabular Regression]
+For structured tabular data with a moderate number of interpretable features, compare:
+\begin{enumerate}
+    \item linear regression,
+    \item a deep multilayer perceptron.
+\end{enumerate}
+If the relationship is approximately linear and interpretability matters, the linear class may be preferable. If there are strong nonlinear interactions and enough data, the neural network may be better.
+\end{example}
+
+\section{A Unifying Perspective}
+
+This chapter developed one of the deepest ideas in machine learning: learning is possible only because the learner is not neutral. It searches within a restricted space of hypotheses and brings preferences about which solutions are more plausible. These preferences may appear as model class restrictions, priors, regularizers, optimization dynamics, symmetries, architectural patterns, or representation choices.
+
+A useful way to summarize the situation is:
+\[
+\text{generalization} \quad \text{requires} \quad \text{inductive bias}.
+\]
+Without bias, finite data do not determine how to behave on unseen inputs. With well-chosen bias, a learner can extrapolate in meaningful ways.
+
+The central conceptual shift is this: machine learning is not merely about fitting functions. It is about choosing structured families of functions whose biases align with the structure of the world. Linear models, kernels, CNNs, recurrent networks, transformers, and regularized estimators all embody this principle in different forms.
+
+Thus the question is never simply
+\[
+\text{``How powerful is the model?''}
+\]
+but rather
+\[
+\text{``What kinds of functions does the model prefer, and are those preferences appropriate for the task?''}
+\]
+
+\section{Summary}
+
+In this chapter we introduced hypothesis spaces as the search spaces of learning and inductive bias as the assumptions or preferences that guide prediction beyond the training data. We explained why unrestricted learning is impossible from finite data and developed the no-free-lunch intuition that successful learning requires favoring some hypotheses over others.
+
+We distinguished between explicit and implicit inductive bias, and studied common structural assumptions such as sparsity, smoothness, locality, compositionality, invariance, and equivariance. We then examined how these ideas appear in both classical and deep models. Linear models favor linear dependence in features; kernels encode similarity and smoothness; CNNs encode locality and translation structure; transformers encode flexible sequence interactions and context dependence.
+
+The main lesson is that architecture, regularization, prior assumptions, and optimization are all forms of inductive bias. They are not incidental details. They are the mechanisms by which learning becomes possible.
+
+The next chapter will build on this discussion by examining learning as optimization, where the hypothesis class must be searched by concrete computational procedures and where the objective function formalizes the tradeoff between data fit and structure.
+
+\section{Exercises}
+
+\begin{enumerate}
+    \item Give the definition of a hypothesis class. Why is a hypothesis class necessary in machine learning?
+
+    \item Explain in your own words why unrestricted learning from finite data is impossible.
+
+    \item State the no-free-lunch intuition informally. What does it say about generalization?
+
+    \item Consider the class of all functions from a finite set $\mathcal{X}$ to $\mathcal{Y}=\{0,1\}$. Suppose you observe labels on only part of $\mathcal{X}$. Why are there many hypotheses consistent with the observed data?
+
+    \item Compare the following two hypothesis classes for regression on $\mathbb{R}^d$:
+    \begin{enumerate}
+        \item linear functions,
+        \item degree-$m$ polynomial functions.
+    \end{enumerate}
+    Which is more expressive? Which may generalize better with little data? Explain.
+
+    \item What is inductive bias? Why is it not a flaw but a necessity?
+
+    \item Give one example of explicit inductive bias and one example of implicit inductive bias.
+
+    \item Explain the difference between explicit regularization and implicit bias from optimization.
+
+    \item A model fits the training data perfectly. Why might it still generalize poorly?
+
+    \item What is meant by a sparsity assumption? Give a learning problem where sparsity is a reasonable bias.
+
+    \item What is meant by smoothness? Why can smoothness be useful for interpolation?
+
+    \item Define invariance and equivariance. Give one example of each from machine learning.
+
+    \item Why is convolutional structure a sensible inductive bias for images?
+
+    \item Why can a transformer be better suited than a purely local model for language modeling?
+
+    \item In what sense is architecture a form of inductive bias?
+
+    \item Compare the inductive biases of:
+    \begin{enumerate}
+        \item linear regression,
+        \item kernel regression with an RBF kernel,
+        \item a convolutional neural network,
+        \item a transformer.
+    \end{enumerate}
+
+    \item Suppose you are designing a model for the following task: predicting sentiment from short text reviews. Compare two possible hypothesis classes and argue which inductive biases may help.
+
+    \item Suppose a task has strong translation symmetry. Why might a fully connected network be less sample-efficient than a convolutional model?
+
+    \item Explain how priors and regularizers both encode preferences over functions.
+
+    \item Give an example of a task where a linear model is a better choice than a deep neural network, and explain why.
+
+    \item Give an example of a task where compositionality is an important structural assumption.
+
+    \item Why is simplicity not an absolute notion but representation-dependent?
+
+    \item Consider two models that have similar expressive power but are trained with different optimization algorithms. Why might they generalize differently?
+
+    \item For each of the following tasks, identify a plausible useful inductive bias:
+    \begin{enumerate}
+        \item object recognition in photographs,
+        \item predicting housing prices from tabular features,
+        \item forecasting a time series,
+        \item language translation,
+        \item classifying a set of unordered points.
+    \end{enumerate}
+
+    \item Write a short paragraph explaining the slogan:
+    \[
+    \text{generalization requires inductive bias}.
+    \]
+\end{enumerate}
+
+\section*{Historical Note}
+
+The modern language of hypothesis spaces and inductive bias emerged from several traditions: logic and philosophy of induction, statistical learning theory, approximation theory, and pattern recognition. Classical statistics long relied on structural modeling assumptions such as linearity, Gaussian noise, and smoothness. Statistical learning theory clarified that generalization depends on restricting complexity or favoring certain hypotheses. In modern deep learning, these ideas reappear in new forms through architecture, optimization, implicit bias, and large-scale representation learning. Although the models have changed, the central question remains the same: what assumptions allow finite data to support reliable prediction?

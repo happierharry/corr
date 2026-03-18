@@ -1,0 +1,245 @@
+\chapter{Diffusion Models: Mathematical Foundations}
+
+\section{Introduction}
+
+We now formalize diffusion models as probabilistic processes. The key idea is to define a forward Markov chain that gradually corrupts data into noise, and then learn a reverse process that reconstructs data.
+
+This chapter derives the forward and reverse processes, shows how training objectives arise, and connects diffusion to score matching and stochastic differential equations.
+
+\section{Discrete-Time Diffusion Formulation}
+
+We define a forward Markov chain:
+\[
+q(x_{1:T} \mid x_0) = \prod_{t=1}^T q(x_t \mid x_{t-1}),
+\]
+where each transition adds Gaussian noise.
+
+\subsection{Forward Transitions}
+
+\begin{definition}[Forward Process]
+\[
+q(x_t \mid x_{t-1})
+=
+\mathcal{N}\left(x_t \;\middle|\; \sqrt{1-\beta_t}\,x_{t-1}, \;\beta_t I \right),
+\]
+where $\beta_t \in (0,1)$ is a noise schedule.
+\end{definition}
+
+This defines a Markov chain that gradually destroys structure.
+
+\section{Forward Process: Closed-Form Marginals}
+
+A key property is that $x_t$ can be sampled directly from $x_0$.
+
+\begin{proposition}[Closed-Form Marginal]
+\[
+q(x_t \mid x_0)
+=
+\mathcal{N}\left(x_t \;\middle|\; \sqrt{\bar{\alpha}_t}\,x_0, \;(1-\bar{\alpha}_t)I \right),
+\]
+where:
+\[
+\alpha_t = 1 - \beta_t,
+\quad
+\bar{\alpha}_t = \prod_{s=1}^t \alpha_s.
+\]
+\end{proposition}
+
+\subsection{Derivation Sketch}
+
+Repeated substitution gives:
+\[
+x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon,
+\quad \epsilon \sim \mathcal{N}(0,I).
+\]
+
+Thus:
+\begin{itemize}
+    \item mean shrinks toward zero,
+    \item variance increases over time.
+\end{itemize}
+
+\section{Reverse Process Parameterization}
+
+We define a learned reverse chain:
+\[
+p_\theta(x_{0:T}) = p(x_T)\prod_{t=1}^T p_\theta(x_{t-1} \mid x_t),
+\]
+with:
+\[
+p(x_T) = \mathcal{N}(0,I).
+\]
+
+\subsection{Gaussian Parameterization}
+
+\[
+p_\theta(x_{t-1} \mid x_t)
+=
+\mathcal{N}(x_{t-1} \mid \mu_\theta(x_t,t), \Sigma_\theta(x_t,t)).
+\]
+
+The model learns to predict the mean (and optionally variance) of the reverse transition.
+
+\section{Training Objectives: ELBO View}
+
+Training maximizes log-likelihood:
+\[
+\log p_\theta(x_0).
+\]
+
+Using variational inference, we obtain an ELBO:
+\[
+\mathbb{E}_q \left[
+\log p_\theta(x_{0:T}) - \log q(x_{1:T} \mid x_0)
+\right].
+\]
+
+This decomposes into terms comparing forward and reverse transitions.
+
+\subsection{Simplified Objective}
+
+After algebraic simplification, training reduces to:
+\[
+\mathbb{E}_{t,x_0,\epsilon}
+\left[
+\| \epsilon - \epsilon_\theta(x_t,t) \|^2
+\right],
+\]
+where:
+\[
+x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon.
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item model predicts noise $\epsilon$,
+    \item equivalent to learning reverse dynamics,
+    \item yields stable supervised learning objective.
+\end{itemize}
+
+\section{Training Objective Transformations}
+
+Different parameterizations are equivalent:
+
+\begin{itemize}
+    \item predicting noise $\epsilon$,
+    \item predicting $x_0$,
+    \item predicting score $\nabla_x \log p(x_t)$.
+\end{itemize}
+
+These correspond to different but related loss formulations.
+
+\section{Score Matching and SDE View}
+
+Diffusion models are closely related to score matching.
+
+\subsection{Score Function}
+
+\[
+s(x) = \nabla_x \log p(x).
+\]
+
+The model learns an approximation:
+\[
+s_\theta(x_t, t).
+\]
+
+\subsection{Connection}
+
+Noise prediction is proportional to the score:
+\[
+\epsilon_\theta(x_t,t) \;\Longleftrightarrow\; -\nabla_x \log q(x_t).
+\]
+
+Thus diffusion training implicitly performs score matching.
+
+\subsection{Continuous-Time View}
+
+As $T \to \infty$, the process becomes a stochastic differential equation (SDE):
+\[
+dx = f(x,t)\,dt + g(t)\,dW_t.
+\]
+
+The reverse process is another SDE that removes noise.
+
+\section{Langevin Dynamics Connection}
+
+Sampling can be interpreted as approximate Langevin dynamics:
+\[
+x_{t-1} = x_t + \eta \nabla_x \log p(x_t) + \sqrt{2\eta}\,\xi.
+\]
+
+\begin{itemize}
+    \item gradient term moves toward high-density regions,
+    \item noise maintains stochasticity,
+    \item diffusion combines both ideas.
+\end{itemize}
+
+\section{DDPM, DDIM, and Sampler Intuition}
+
+\subsection{DDPM (Stochastic Sampling)}
+
+\begin{itemize}
+    \item follows learned reverse transitions,
+    \item includes stochastic noise at each step,
+    \item produces diverse samples.
+\end{itemize}
+
+\subsection{DDIM (Deterministic Sampling)}
+
+\begin{itemize}
+    \item removes stochasticity,
+    \item produces deterministic trajectories,
+    \item faster sampling with fewer steps.
+\end{itemize}
+
+\subsection{Tradeoffs}
+
+\begin{itemize}
+    \item stochastic samplers: more diversity,
+    \item deterministic samplers: faster and more controllable.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Diffusion models define:
+\begin{itemize}
+    \item a forward stochastic process that simplifies data,
+    \item a reverse learned process that reconstructs it.
+\end{itemize}
+
+Training can be viewed as:
+\begin{itemize}
+    \item variational inference (ELBO),
+    \item score matching,
+    \item learning dynamics of a stochastic system.
+\end{itemize}
+
+Thus diffusion sits at the intersection of probability, optimization, and dynamical systems.
+
+\section{Summary}
+
+In this chapter we formalized diffusion models. We defined the forward Markov process, derived closed-form marginals, and introduced the reverse generative model. We showed how training arises from a variational objective and reduces to noise prediction.
+
+We also connected diffusion to score matching, stochastic differential equations, and Langevin dynamics, and discussed different sampling schemes such as DDPM and DDIM.
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item Derive the mean and variance of $q(x_t \mid x_0)$.
+
+    \item Show how $x_t$ can be written as a linear combination of $x_0$ and Gaussian noise.
+
+    \item Derive the simplified noise-prediction objective from the ELBO.
+
+    \item Explain why predicting $\epsilon$ is equivalent to learning the score function.
+
+    \item Compare stochastic (DDPM) and deterministic (DDIM) sampling.
+
+    \item Show how variance accumulates over diffusion steps.
+
+    \item Derive the relationship between score matching and denoising.
+
+    \item Explain the role of the noise schedule $\{\beta_t\}$.
+\end{enumerate}

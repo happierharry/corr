@@ -1,0 +1,272 @@
+\chapter{Attention and Transformers}
+
+\section{Attention Mechanisms}
+
+Sequence models based on recurrence compress past information into a fixed-size hidden state. This creates a bottleneck when modeling long sequences.
+
+\medskip
+
+\noindent
+\textbf{Core idea of attention.}  
+Instead of relying on a single hidden state, attention allows the model to directly access all relevant parts of the input.
+
+\medskip
+
+\noindent
+\textbf{Query-key-value framework.}  
+Attention is defined in terms of three components:
+\begin{itemize}
+    \item Query ($q$)
+    \item Keys ($k_i$)
+    \item Values ($v_i$)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Attention weights.}
+\[
+\alpha_i = \frac{\exp(\langle q, k_i \rangle)}{\sum_j \exp(\langle q, k_j \rangle)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Output.}
+\[
+\mathrm{Attn}(q, K, V) = \sum_i \alpha_i v_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The query determines which inputs are relevant
+    \item Weights $\alpha_i$ represent importance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention replaces fixed memory with a flexible, data-dependent mechanism.
+
+\section{Self-Attention}
+
+Self-attention applies the attention mechanism within a single sequence.
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+Each element of the sequence attends to all other elements.
+
+\medskip
+
+\noindent
+\textbf{Construction.}  
+Given inputs $x_1, \dots, x_T$, define:
+\[
+q_i = W_Q x_i, \quad k_i = W_K x_i, \quad v_i = W_V x_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Attention output.}
+\[
+y_i = \sum_{j=1}^T \alpha_{ij} v_j,
+\quad
+\alpha_{ij} = \frac{\exp(\langle q_i, k_j \rangle)}{\sum_{l} \exp(\langle q_i, k_l \rangle)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item Captures dependencies between all positions
+    \item Fully parallelizable across sequence elements
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Positional encoding.}  
+Since self-attention is permutation-invariant, positional information must be added explicitly.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Self-attention provides a flexible mechanism for modeling relationships within sequences.
+
+\section{Transformer Architecture}
+
+The transformer architecture is built entirely from attention mechanisms.
+
+\medskip
+
+\noindent
+\textbf{Basic components.}
+\begin{itemize}
+    \item Multi-head self-attention
+    \item Feedforward layers
+    \item Residual connections
+    \item Normalization layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Multi-head attention.}  
+Multiple attention mechanisms are applied in parallel:
+\[
+\mathrm{MultiHead}(Q,K,V) = \mathrm{Concat}(H_1, \dots, H_h) W_O,
+\]
+where each head $H_i$ computes attention with different projections.
+
+\medskip
+
+\noindent
+\textbf{Feedforward network.}
+\[
+\mathrm{FFN}(x) = \sigma(W_1 x + b_1) W_2 + b_2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Residual structure.}
+\[
+x \leftarrow x + \mathrm{Layer}(x),
+\]
+followed by normalization.
+
+\medskip
+
+\noindent
+\textbf{Architecture layout.}
+\begin{itemize}
+    \item Stack of identical blocks
+    \item Each block: attention + feedforward
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Encoder--decoder structure.}
+\begin{itemize}
+    \item Encoder processes input sequence
+    \item Decoder generates output sequence with attention to encoder outputs
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers replace recurrence with attention, enabling efficient modeling of long-range dependencies.
+
+\section{Scaling and Applications}
+
+Transformers have demonstrated remarkable scalability and performance across domains.
+
+\medskip
+
+\noindent
+\textbf{Scaling behavior.}
+\begin{itemize}
+    \item Performance improves with model size, data, and computation
+    \item Enables training of very large models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Parallelization.}
+\begin{itemize}
+    \item Unlike RNNs, transformers process sequences in parallel
+    \item Efficient use of modern hardware
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Applications.}
+\begin{itemize}
+    \item Natural language processing (translation, text generation)
+    \item Vision (vision transformers)
+    \item Speech processing
+    \item Multimodal learning
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Pretraining and fine-tuning.}
+\begin{itemize}
+    \item Large models trained on massive datasets
+    \item Adapted to specific tasks through fine-tuning
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item Quadratic complexity in sequence length
+    \item High computational cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Scaling and data availability are key drivers of modern deep learning performance.
+
+\section{A Unifying Perspective}
+
+Attention and transformers unify several ideas:
+
+\begin{itemize}
+    \item \textbf{Representation:} dynamic weighting of inputs
+    \item \textbf{Computation:} parallel processing of sequences
+    \item \textbf{Architecture:} modular and scalable design
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Query-key-value attention
+    \item Multi-head mechanisms
+    \item Residual and normalization layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Attention provides a flexible mechanism for modeling interactions, replacing fixed sequential structures.
+
+\section{Outlook}
+
+This chapter introduced attention mechanisms and transformers:
+\begin{itemize}
+    \item attention as a flexible memory mechanism,
+    \item self-attention for sequence modeling,
+    \item transformer architectures,
+    \item scaling behavior and applications.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study generative models, beginning with probabilistic modeling and latent variable approaches.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Modern architectures succeed by enabling flexible, scalable interactions between data elements.

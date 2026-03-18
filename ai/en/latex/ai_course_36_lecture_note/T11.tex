@@ -1,0 +1,275 @@
+\section{Tutorial 11: CNN and Sequence Modeling Intuition}
+
+\subsection{Objectives}
+
+This tutorial develops intuition for structure-aware neural networks:
+
+\begin{itemize}
+    \item Understand how CNNs process spatial data
+    \item Understand how RNNs process sequential data
+    \item Compare architectural inductive biases
+    \item Relate structure to efficiency and performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+How architectural design reflects the structure of data.
+
+\subsection{Exercise 1: Fully Connected vs Convolution}
+
+\textbf{Question.}  
+Why is a fully connected network inefficient for image data?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item ignores spatial locality
+    \item requires many parameters
+    \item does not exploit repeating patterns
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Ignoring structure leads to inefficiency and poor generalization.
+
+\subsection{Exercise 2: Local Receptive Fields}
+
+Consider a convolutional filter applied to an image.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What does a $3 \times 3$ filter capture?
+    \item How does stacking layers increase receptive field?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item $3 \times 3$ filter captures local patterns (edges, textures)
+    \item stacking layers aggregates larger spatial context
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs build global understanding from local computations.
+
+\subsection{Exercise 3: Weight Sharing}
+
+\textbf{Question.}  
+Why is weight sharing important in CNNs?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item same feature can appear anywhere
+    \item reduces number of parameters
+    \item improves generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Weight sharing encodes translation symmetry.
+
+\subsection{Exercise 4: Hierarchical Features}
+
+\textbf{Task.}  
+Describe what different CNN layers learn.
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item early layers: edges and textures
+    \item middle layers: shapes and parts
+    \item deep layers: objects and semantics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Deep networks build hierarchical representations.
+
+\subsection{Exercise 5: Sequential Data Processing}
+
+Consider a sequence $(x_1, x_2, \dots, x_T)$.
+
+\medskip
+
+\noindent
+\textbf{Task.}  
+Explain how an RNN processes this sequence.
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item processes inputs one step at a time
+    \item maintains hidden state $h_t$
+    \item summarizes past information in $h_t$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+RNNs compress past information into a state.
+
+\subsection{Exercise 6: Information Bottleneck in RNNs}
+
+\textbf{Question.}  
+Why is it difficult for RNNs to capture long-term dependencies?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item all past information must pass through $h_t$
+    \item gradients degrade over long sequences
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The hidden state acts as a bottleneck.
+
+\subsection{Exercise 7: CNN vs RNN Comparison}
+
+Fill in the table:
+
+\[
+\begin{array}{c|c|c}
+\text{Aspect} & \text{CNN} & \text{RNN} \\
+\hline
+\text{Structure} & & \\
+\text{Computation} & & \\
+\text{Parallelism} & & \\
+\text{Inductive bias} & & \\
+\end{array}
+\]
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item CNN:
+    \begin{itemize}
+        \item spatial structure
+        \item parallel computation
+        \item locality + translation invariance
+    \end{itemize}
+
+    \item RNN:
+    \begin{itemize}
+        \item temporal structure
+        \item sequential computation
+        \item memory over time
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Different architectures encode different structural assumptions.
+
+\subsection{Exercise 8: When to Use Which?}
+
+\textbf{Task.}  
+Match model types to data:
+
+\begin{itemize}
+    \item images
+    \item language
+    \item time series
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item images $\rightarrow$ CNN
+    \item language $\rightarrow$ RNN / Transformer
+    \item time series $\rightarrow$ RNN / hybrid models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Model choice should reflect data structure.
+
+\subsection{Exercise 9 (Discussion): Limitations}
+
+\textbf{Question.}  
+What are the limitations of CNNs and RNNs?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item CNN:
+    \begin{itemize}
+        \item limited long-range interaction
+    \end{itemize}
+
+    \item RNN:
+    \begin{itemize}
+        \item sequential bottleneck
+        \item difficult to parallelize
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Limitations motivate new architectures.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item CNNs exploit spatial locality and symmetry
+    \item RNNs model temporal dependencies via hidden states
+    \item Both rely on structural inductive bias
+    \item Limitations lead to attention-based models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We next study attention mechanisms, which overcome limitations of both CNNs and RNNs by modeling global interactions directly.

@@ -1,0 +1,273 @@
+\chapter{From Classical Models to Neural Networks}
+
+\section{Limitations of Shallow Models}
+
+In previous chapters, we studied a range of classical models, including linear regression, logistic regression, and kernel methods. These models are powerful and well-understood, yet they exhibit fundamental limitations.
+
+\medskip
+
+\noindent
+\textbf{Shallow models.}  
+We refer to models of the form
+\[
+f(x) = \langle w, \phi(x) \rangle,
+\]
+where $\phi$ is either fixed or involves only a single layer of transformation.
+
+\medskip
+
+\noindent
+\textbf{Key limitation: representation.}  
+The success of these models depends critically on the choice of features $\phi(x)$.
+
+\medskip
+
+\noindent
+\textbf{Challenges.}
+\begin{itemize}
+    \item Designing effective features requires domain expertise
+    \item Fixed feature maps may fail to capture complex structure
+    \item High-dimensional feature spaces can be computationally expensive
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Expressivity limitations.}
+\begin{itemize}
+    \item Linear models produce linear decision boundaries
+    \item Kernel methods provide flexibility, but scale poorly with data size
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Curse of dimensionality.}  
+Explicit feature expansions often require exponentially many features to capture complex patterns.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Classical models separate representation and learning: features are designed first, and then a model is fitted. This separation can limit their effectiveness.
+
+\section{Compositional Structure of Functions}
+
+Many real-world functions exhibit a \emph{compositional structure}.
+
+\medskip
+
+\noindent
+\textbf{Definition (informal).}  
+A function is compositional if it can be written as a composition of simpler functions:
+\[
+f(x) = f_L(f_{L-1}(\cdots f_1(x))).
+\]
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Images: edges $\rightarrow$ shapes $\rightarrow$ objects
+    \item Language: characters $\rightarrow$ words $\rightarrow$ sentences
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hierarchical structure.}  
+Each layer captures patterns at a different level of abstraction.
+
+\medskip
+
+\noindent
+\textbf{Efficiency of composition.}  
+Compositional representations can describe complex functions using relatively few parameters.
+
+\medskip
+
+\noindent
+\textbf{Contrast with shallow models.}  
+A shallow model may require exponentially many units to represent a function that can be expressed compactly using multiple layers.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth allows reuse of intermediate computations, leading to more efficient representations.
+
+\section{Motivation for Deep Learning}
+
+Deep learning arises from the idea of learning both representations and functions through composition.
+
+\medskip
+
+\noindent
+\textbf{Neural networks.}  
+A neural network with $L$ layers has the form
+\[
+f(x) = f_L(f_{L-1}(\cdots f_1(x))),
+\]
+where each layer is typically an affine transformation followed by a nonlinearity.
+
+\medskip
+
+\noindent
+\textbf{Key advantages.}
+
+\begin{itemize}
+    \item \textbf{Automatic feature learning:}  
+    Features are learned from data rather than manually designed.
+
+    \item \textbf{Expressivity:}  
+    Deep networks can represent highly complex functions.
+
+    \item \textbf{Scalability:}  
+    Efficient training with large datasets and modern hardware.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Universal approximation (informal).}  
+Neural networks can approximate a wide class of functions, given sufficient capacity.
+
+\medskip
+
+\noindent
+\textbf{Practical success.}  
+Deep learning has achieved strong performance in:
+\begin{itemize}
+    \item computer vision,
+    \item natural language processing,
+    \item speech recognition,
+    \item generative modeling.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key shift.}  
+Instead of designing features, we design \emph{architectures} that can learn features automatically.
+
+\section{Transition to Learned Representations}
+
+The transition from classical models to deep learning involves a change in how representations are constructed.
+
+\medskip
+
+\noindent
+\textbf{Classical approach.}
+\begin{itemize}
+    \item Feature map $\phi$ is fixed
+    \item Model learns parameters $w$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Deep learning approach.}
+\begin{itemize}
+    \item Feature map $\phi_\theta$ is parameterized
+    \item Representation and model are learned jointly
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Model structure.}
+\[
+f(x) = g_\theta(\phi_\theta(x)),
+\]
+where both $\phi_\theta$ and $g_\theta$ depend on parameters.
+
+\medskip
+
+\noindent
+\textbf{Hierarchical representations.}
+\begin{itemize}
+    \item Early layers: local or low-level features
+    \item Intermediate layers: patterns and structures
+    \item Final layers: task-specific representations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric viewpoint.}  
+Deep networks transform data through successive nonlinear mappings, reshaping its geometry to make learning easier.
+
+\medskip
+
+\noindent
+\textbf{Optimization perspective.}  
+Learning involves optimizing a highly nonconvex objective over all layers simultaneously.
+
+\medskip
+
+\noindent
+\textbf{Regularization through structure.}  
+Architectural choices impose inductive biases that guide learning:
+\begin{itemize}
+    \item convolutional layers encode locality,
+    \item attention mechanisms encode relationships,
+    \item residual connections stabilize training.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Deep learning unifies representation, modeling, and optimization into a single framework.
+
+\section{A Unifying Perspective}
+
+We can now reinterpret the evolution of models:
+
+\begin{itemize}
+    \item Classical models: fixed representations + simple models
+    \item Kernel methods: implicit high-dimensional representations
+    \item Deep learning: learned hierarchical representations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+The power of modern machine learning lies in learning representations that make the problem easier.
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+\begin{itemize}
+    \item Representation (features)
+    \item Function (mapping)
+    \item Optimization (learning)
+\end{itemize}
+
+\medskip
+
+\noindent
+Deep learning integrates these components in a unified and scalable way.
+
+\section{Outlook}
+
+This chapter motivated the transition from classical models to neural networks:
+\begin{itemize}
+    \item limitations of shallow models,
+    \item importance of compositional structure,
+    \item advantages of deep architectures,
+    \item shift toward learned representations.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we begin our study of deep learning by examining neural networks as compositional function approximators.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Complex problems often require structured representations, and depth provides a natural way to build them.

@@ -1,0 +1,271 @@
+\chapter{Backpropagation and Automatic Differentiation}
+
+\section{Computational Graphs}
+
+Neural networks are compositions of functions. To compute gradients efficiently, it is useful to represent these computations explicitly.
+
+\medskip
+
+\noindent
+\textbf{Computational graph.}  
+A computational graph is a directed acyclic graph (DAG) that represents how a function is built from simpler operations.
+
+\medskip
+
+\noindent
+\textbf{Nodes and edges.}
+\begin{itemize}
+    \item Nodes represent variables or intermediate values
+    \item Edges represent functional dependencies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example.}  
+Consider a simple function
+\[
+z = (x_1 + x_2) \cdot x_3.
+\]
+
+\medskip
+
+\noindent
+We can represent this as a graph:
+\begin{itemize}
+    \item $a = x_1 + x_2$
+    \item $z = a \cdot x_3$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Forward pass.}  
+We evaluate the graph from inputs to outputs, computing all intermediate values.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+A neural network is a large computational graph, where each layer corresponds to a set of operations.
+
+\section{Chain Rule and Reverse-Mode Differentiation}
+
+To train a neural network, we must compute gradients of a loss function with respect to all parameters.
+
+\medskip
+
+\noindent
+\textbf{Chain rule.}  
+For a composition of functions,
+\[
+f(x) = f_L(f_{L-1}(\cdots f_1(x))),
+\]
+the derivative is obtained by repeated application of the chain rule.
+
+\medskip
+
+\noindent
+\textbf{Local derivatives.}  
+Each node in the computational graph contributes a local derivative.
+
+\medskip
+
+\noindent
+\textbf{Reverse-mode differentiation.}  
+Gradients are computed by propagating sensitivities from the output backward through the graph.
+
+\medskip
+
+\noindent
+\textbf{Basic principle.}  
+If a variable $z$ depends on $x$ through intermediate variables, then
+\[
+\frac{\partial L}{\partial x} = \sum_{\text{paths}} \frac{\partial L}{\partial z} \cdot \frac{\partial z}{\partial x}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Backpropagation.}  
+This process of propagating gradients backward through the network is known as backpropagation.
+
+\medskip
+
+\noindent
+\textbf{Example.}  
+For $z = a \cdot x_3$ and $a = x_1 + x_2$,
+\[
+\frac{\partial z}{\partial x_1} = \frac{\partial z}{\partial a} \cdot \frac{\partial a}{\partial x_1}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Backpropagation systematically applies the chain rule across the computational graph.
+
+\section{Efficient Gradient Computation}
+
+A naive computation of gradients would be computationally expensive, especially for deep networks.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Reuse intermediate computations from the forward pass.
+
+\medskip
+
+\noindent
+\textbf{Forward pass.}
+\begin{itemize}
+    \item Compute all intermediate values
+    \item Store them for reuse
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Backward pass.}
+\begin{itemize}
+    \item Compute gradients in reverse order
+    \item Reuse stored intermediate values
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Complexity.}  
+Backpropagation computes gradients with a cost comparable to evaluating the function itself.
+
+\medskip
+
+\noindent
+\textbf{Gradient flow.}  
+Gradients propagate layer by layer:
+\[
+\frac{\partial L}{\partial W_\ell}
+\quad \text{depends on} \quad
+\frac{\partial L}{\partial z^{(\ell)}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Shared subcomputations.}  
+The computational graph ensures that repeated operations are computed only once.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Backpropagation is efficient because it avoids redundant computation and exploits the structure of the network.
+
+\section{Implementation Perspectives}
+
+Modern machine learning frameworks implement backpropagation using automatic differentiation.
+
+\medskip
+
+\noindent
+\textbf{Automatic differentiation (AD).}
+\begin{itemize}
+    \item Computes exact derivatives (up to numerical precision)
+    \item Works for arbitrary compositions of differentiable operations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Two modes of AD.}
+\begin{itemize}
+    \item Forward mode
+    \item Reverse mode (used in deep learning)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Why reverse mode?}  
+Efficient when the function has many parameters and a single output (typical in learning problems).
+
+\medskip
+
+\noindent
+\textbf{Practical workflow.}
+\begin{enumerate}
+    \item Define the model as a computational graph
+    \item Perform a forward pass to compute loss
+    \item Use automatic differentiation to compute gradients
+    \item Update parameters using an optimization algorithm
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Memory considerations.}
+\begin{itemize}
+    \item Intermediate values must be stored for backward pass
+    \item Large models require careful memory management
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Numerical issues.}
+\begin{itemize}
+    \item Vanishing and exploding gradients
+    \item Finite precision arithmetic
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Automatic differentiation abstracts the complexity of gradient computation, allowing practitioners to focus on model design.
+
+\section{A Unifying Perspective}
+
+Backpropagation connects several core ideas:
+
+\begin{itemize}
+    \item \textbf{Mathematics:} chain rule for derivatives
+    \item \textbf{Computation:} efficient reuse of intermediate values
+    \item \textbf{Algorithms:} scalable training of deep networks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+\begin{itemize}
+    \item Computational graph
+    \item Forward pass
+    \item Backward pass
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core insight.}  
+Backpropagation enables efficient training of complex models by systematically applying the chain rule.
+
+\section{Outlook}
+
+This chapter introduced backpropagation and automatic differentiation:
+\begin{itemize}
+    \item computational graphs as a representation of models,
+    \item reverse-mode differentiation for efficient gradients,
+    \item practical implementation via automatic differentiation.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study the challenges of training deep networks, including initialization and gradient-related issues.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Efficient computation of gradients is the key that makes modern deep learning possible.

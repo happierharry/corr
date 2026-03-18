@@ -1,0 +1,197 @@
+\chapter{Foundations of Generative Modeling}
+
+\section{Introduction}
+
+Generative modeling aims to learn the underlying distribution of data rather than just predicting labels. Instead of learning a mapping $x \mapsto y$, a generative model seeks to capture the structure of $p(x)$ or related distributions, enabling tasks such as sampling, density estimation, and representation learning.
+
+This chapter establishes the conceptual and mathematical foundations for generative modeling. We introduce different types of generative models, clarify their objectives, and distinguish between likelihood-based, sampling-based, and representation-based perspectives.
+
+\section{What It Means to Model a Data Distribution}
+
+Let $X \sim p_{\text{data}}$ denote the unknown data-generating distribution. A generative model aims to learn a distribution $p_\theta(x)$ such that:
+\[
+p_\theta(x) \approx p_{\text{data}}(x).
+\]
+
+This can be approached in several ways:
+\begin{itemize}
+    \item estimating densities,
+    \item generating samples,
+    \item learning latent representations.
+\end{itemize}
+
+Each perspective emphasizes a different aspect of modeling.
+
+\section{Joint, Marginal, and Conditional Generative Models}
+
+Generative modeling can involve different distributions:
+
+\subsection{Marginal Models}
+
+Model $p(x)$ directly:
+\[
+p_\theta(x) \approx p_{\text{data}}(x).
+\]
+
+\subsection{Joint Models}
+
+Model the joint distribution:
+\[
+p_\theta(x,y),
+\]
+which allows derivation of conditionals via:
+\[
+p(y|x) = \frac{p(x,y)}{p(x)}.
+\]
+
+\subsection{Conditional Models}
+
+Model $p_\theta(x|y)$ or $p_\theta(y|x)$ directly. Examples include conditional generative models and sequence-to-sequence systems.
+
+Each choice reflects a different modeling objective and application.
+
+\section{Sampling, Likelihood, and Inference}
+
+Generative models are often evaluated along three axes:
+
+\subsection{Sampling}
+
+Can we generate realistic samples $x \sim p_\theta(x)$?
+
+\subsection{Likelihood}
+
+Can we evaluate or approximate $p_\theta(x)$?
+
+\subsection{Inference}
+
+Can we infer latent structure, such as hidden variables $z$?
+
+Different models prioritize different aspects:
+\begin{itemize}
+    \item likelihood-based models focus on density estimation,
+    \item implicit models focus on sampling,
+    \item latent-variable models emphasize representation.
+\end{itemize}
+
+\section{Latent-Variable Models}
+
+Many generative models introduce latent variables $z$:
+\[
+p_\theta(x) = \int p_\theta(x|z)p(z)\,dz.
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item $z$ captures underlying structure,
+    \item $p(z)$ is a prior,
+    \item $p_\theta(x|z)$ generates data from latent codes.
+\end{itemize}
+
+Latent-variable models enable:
+\begin{itemize}
+    \item structured generation,
+    \item disentangled representations,
+    \item dimensionality reduction.
+\end{itemize}
+
+\section{Explicit Density, Implicit Density, and Energy Views}
+
+Generative models differ in how they represent distributions.
+
+\subsection{Explicit Density Models}
+
+These define $p_\theta(x)$ directly and allow likelihood evaluation.
+
+Examples:
+\begin{itemize}
+    \item autoregressive models,
+    \item normalizing flows,
+    \item variational autoencoders (approximate likelihood).
+\end{itemize}
+
+\subsection{Implicit Models}
+
+These define a sampling procedure:
+\[
+x = G_\theta(z), \quad z \sim p(z),
+\]
+without explicit density evaluation.
+
+Example:
+\begin{itemize}
+    \item generative adversarial networks (GANs).
+\end{itemize}
+
+\subsection{Energy-Based Models}
+
+These define:
+\[
+p_\theta(x) \propto e^{-E_\theta(x)},
+\]
+where $E_\theta(x)$ is an energy function.
+
+They avoid explicit normalization but require specialized inference methods.
+
+\section{Evaluation of Generative Models}
+
+Evaluating generative models is challenging because there is no single metric.
+
+\subsection{Likelihood-Based Evaluation}
+
+\begin{itemize}
+    \item log-likelihood,
+    \item bits-per-dimension.
+\end{itemize}
+
+These measure how well the model fits the data distribution.
+
+\subsection{Sample Quality}
+
+\begin{itemize}
+    \item visual inspection,
+    \item metrics such as FID (in practice).
+\end{itemize}
+
+These measure realism of generated samples.
+
+\subsection{Tradeoffs}
+
+High likelihood does not always imply high-quality samples, and vice versa. This reflects differences between modeling density and capturing perceptual structure.
+
+\section{Discriminative vs Generative Objectives}
+
+Discriminative models learn:
+\[
+p(y|x),
+\]
+while generative models learn:
+\[
+p(x) \quad \text{or} \quad p(x,y).
+\]
+
+\subsection{Comparison}
+
+\begin{itemize}
+    \item discriminative models focus on prediction accuracy,
+    \item generative models aim to capture data structure,
+    \item generative models can simulate data and support unsupervised learning.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Generative modeling can be understood as learning a probability distribution over data. Different approaches emphasize:
+\begin{itemize}
+    \item likelihood (explicit density models),
+    \item sampling (implicit models),
+    \item structure (latent-variable models),
+    \item energy (unnormalized models).
+\end{itemize}
+
+These perspectives are complementary and lead to different algorithmic approaches.
+
+\section{Summary}
+
+In this chapter we introduced the foundations of generative modeling. We defined the goal of modeling a data distribution and distinguished between marginal, joint, and conditional models. We discussed sampling, likelihood, and inference as key evaluation axes, and introduced latent-variable models.
+
+We also classified generative models into explicit density, implicit, and energy-based approaches, and discussed challenges in evaluation. This framework sets the stage for specific generative models in the following chapters.

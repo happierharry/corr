@@ -1,0 +1,242 @@
+\section{Tutorial 1: Foundations}
+
+\subsection{Objectives}
+
+This tutorial reinforces the key ideas from Lectures 1 and 2:
+\begin{itemize}
+    \item Learning as function approximation
+    \item Probabilistic formulation of learning
+    \item Empirical risk minimization (ERM)
+    \item Bias--variance tradeoff (intuition)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Develop intuition through concrete examples and simple derivations.
+
+\subsection{Exercise 1: Empirical Risk vs True Risk}
+
+Let $(x,y) \sim P$, and let $f$ be a fixed model.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Define the true risk $R(f)$.
+    \item Define the empirical risk $\hat{R}_n(f)$.
+    \item Explain why $\hat{R}_n(f)$ is a good approximation of $R(f)$.
+    \item Give an example where $\hat{R}_n(f)$ is misleading.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item 
+    \[
+    R(f) = \mathbb{E}_{(x,y)\sim P}[\ell(f(x),y)].
+    \]
+
+    \item 
+    \[
+    \hat{R}_n(f) = \frac{1}{n} \sum_{i=1}^n \ell(f(x_i), y_i).
+    \]
+
+    \item By the law of large numbers:
+    \[
+    \hat{R}_n(f) \to R(f) \quad \text{as } n \to \infty.
+    \]
+
+    \item If $f$ overfits the training data (e.g., memorizes noise), then:
+    \[
+    \hat{R}_n(f) \ll R(f).
+    \]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Empirical risk approximates true risk, but only when the model generalizes.
+
+\subsection{Exercise 2: Bias--Variance Intuition}
+
+Consider fitting a model to noisy data:
+\[
+y = f(x) + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe what happens when the model is too simple.
+    \item Describe what happens when the model is too complex.
+    \item Explain the bias--variance tradeoff qualitatively.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item \textbf{Too simple (high bias):}
+    \begin{itemize}
+        \item Model cannot capture true structure
+        \item Systematic error remains
+    \end{itemize}
+
+    \item \textbf{Too complex (high variance):}
+    \begin{itemize}
+        \item Model fits noise
+        \item Predictions vary significantly with data
+    \end{itemize}
+
+    \item \textbf{Tradeoff:}
+    \begin{itemize}
+        \item Increasing complexity reduces bias
+        \item Increasing complexity increases variance
+    \end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Good models balance approximation accuracy and stability.
+
+\subsection{Exercise 3: Loss Functions and Probabilistic Interpretation}
+
+Suppose we assume:
+\[
+y = f_\theta(x) + \varepsilon, \quad \varepsilon \sim \mathcal{N}(0, \sigma^2).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Write down the likelihood $p(y \mid x, \theta)$.
+    \item Show that maximizing likelihood is equivalent to minimizing squared loss.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item 
+    \[
+    p(y \mid x, \theta)
+    =
+    \frac{1}{\sqrt{2\pi \sigma^2}}
+    \exp\left(-\frac{(y - f_\theta(x))^2}{2\sigma^2}\right).
+    \]
+
+    \item Taking negative log-likelihood:
+    \[
+    -\log p(y \mid x, \theta)
+    =
+    \frac{(y - f_\theta(x))^2}{2\sigma^2} + C.
+    \]
+
+    Minimizing this is equivalent to minimizing:
+    \[
+    (y - f_\theta(x))^2.
+    \]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Loss functions encode assumptions about the data-generating process.
+
+\subsection{Exercise 4: Simple Optimization Problem}
+
+Consider linear regression:
+\[
+L(w) = \sum_{i=1}^n (w^\top x_i - y_i)^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute the gradient $\nabla_w L(w)$.
+    \item Write the gradient descent update rule.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item 
+    \[
+    \nabla_w L(w) = 2 \sum_{i=1}^n (w^\top x_i - y_i) x_i.
+    \]
+
+    In matrix form:
+    \[
+    \nabla_w L(w) = 2 X^\top (Xw - y).
+    \]
+
+    \item Gradient descent update:
+    \[
+    w_{t+1} = w_t - \eta \nabla_w L(w_t).
+    \]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Learning reduces to solving an optimization problem.
+
+\subsection{Exercise 5 (Discussion): What Enables Generalization?}
+
+\textbf{Question.}  
+If many functions fit the data perfectly, why do some generalize better than others?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+\begin{itemize}
+    \item Hypothesis space restrictions
+    \item Inductive bias
+    \item Simplicity of solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Generalization depends on assumptions beyond data.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item ERM approximates true risk but may fail under overfitting
+    \item Bias--variance tradeoff governs model complexity
+    \item Loss functions arise from probabilistic assumptions
+    \item Learning involves optimization over parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now examine how hypothesis spaces and inductive bias formalize these ideas.

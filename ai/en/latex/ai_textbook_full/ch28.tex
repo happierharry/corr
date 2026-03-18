@@ -1,0 +1,324 @@
+\chapter{Generative Adversarial Networks}
+
+\section{Introduction}
+
+Generative Adversarial Networks (GANs) take a fundamentally different approach to generative modeling. Instead of explicitly modeling a likelihood, GANs learn to generate data by playing a game between two networks: a generator and a discriminator.
+
+This chapter develops GANs from a game-theoretic perspective. We derive the minimax objective, analyze the role of the discriminator, and interpret GANs as implicitly minimizing a divergence between distributions. We also discuss training instabilities and common remedies.
+
+\section{Adversarial Learning Setup}
+
+GANs consist of two components:
+
+\begin{itemize}
+    \item \textbf{Generator} $G_\theta(z)$: maps noise $z \sim p(z)$ to data space,
+    \item \textbf{Discriminator} $D_\phi(x)$: outputs a score indicating whether $x$ is real or generated.
+\end{itemize}
+
+The goal is:
+\begin{itemize}
+    \item $G_\theta$: produce realistic samples,
+    \item $D_\phi$: distinguish real data from generated samples.
+\end{itemize}
+
+Thus training becomes a two-player game.
+
+\section{Minimax Formulation}
+
+The standard GAN objective is:
+\[
+\min_\theta \max_\phi \;
+\mathbb{E}_{x \sim p_{\text{data}}}[\log D_\phi(x)]
++
+\mathbb{E}_{z \sim p(z)}[\log(1 - D_\phi(G_\theta(z)))].
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item the discriminator maximizes classification accuracy,
+    \item the generator minimizes the discriminator's ability to distinguish samples.
+\end{itemize}
+
+This is a minimax optimization problem.
+
+\section{What the Discriminator Learns}
+
+For a fixed generator, the discriminator solves:
+\[
+\max_D \;
+\mathbb{E}_{x \sim p_{\text{data}}}[\log D(x)]
++
+\mathbb{E}_{x \sim p_G}[\log(1 - D(x))].
+\]
+
+\begin{proposition}[Optimal Discriminator]
+The optimal discriminator is:
+\[
+D^*(x)
+=
+\frac{p_{\text{data}}(x)}{p_{\text{data}}(x) + p_G(x)}.
+\]
+\end{proposition}
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item $D^*(x)$ estimates the probability that $x$ is real,
+    \item it compares densities of real and generated data.
+\end{itemize}
+
+Thus the discriminator implicitly learns a density ratio.
+
+\section{Divergence Minimization View}
+
+Substituting $D^*$ into the objective yields:
+\[
+\min_G \; 2 \cdot \mathrm{JS}(p_{\text{data}} \,\|\, p_G) - \log 4,
+\]
+where $\mathrm{JS}$ is the Jensen--Shannon divergence.
+
+\subsection{Interpretation}
+
+GAN training can be viewed as minimizing a divergence between:
+\begin{itemize}
+    \item the true data distribution,
+    \item the generator distribution.
+\end{itemize}
+
+However, this divergence is implicit and not computed directly.
+
+\section{Training Pathologies}
+
+GAN training is notoriously unstable.
+
+\subsection{Non-Convergence}
+
+The minimax game may not converge:
+\begin{itemize}
+    \item oscillations between generator and discriminator,
+    \item failure to reach equilibrium.
+\end{itemize}
+
+\subsection{Mode Collapse}
+
+The generator produces limited diversity:
+\begin{itemize}
+    \item maps many $z$ values to similar outputs,
+    \item ignores parts of the data distribution.
+\end{itemize}
+
+\subsection{Vanishing Gradients}
+
+If the discriminator becomes too strong:
+\[
+D(x) \approx 1,\quad D(G(z)) \approx 0,
+\]
+then gradients for the generator become very small.
+
+\section{Stabilization Tricks}
+
+Several techniques improve GAN training:
+
+\begin{itemize}
+    \item \textbf{Non-saturating loss:} replace $\log(1-D(G(z)))$ with $-\log D(G(z))$,
+    \item \textbf{Gradient penalties:} enforce smoothness of discriminator,
+    \item \textbf{Label smoothing:} reduce overconfidence,
+    \item \textbf{Architecture design:} use convolutional and residual structures,
+    \item \textbf{Normalization:} stabilize training dynamics.
+\end{itemize}
+
+These do not fully solve instability but improve practical performance.
+
+\section{Conditional GANs}
+
+GANs can be extended to conditional settings:
+\[
+G(z, y), \quad D(x, y).
+\]
+
+\subsection{Objective}
+
+\[
+\min_G \max_D \;
+\mathbb{E}_{x,y}[\log D(x,y)]
++
+\mathbb{E}_{z,y}[\log(1 - D(G(z,y), y))].
+\]
+
+\subsection{Applications}
+
+\begin{itemize}
+    \item image-to-image translation,
+    \item class-conditional generation,
+    \item super-resolution.
+\end{itemize}
+
+Conditioning allows controlled generation.
+
+\section{Worked Derivation: Optimal Discriminator}
+
+We maximize:
+\[
+\mathcal{L}(D)
+=
+\int p_{\text{data}}(x)\log D(x)\,dx
++
+\int p_G(x)\log(1-D(x))\,dx.
+\]
+
+For each $x$, maximize:
+\[
+p_{\text{data}}(x)\log D + p_G(x)\log(1-D).
+\]
+
+Setting derivative to zero:
+\[
+\frac{p_{\text{data}}(x)}{D(x)} - \frac{p_G(x)}{1-D(x)} = 0.
+\]
+
+Solving:
+\[
+D^*(x)=\frac{p_{\text{data}}(x)}{p_{\text{data}}(x)+p_G(x)}.
+\]
+
+\section{Wasserstein GAN (WGAN)}
+
+Standard GANs minimize a Jensen--Shannon divergence, which can lead to vanishing gradients when the real and generated distributions have little overlap. Wasserstein GANs address this by replacing the divergence with the \emph{Wasserstein distance} (Earth Mover's distance), which provides more meaningful gradients.
+
+\subsection{Wasserstein Distance (Intuition)}
+
+The Wasserstein-1 distance between distributions $p$ and $q$ measures the minimum cost of transporting mass to transform $p$ into $q$.
+
+\begin{itemize}
+    \item robust even when supports do not overlap,
+    \item provides informative gradients,
+    \item better reflects distributional differences.
+\end{itemize}
+
+\subsection{WGAN Objective}
+
+Using the Kantorovich--Rubinstein duality, the objective becomes:
+\[
+\min_G \max_{D \in \mathcal{D}}
+\;
+\mathbb{E}_{x \sim p_{\text{data}}}[D(x)]
+-
+\mathbb{E}_{z \sim p(z)}[D(G(z))],
+\]
+where $D$ (called a critic) is constrained to be 1-Lipschitz.
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item $D(x)$ assigns higher values to real samples,
+    \item the difference estimates the Wasserstein distance,
+    \item the generator minimizes this distance.
+\end{itemize}
+
+\section{Enforcing the Lipschitz Constraint}
+
+The key requirement in WGAN is that the critic must be 1-Lipschitz.
+
+\subsection{Weight Clipping (Original WGAN)}
+
+The original method enforces this by clipping weights:
+\[
+w \leftarrow \mathrm{clip}(w, -c, c).
+\]
+
+\subsection{Limitations}
+
+\begin{itemize}
+    \item restricts model capacity,
+    \item can lead to poor optimization,
+    \item sensitive to choice of clipping threshold.
+\end{itemize}
+
+\section{WGAN-GP (Gradient Penalty)}
+
+WGAN-GP improves stability by enforcing the Lipschitz constraint through a gradient penalty.
+
+\subsection{Objective}
+
+\[
+\min_G \max_D
+\;
+\mathbb{E}_{x \sim p_{\text{data}}}[D(x)]
+-
+\mathbb{E}_{z \sim p(z)}[D(G(z))]
++
+\lambda \, \mathbb{E}_{\hat{x}}
+\left[
+\left(\|\nabla_{\hat{x}} D(\hat{x})\|_2 - 1\right)^2
+\right],
+\]
+where $\hat{x}$ are points interpolated between real and generated samples.
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item penalizes deviation from unit gradient norm,
+    \item enforces approximate Lipschitz continuity,
+    \item leads to more stable training.
+\end{itemize}
+
+\subsection{Advantages}
+
+\begin{itemize}
+    \item improved convergence,
+    \item reduced mode collapse,
+    \item more reliable gradients.
+\end{itemize}
+
+\section{Comparison with Standard GANs}
+
+\begin{itemize}
+    \item Standard GAN:
+    \begin{itemize}
+        \item minimizes JS divergence,
+        \item prone to vanishing gradients,
+        \item unstable training.
+    \end{itemize}
+    \item WGAN:
+    \begin{itemize}
+        \item minimizes Wasserstein distance,
+        \item stable gradients,
+        \item requires Lipschitz constraint.
+    \end{itemize}
+    \item WGAN-GP:
+    \begin{itemize}
+        \item improved enforcement via gradient penalty,
+        \item more robust in practice.
+    \end{itemize}
+\end{itemize}
+
+\section{Updated Perspective on GANs}
+
+Wasserstein GANs highlight that the choice of divergence is crucial for training dynamics. By using a distance with better geometric properties, WGANs improve stability and interpretability.
+
+This reinforces a broader principle:
+\[
+\text{good optimization} \;\Longleftrightarrow\; \text{well-behaved objective geometry}.
+\]
+
+Thus GAN variants can be understood as modifying the training objective to improve gradient behavior and convergence.
+
+\section{A Unifying Perspective}
+
+GANs replace likelihood-based learning with adversarial learning. The generator and discriminator form a game in which the generator improves by fooling the discriminator, while the discriminator improves by detecting generated samples.
+
+This leads to:
+\begin{itemize}
+    \item powerful sample generation,
+    \item implicit density modeling,
+    \item challenging optimization dynamics.
+\end{itemize}
+
+GANs highlight a key idea: good generative models can be learned without explicitly computing likelihoods.
+
+\section{Summary}
+
+In this chapter we developed generative adversarial networks. We formulated GANs as a minimax game, derived the optimal discriminator, and interpreted training as divergence minimization. We discussed common training pathologies such as instability and mode collapse, along with practical remedies.
+
+We also introduced conditional GANs for controlled generation. GANs provide a powerful alternative to likelihood-based generative modeling.

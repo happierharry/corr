@@ -1,0 +1,295 @@
+\section{Long Short-Term Memory (LNN) Networks}
+\label{sec:lstm}
+
+\subsection{Motivation}
+
+Many machine learning tasks involve \emph{sequences}: sentences, speech signals, time series, DNA strings, and more. In such problems, the meaning of the current input often depends on information that appeared many steps earlier.
+
+For example, in the sentence
+\begin{quote}
+``I grew up in France, so I speak fluent \_\_\_.''
+\end{quote}
+the word ``France'' appears much earlier, but it is still relevant for predicting the missing word ``French.''
+
+A standard recurrent neural network (RNN) processes a sequence one step at a time and stores past information in a hidden state. However, in practice, ordinary RNNs often struggle to preserve important information over long time intervals. Relevant information may gradually fade away or be overwritten by newer inputs.
+
+Long Short-Term Memory (LSTM) networks were introduced to address this problem. Their main idea is simple:
+
+\begin{quote}
+An LSTM is a recurrent network with an explicit memory and learned gates that decide what to remember, what to forget, and what to reveal.
+\end{quote}
+
+\subsection{Why Ordinary RNNs Struggle}
+
+Recall that a standard RNN updates its hidden state by
+\[
+h_t = \phi(W_h h_{t-1} + W_x x_t + b),
+\]
+where:
+\begin{itemize}
+    \item \(x_t\) is the input at time \(t\),
+    \item \(h_{t-1}\) is the previous hidden state,
+    \item \(h_t\) is the new hidden state.
+\end{itemize}
+
+In principle, \(h_t\) should summarize all useful information from the past. In practice, however, repeatedly transforming the hidden state over many time steps can make old information difficult to preserve. During training, gradients may also become extremely small or extremely large, which makes learning long-range dependencies difficult.
+
+Thus, although RNNs are conceptually elegant, they often struggle with tasks that require remembering information over long time spans.
+
+\subsection{Core Idea of the LSTM}
+
+The LSTM introduces a second internal state called the \emph{cell state}, usually denoted by \(c_t\). This cell state acts as a more persistent memory.
+
+A useful intuition is to imagine the cell state as a conveyor belt running through time. At each step, the network can:
+\begin{itemize}
+    \item keep part of the old memory,
+    \item erase part of it,
+    \item write new information into it,
+    \item expose part of it as output.
+\end{itemize}
+
+This is controlled by \emph{gates}, which are learned mechanisms that regulate the flow of information.
+
+\subsection{The Gates: An Intuitive View}
+
+An LSTM has three main gates.
+
+\subsubsection{Forget gate}
+
+The forget gate answers the question:
+\begin{quote}
+What part of the old memory is still useful, and what part should be discarded?
+\end{quote}
+
+For example, if the topic of a sentence changes, some earlier information may no longer matter. The forget gate lets the network erase such irrelevant information.
+
+\subsubsection{Input gate}
+
+The input gate answers the question:
+\begin{quote}
+What new information from the current input should be stored in memory?
+\end{quote}
+
+Not every new observation is important enough to be remembered for a long time. The input gate decides what is worth writing into the memory.
+
+\subsubsection{Output gate}
+
+The output gate answers the question:
+\begin{quote}
+What part of the current memory should be used right now?
+\end{quote}
+
+The memory may contain a lot of information, but not all of it is needed at every time step. The output gate controls which part becomes visible as the hidden state.
+
+\subsection{A Human Analogy}
+
+When reading a story, a person informally performs operations similar to those of an LSTM:
+\begin{itemize}
+    \item ``This detail is important, I should remember it.''
+    \item ``This detail is temporary, I can ignore it later.''
+    \item ``This new sentence changes what I believed before, so I should update my memory.''
+    \item ``This fact is useful right now for understanding the next sentence.''
+\end{itemize}
+
+An LSTM attempts to learn this kind of memory management automatically.
+
+\subsection{Step-by-Step Intuition}
+
+At time \(t\), the LSTM receives:
+\begin{itemize}
+    \item the current input \(x_t\),
+    \item the previous hidden state \(h_{t-1}\),
+    \item the previous cell state \(c_{t-1}\).
+\end{itemize}
+
+It then performs four conceptual operations.
+
+\subsubsection*{Step 1: Decide what to forget}
+
+The network examines the previous hidden state and the current input, then decides which parts of the previous memory \(c_{t-1}\) should be kept and which should be removed.
+
+\subsubsection*{Step 2: Decide what new information to store}
+
+The network creates candidate new information from the current input and context, then decides how much of that candidate information should be written into memory.
+
+\subsubsection*{Step 3: Update the memory}
+
+The new cell state \(c_t\) is formed by combining:
+\begin{itemize}
+    \item the retained part of the old memory,
+    \item the selected part of the new candidate information.
+\end{itemize}
+
+\subsubsection*{Step 4: Decide what to output}
+
+Finally, the network determines what part of the updated memory should be exposed as the hidden state \(h_t\), which is used for prediction and for the next time step.
+
+\subsection{The Standard LSTM Equations}
+
+The LSTM equations are:
+\[
+f_t = \sigma(W_f [h_{t-1},x_t] + b_f),
+\]
+\[
+i_t = \sigma(W_i [h_{t-1},x_t] + b_i),
+\]
+\[
+\tilde{c}_t = \tanh(W_c [h_{t-1},x_t] + b_c),
+\]
+\[
+c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t,
+\]
+\[
+o_t = \sigma(W_o [h_{t-1},x_t] + b_o),
+\]
+\[
+h_t = o_t \odot \tanh(c_t).
+\]
+
+Here:
+\begin{itemize}
+    \item \(f_t\) is the forget gate,
+    \item \(i_t\) is the input gate,
+    \item \(\tilde{c}_t\) is the candidate new memory,
+    \item \(c_t\) is the updated cell state,
+    \item \(o_t\) is the output gate,
+    \item \(h_t\) is the hidden state.
+\end{itemize}
+
+The functions used are:
+\begin{itemize}
+    \item \(\sigma(\cdot)\), the sigmoid function, producing values in \([0,1]\),
+    \item \(\tanh(\cdot)\), producing values in \([-1,1]\),
+    \item \(\odot\), elementwise multiplication.
+\end{itemize}
+
+\subsection{Interpretation of the Equations}
+
+Each equation has a clear meaning.
+
+\subsubsection*{Forget gate}
+\[
+f_t = \sigma(W_f [h_{t-1},x_t] + b_f)
+\]
+This produces numbers between \(0\) and \(1\), telling the network how much of each component of the old memory \(c_{t-1}\) should be retained.
+
+\subsubsection*{Input gate}
+\[
+i_t = \sigma(W_i [h_{t-1},x_t] + b_i)
+\]
+This determines how much new information should be written into memory.
+
+\subsubsection*{Candidate memory}
+\[
+\tilde{c}_t = \tanh(W_c [h_{t-1},x_t] + b_c)
+\]
+This is the new content the network proposes to add to memory.
+
+\subsubsection*{Memory update}
+\[
+c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t
+\]
+This is the most important equation. It says:
+\begin{quote}
+new memory = retained old memory + selected new information.
+\end{quote}
+
+\subsubsection*{Output gate}
+\[
+o_t = \sigma(W_o [h_{t-1},x_t] + b_o)
+\]
+This decides how much of the updated memory should be visible externally.
+
+\subsubsection*{Hidden state}
+\[
+h_t = o_t \odot \tanh(c_t)
+\]
+This is the actual output of the LSTM at time \(t\), used by later layers or future time steps.
+
+\subsection{Why the Cell State Helps}
+
+The key architectural feature is the additive update
+\[
+c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t.
+\]
+
+Because the previous memory \(c_{t-1}\) can pass through largely unchanged when \(f_t\) is near \(1\), information can survive across many time steps more easily than in an ordinary RNN. This creates a more direct path for memory and for gradient flow during training.
+
+Thus, the LSTM is better able to preserve important information over long ranges.
+
+\subsection{A Simple Language Example}
+
+Consider the sentence:
+\begin{quote}
+``I was born in Italy, and now I speak fluent \_\_\_.''
+\end{quote}
+
+When the LSTM reads the word ``Italy,'' it may decide that this information is important and store it in the cell state. As it processes later words such as ``and,'' ``now,'' and ``speak,'' the memory of ``Italy'' can remain available. When predicting the final word, the model can use that stored information to help produce ``Italian.''
+
+On the other hand, in a sentence where an earlier detail becomes irrelevant, the forget gate can suppress it. For example:
+\begin{quote}
+``I drank coffee this morning. The capital of Japan is \_\_\_.''
+\end{quote}
+The information about coffee is unlikely to matter for predicting ``Tokyo,'' so the model can learn to discard it.
+
+\subsection{LSTM vs.\ Ordinary RNN}
+
+The difference may be summarized as follows:
+
+\begin{itemize}
+    \item A standard RNN has one hidden state and updates it repeatedly.
+    \item An LSTM has both a hidden state and a cell state.
+    \item An LSTM uses gates to control information flow explicitly.
+\end{itemize}
+
+Hence, an LSTM is not merely ``a bigger RNN,'' but rather a recurrent architecture with controlled memory management.
+
+\subsection{An Informal Metaphor}
+
+A useful metaphor is to imagine that the network carries a notebook:
+\begin{itemize}
+    \item the forget gate acts like an eraser,
+    \item the input gate decides what new notes to write,
+    \item the output gate decides what notes to read aloud right now.
+\end{itemize}
+
+The notebook itself corresponds to the cell state.
+
+\subsection{Why It Is Called Long Short-Term Memory}
+
+The term \emph{Long Short-Term Memory} reflects the fact that the architecture is designed to combine:
+\begin{itemize}
+    \item \emph{short-term processing}, reacting to the current input,
+    \item \emph{long-term memory}, preserving relevant information across many time steps.
+\end{itemize}
+
+In this sense, the LSTM is a mechanism for deciding when short-term observations should become part of longer-term memory.
+
+\subsection{Historical Importance}
+
+Before transformers became dominant, LSTMs were among the most important sequence models in machine learning. They were widely used in:
+\begin{itemize}
+    \item language modeling,
+    \item machine translation,
+    \item speech recognition,
+    \item handwriting recognition,
+    \item sequence labeling,
+    \item time-series forecasting.
+\end{itemize}
+
+They represented a major improvement over ordinary RNNs in handling long-range dependencies.
+
+\subsection{Summary}
+
+An LSTM is a recurrent neural network with an explicit memory mechanism. Its central innovation is the use of gates that regulate information flow:
+\begin{itemize}
+    \item the forget gate decides what old information to remove,
+    \item the input gate decides what new information to store,
+    \item the output gate decides what memory to use right now.
+\end{itemize}
+
+The cell state acts as a persistent memory, making it easier to preserve useful information across long sequences. This is why LSTMs are much better than ordinary RNNs at learning long-term dependencies.
+
+\begin{quote}
+In one sentence: an LSTM is an RNN that learns what to remember, what to forget, and what to reveal.
+\end{quote}

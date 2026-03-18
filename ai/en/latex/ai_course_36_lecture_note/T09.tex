@@ -1,0 +1,280 @@
+\section{Tutorial 9: Gradient Flow Experiments}
+
+\subsection{Objectives}
+
+This tutorial provides hands-on and conceptual understanding of gradient flow in deep networks:
+
+\begin{itemize}
+    \item Observe vanishing and exploding gradients
+    \item Compare activation functions
+    \item Study the effect of initialization
+    \item Understand the role of normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Turn theoretical insights about gradient flow into observable behavior.
+
+\subsection{Exercise 1: Gradient Norm Across Depth}
+
+Consider a deep neural network with $L$ layers.
+
+\medskip
+
+\noindent
+\textbf{Task.}
+\begin{enumerate}
+    \item For each layer $\ell$, define:
+    \[
+    g_\ell = \left\|\frac{\partial L}{\partial h_\ell}\right\|.
+    \]
+    \item Predict how $g_\ell$ behaves as $\ell$ decreases (toward input).
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item If gradients vanish:
+    \[
+    g_1 \ll g_L
+    \]
+
+    \item If gradients explode:
+    \[
+    g_1 \gg g_L
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradient norms reveal how learning signals propagate.
+
+\subsection{Exercise 2: Activation Function Comparison}
+
+Compare sigmoid and ReLU networks of depth $L$.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Explain why sigmoid leads to vanishing gradients.
+    \item Explain why ReLU improves gradient flow.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Sigmoid:
+    \begin{itemize}
+        \item $\sigma'(z) \leq 0.25$
+        \item repeated multiplication $\Rightarrow$ exponential decay
+    \end{itemize}
+
+    \item ReLU:
+    \begin{itemize}
+        \item derivative is $1$ in active region
+        \item preserves gradient magnitude
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Activation choice directly affects gradient dynamics.
+
+\subsection{Exercise 3: Initialization Effects}
+
+Assume weights are initialized as:
+\[
+W_{ij} \sim \mathcal{N}(0, \sigma^2).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens if $\sigma$ is too small?
+    \item What happens if $\sigma$ is too large?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Small $\sigma$:
+    \begin{itemize}
+        \item activations shrink
+        \item gradients vanish
+    \end{itemize}
+
+    \item Large $\sigma$:
+    \begin{itemize}
+        \item activations grow
+        \item gradients explode
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Initialization controls both forward and backward signal propagation.
+
+\subsection{Exercise 4: Effect of Depth}
+
+Consider increasing depth $L$.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe how gradient stability changes with depth.
+    \item Why are shallow networks easier to train?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Gradient instability increases with depth
+    \item Fewer multiplicative terms in shallow networks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth amplifies both expressivity and instability.
+
+\subsection{Exercise 5: Normalization Effects}
+
+Consider inserting batch normalization after each layer.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item How does normalization affect activations?
+    \item How does it affect gradients?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Activations are rescaled to stable distributions
+    \item Gradients become more stable and less sensitive to scale
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalization stabilizes both forward and backward passes.
+
+\subsection{Exercise 6: Practical Experiment (Conceptual)}
+
+\textbf{Experiment design.}
+
+Train three networks with identical architecture:
+
+\begin{itemize}
+    \item Model A: sigmoid activation
+    \item Model B: ReLU activation
+    \item Model C: ReLU + batch normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Predict training behavior of each model.
+    \item Rank them by training speed and stability.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Expected outcome.}
+
+\begin{itemize}
+    \item Model A:
+    \begin{itemize}
+        \item slow training, vanishing gradients
+    \end{itemize}
+
+    \item Model B:
+    \begin{itemize}
+        \item faster, but may still be unstable
+    \end{itemize}
+
+    \item Model C:
+    \begin{itemize}
+        \item fastest and most stable
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Modern deep learning relies on combining multiple stabilization techniques.
+
+\subsection{Exercise 7 (Discussion): Diagnosing Training Failures}
+
+\textbf{Question.}  
+How can you diagnose gradient-related issues in practice?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item monitor gradient norms per layer
+    \item observe training loss behavior
+    \item check activation distributions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Understanding gradient flow is essential for debugging deep models.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Gradient flow determines whether deep networks can learn
+    \item Activation functions, initialization, and normalization all affect it
+    \item Instability grows with depth
+    \item Practical success depends on controlling these dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next tutorial.}  
+We next study how architectural changes (e.g., residual connections) further improve stability and enable very deep networks.

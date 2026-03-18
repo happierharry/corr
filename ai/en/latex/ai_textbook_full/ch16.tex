@@ -1,0 +1,212 @@
+\chapter{Backpropagation and Automatic Differentiation}
+
+\section{Introduction}
+
+Training neural networks requires computing gradients of a loss with respect to many parameters. Direct symbolic differentiation is impractical, and naive application of the chain rule can be computationally expensive. Backpropagation provides an efficient and systematic way to compute these gradients.
+
+This chapter develops backpropagation as an instance of \emph{reverse-mode automatic differentiation} on computation graphs. We interpret the chain rule as message passing, derive the reverse recursion, and apply it to multilayer perceptrons. We also discuss parameter sharing and memory--computation tradeoffs.
+
+\section{Differentiation on Computation Graphs}
+
+\begin{definition}[Computation Graph]
+A computation graph is a directed acyclic graph in which:
+\begin{itemize}
+    \item nodes represent intermediate variables,
+    \item edges represent functional dependencies,
+    \item each node computes a function of its parents.
+\end{itemize}
+\end{definition}
+
+Let the graph define a scalar output $L$ (the loss) as a function of inputs and parameters. Each node $v$ has a value $z_v$ computed from its parents.
+
+Differentiation means computing $\frac{\partial L}{\partial z_v}$ for all nodes $v$.
+
+\section{The Chain Rule as Message Passing}
+
+If a node $v$ influences the loss through multiple paths, then by the chain rule,
+\[
+\frac{\partial L}{\partial z_v}
+=
+\sum_{u:\, v\to u}
+\frac{\partial L}{\partial z_u}\frac{\partial z_u}{\partial z_v}.
+\]
+This expresses a recursive dependency: gradients at a node are obtained by aggregating contributions from its children.
+
+Thus differentiation can be viewed as \emph{message passing}:
+\begin{itemize}
+    \item each node receives gradient messages from its outputs,
+    \item it combines them using local derivatives,
+    \item and passes messages backward to its inputs.
+\end{itemize}
+
+\section{Reverse-Mode Automatic Differentiation}
+
+Reverse-mode automatic differentiation computes all gradients $\frac{\partial L}{\partial z_v}$ in a single backward pass.
+
+\subsection{Reverse Recursion}
+
+Let $\bar{z}_v = \frac{\partial L}{\partial z_v}$ denote the adjoint variable. Then:
+\[
+\bar{z}_v = \sum_{u:\, v\to u} \bar{z}_u \frac{\partial z_u}{\partial z_v}.
+\]
+
+The algorithm proceeds as follows:
+\begin{enumerate}
+    \item \textbf{Forward pass:} compute all node values $z_v$.
+    \item \textbf{Backward pass:} initialize $\bar{z}_L = 1$ and propagate gradients backward using the recursion.
+\end{enumerate}
+
+\subsection{Complexity}
+
+\begin{itemize}
+    \item Forward mode computes derivatives with cost proportional to input dimension.
+    \item Reverse mode computes derivatives with cost proportional to output dimension.
+\end{itemize}
+
+Since neural networks typically have a scalar output (loss), reverse mode is far more efficient.
+
+\begin{proposition}[Efficiency of Reverse Mode]
+For a scalar output $L$, reverse-mode automatic differentiation computes all partial derivatives $\frac{\partial L}{\partial \theta_j}$ at a cost comparable to a small constant multiple of the forward computation.
+\end{proposition}
+
+\section{Backpropagation in Multilayer Perceptrons}
+
+Consider a network
+\[
+h^{(1)} = \sigma(W^{(1)}x + b^{(1)}),\qquad
+h^{(2)} = \sigma(W^{(2)}h^{(1)} + b^{(2)}),
+\]
+\[
+\hat{y} = W^{(3)}h^{(2)} + b^{(3)},\qquad
+L = \ell(\hat{y}, y).
+\]
+
+We derive gradients using reverse-mode differentiation.
+
+\subsection{Backward Pass}
+
+Define error signals:
+\[
+\delta^{(3)} = \frac{\partial L}{\partial \hat{y}},
+\]
+\[
+\delta^{(2)} = (W^{(3)})^\top \delta^{(3)} \odot \sigma'(z^{(2)}),
+\]
+\[
+\delta^{(1)} = (W^{(2)})^\top \delta^{(2)} \odot \sigma'(z^{(1)}),
+\]
+where $z^{(\ell)} = W^{(\ell)}h^{(\ell-1)} + b^{(\ell)}$ and $\odot$ denotes elementwise multiplication.
+
+\subsection{Gradients}
+
+The gradients are:
+\[
+\frac{\partial L}{\partial W^{(3)}} = \delta^{(3)} (h^{(2)})^\top,\qquad
+\frac{\partial L}{\partial b^{(3)}} = \delta^{(3)},
+\]
+\[
+\frac{\partial L}{\partial W^{(2)}} = \delta^{(2)} (h^{(1)})^\top,\qquad
+\frac{\partial L}{\partial b^{(2)}} = \delta^{(2)},
+\]
+\[
+\frac{\partial L}{\partial W^{(1)}} = \delta^{(1)} x^\top,\qquad
+\frac{\partial L}{\partial b^{(1)}} = \delta^{(1)}.
+\]
+
+This shows a general pattern:
+\[
+\text{gradient} = \text{error signal} \times \text{input to layer}.
+\]
+
+\subsection{Matrix Form Insight}
+
+Backpropagation propagates gradients through matrix multiplications using transposes:
+\[
+\delta^{(\ell)} = (W^{(\ell+1)})^\top \delta^{(\ell+1)} \odot \sigma'(z^{(\ell)}).
+\]
+Thus each layer receives a transformed version of the error from the layer above.
+
+\section{Parameter Sharing}
+
+In many models, parameters are reused across multiple parts of the computation graph (e.g., convolutional filters, recurrent networks).
+
+If a parameter $\theta$ appears in multiple nodes, then:
+\[
+\frac{\partial L}{\partial \theta}
+=
+\sum_{k} \frac{\partial L}{\partial z_k} \frac{\partial z_k}{\partial \theta}.
+\]
+
+Thus gradients accumulate over all occurrences. This is a direct consequence of the chain rule and is naturally handled by reverse-mode differentiation.
+
+\section{Memory and Computation Tradeoffs}
+
+Reverse-mode differentiation requires storing intermediate values from the forward pass in order to compute derivatives in the backward pass.
+
+\subsection{Tradeoff}
+
+\begin{itemize}
+    \item storing all intermediate activations uses more memory but speeds up backpropagation,
+    \item recomputing activations reduces memory but increases computation.
+\end{itemize}
+
+This tradeoff becomes important in large models.
+
+\subsection{Checkpointing}
+
+A common strategy is to store only some intermediate values and recompute others when needed. This balances memory and computation.
+
+\section{Worked Derivation: Two-Layer Network}
+
+Consider
+\[
+h = \sigma(Wx + b),\qquad
+\hat{y} = v^\top h,\qquad
+L = \ell(\hat{y}, y).
+\]
+
+Then:
+\[
+\frac{\partial L}{\partial v} = \frac{\partial L}{\partial \hat{y}}\, h,
+\]
+\[
+\frac{\partial L}{\partial h} = \frac{\partial L}{\partial \hat{y}}\, v,
+\]
+\[
+\frac{\partial L}{\partial W}
+=
+\left( \frac{\partial L}{\partial h} \odot \sigma'(Wx+b) \right) x^\top.
+\]
+
+This illustrates the layered structure of gradient computation.
+
+\section{Common Gradient Pitfalls}
+
+\begin{itemize}
+    \item forgetting to apply the chain rule through all paths,
+    \item missing elementwise products with activation derivatives,
+    \item incorrect matrix dimensions,
+    \item failing to sum gradients for shared parameters.
+\end{itemize}
+
+Backpropagation avoids these issues by systematically applying the reverse recursion.
+
+\section{A Unifying Perspective}
+
+Backpropagation is not a special trick, but a structured application of the chain rule on computation graphs. Reverse-mode automatic differentiation makes gradient computation efficient by reusing intermediate results and propagating information backward.
+
+The key ideas are:
+\begin{itemize}
+    \item represent computation as a graph,
+    \item apply the chain rule locally,
+    \item propagate gradients backward,
+    \item reuse structure for efficiency.
+\end{itemize}
+
+These principles extend beyond neural networks to any differentiable program.
+
+\section{Summary}
+
+In this chapter we developed backpropagation as reverse-mode automatic differentiation on computation graphs. We interpreted the chain rule as message passing, derived the reverse recursion, and applied it to multilayer perceptrons. We showed how gradients take a structured matrix form and how parameter sharing leads to gradient accumulation.
+
+We also discussed computational efficiency and memory tradeoffs. Backpropagation is the central algorithm enabling the training of modern neural networks, and its principles apply broadly to differentiable computation.

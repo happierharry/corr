@@ -1,0 +1,222 @@
+\chapter{Activation Functions and Architectures}
+
+\section{Introduction}
+
+Nonlinearity is the key ingredient that gives neural networks their expressive power. Without nonlinear activation functions, a deep network would collapse into a single affine map. However, not all nonlinearities behave the same. Their shape, smoothness, and saturation properties strongly influence optimization, stability, and generalization.
+
+This chapter goes beyond listing activation functions. We analyze their mathematical properties and connect them to architectural design and training behavior. We also discuss common architectural motifs and how activation choices interact with them.
+
+\section{Nonlinearity as the Source of Expressive Power}
+
+A feedforward network alternates affine maps and nonlinearities:
+\[
+h^{(\ell)} = \sigma(W^{(\ell)} h^{(\ell-1)} + b^{(\ell)}).
+\]
+
+If $\sigma$ were linear, then the composition would remain linear. Thus all expressive power comes from the activation function.
+
+Nonlinearities enable:
+\begin{itemize}
+    \item representation of nonlinear decision boundaries,
+    \item hierarchical feature construction,
+    \item partitioning of the input space into regions.
+\end{itemize}
+
+The choice of activation determines how these effects occur.
+
+\section{Saturating vs Non-Saturating Activations}
+
+\subsection{Sigmoid and Tanh}
+
+The sigmoid function
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}
+\]
+and the hyperbolic tangent
+\[
+\tanh(z)=\frac{e^z-e^{-z}}{e^z+e^{-z}}
+\]
+are smooth and bounded.
+
+However, they are \emph{saturating}: for large $|z|$, their derivatives approach zero:
+\[
+\sigma'(z)\to 0,\qquad \tanh'(z)\to 0.
+\]
+
+\subsection{Implications of Saturation}
+
+Saturation causes:
+\begin{itemize}
+    \item vanishing gradients,
+    \item slow learning in deep networks,
+    \item sensitivity to initialization.
+\end{itemize}
+
+Thus while sigmoid and tanh are theoretically appealing, they can be difficult to train in deep architectures.
+
+\subsection{ReLU and Non-Saturating Behavior}
+
+The rectified linear unit (ReLU) is
+\[
+\sigma(z)=\max(0,z).
+\]
+
+It is non-saturating for $z>0$, since
+\[
+\sigma'(z)=1 \quad \text{for } z>0.
+\]
+
+This allows gradients to propagate more effectively, which is one reason for its widespread use.
+
+However, ReLU introduces:
+\begin{itemize}
+    \item non-differentiability at $z=0$,
+    \item inactive units when $z<0$ (``dead neurons'').
+\end{itemize}
+
+\section{Piecewise Linear vs Smooth Activations}
+
+Activation functions can be grouped by smoothness.
+
+\subsection{Piecewise Linear Activations}
+
+ReLU and its variants (e.g., leaky ReLU) produce piecewise linear functions. Networks built from them are piecewise linear in the input.
+
+Advantages:
+\begin{itemize}
+    \item simple gradients,
+    \item efficient computation,
+    \item stable optimization.
+\end{itemize}
+
+\subsection{Smooth Activations}
+
+Smooth activations include sigmoid, tanh, and GELU:
+\[
+\mathrm{GELU}(z)=z \cdot \Phi(z),
+\]
+where $\Phi$ is the Gaussian cumulative distribution function.
+
+Smooth activations:
+\begin{itemize}
+    \item provide continuous derivatives,
+    \item may better model gradual transitions,
+    \item can improve optimization in some architectures (e.g., transformers).
+\end{itemize}
+
+\subsection{Tradeoffs}
+
+\begin{itemize}
+    \item piecewise linear: simpler and often faster,
+    \item smooth: potentially better gradient flow and expressivity in certain settings.
+\end{itemize}
+
+The choice depends on the architecture and task.
+
+\section{Inductive Tradeoffs of Activation Functions}
+
+Activation functions impose implicit biases on the function class.
+
+\begin{itemize}
+    \item ReLU favors piecewise linear functions,
+    \item sigmoid/tanh favor smooth bounded outputs,
+    \item GELU introduces smooth gating behavior.
+\end{itemize}
+
+These choices affect:
+\begin{itemize}
+    \item optimization dynamics,
+    \item gradient stability,
+    \item representational properties.
+\end{itemize}
+
+Thus activation functions are not neutral; they shape the hypothesis space.
+
+\section{Architectural Motifs}
+
+Activation functions interact with network architecture. Several common motifs illustrate this.
+
+\subsection{Multilayer Perceptron (MLP)}
+
+An MLP is a stack of fully connected layers with nonlinearities. Its behavior depends strongly on activation choice:
+\begin{itemize}
+    \item ReLU enables deep MLPs to train effectively,
+    \item sigmoid/tanh may lead to vanishing gradients.
+\end{itemize}
+
+\subsection{Bottleneck Architectures}
+
+A bottleneck layer has lower dimensionality than surrounding layers:
+\[
+\mathbb R^d \to \mathbb R^k \to \mathbb R^d,\quad k<d.
+\]
+
+This forces the network to compress information, encouraging structured representations. Nonlinearities determine how information is compressed and reconstructed.
+
+\subsection{Encoder--Decoder Architectures}
+
+These architectures map input to a latent representation and back:
+\[
+x \to z \to \hat{x}.
+\]
+
+They are widely used in autoencoders, sequence models, and generative systems. Activation functions influence both encoding (feature extraction) and decoding (reconstruction quality).
+
+\section{Choosing Activations in Practice}
+
+In practice, the choice of activation depends on both optimization and modeling considerations.
+
+\subsection{Common Guidelines}
+
+\begin{itemize}
+    \item use ReLU or variants for general-purpose deep networks,
+    \item use GELU or similar smooth activations in transformer architectures,
+    \item avoid sigmoid in deep hidden layers unless specifically needed,
+    \item match activation to output type (e.g., sigmoid for probabilities).
+\end{itemize}
+
+\subsection{Interaction with Initialization and Normalization}
+
+Activation choice interacts with:
+\begin{itemize}
+    \item initialization schemes,
+    \item normalization layers,
+    \item learning rates.
+\end{itemize}
+
+A good configuration balances signal propagation, gradient stability, and expressivity.
+
+\section{Worked Comparisons}
+
+\subsection{Derivative Comparison}
+
+\begin{itemize}
+    \item sigmoid: $\sigma'(z)=\sigma(z)(1-\sigma(z))$, small for large $|z|$,
+    \item tanh: $\tanh'(z)=1-\tanh^2(z)$, also saturating,
+    \item ReLU: $\sigma'(z)=1$ for $z>0$, $0$ otherwise,
+    \item GELU: smooth, nonzero derivative over a wide range.
+\end{itemize}
+
+This explains why ReLU often avoids vanishing gradients compared to sigmoid.
+
+\subsection{Optimization Consequences}
+
+\begin{itemize}
+    \item saturating activations slow learning in deep networks,
+    \item non-saturating activations improve gradient flow,
+    \item smooth activations may stabilize training in certain architectures.
+\end{itemize}
+
+Thus activation choice directly affects optimization behavior.
+
+\section{A Unifying Perspective}
+
+Activation functions determine how linear transformations are combined into nonlinear models. Their properties—saturation, smoothness, and shape—affect both expressivity and trainability.
+
+Architectures organize these nonlinearities into structured computations. Together, activation functions and architecture define the effective hypothesis class and its optimization properties.
+
+\section{Summary}
+
+In this chapter we examined activation functions as the source of nonlinearity in neural networks. We compared saturating and non-saturating activations, discussed piecewise linear versus smooth functions, and analyzed their impact on gradient flow and optimization.
+
+We also introduced common architectural motifs and explained how activation choices interact with them. These insights are essential for designing and training effective deep learning systems.

@@ -1,0 +1,310 @@
+\chapter{Support Vector Machines}
+
+\section{Margin Maximization}
+
+In previous chapters, we studied linear classifiers and their extensions via feature maps. Support Vector Machines (SVMs) refine these ideas by introducing a geometric principle: \emph{margin maximization}.
+
+\medskip
+
+\noindent
+\textbf{Binary classification setting.}  
+Let $y_i \in \{-1, +1\}$ and consider a linear classifier
+\[
+f(x) = \langle w, x \rangle + b.
+\]
+
+\medskip
+
+\noindent
+A point is correctly classified if
+\[
+y_i (\langle w, x_i \rangle + b) > 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Margin.}  
+The (functional) margin of a data point is defined as
+\[
+y_i (\langle w, x_i \rangle + b).
+\]
+
+\medskip
+
+\noindent
+\textbf{Geometric margin.}  
+The distance of a point to the decision boundary is
+\[
+\frac{y_i (\langle w, x_i \rangle + b)}{\|w\|}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Goal.}  
+Find a classifier that maximizes the minimum margin over all training points.
+
+\medskip
+
+\noindent
+\textbf{Optimization problem.}
+\[
+\max_{w,b} \; \min_{i} \; \frac{y_i (\langle w, x_i \rangle + b)}{\|w\|}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Equivalent formulation.}  
+By fixing the scale, we obtain
+\[
+\min_{w,b} \; \frac{1}{2}\|w\|^2
+\quad \text{subject to} \quad
+y_i (\langle w, x_i \rangle + b) \geq 1 \quad \forall i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Maximizing margin $\leftrightarrow$ minimizing $\|w\|$
+    \item Encourages robust separation between classes
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Support vectors.}  
+Only points that lie closest to the decision boundary (i.e., those with equality in the constraint) influence the solution.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+SVMs focus on the most informative points, rather than all training data.
+
+\section{Hard and Soft Margins}
+
+The formulation above assumes that the data is linearly separable. In practice, this is rarely the case.
+
+\medskip
+
+\noindent
+\textbf{Hard-margin SVM.}
+\begin{itemize}
+    \item Assumes perfect separability
+    \item Enforces constraints:
+    \[
+    y_i (\langle w, x_i \rangle + b) \geq 1
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitation.}  
+Sensitive to noise and outliers; may have no feasible solution.
+
+\medskip
+
+\noindent
+\textbf{Soft-margin SVM.}  
+Introduce slack variables $\xi_i \geq 0$:
+\[
+y_i (\langle w, x_i \rangle + b) \geq 1 - \xi_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Objective.}
+\[
+\min_{w,b,\xi} \; \frac{1}{2}\|w\|^2 + C \sum_{i=1}^n \xi_i,
+\]
+where $C > 0$ controls the tradeoff between margin size and classification error.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $\xi_i$ measures violation of the margin constraint
+    \item Larger $C$ $\rightarrow$ penalizes errors more strongly
+    \item Smaller $C$ $\rightarrow$ allows more flexibility
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to loss functions.}  
+The soft-margin formulation corresponds to minimizing a \emph{hinge loss}:
+\[
+\ell(x_i, y_i) = \max\big(0, 1 - y_i f(x_i)\big).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+SVMs combine margin maximization with robustness to non-separable data.
+
+\section{Dual Formulation (Conceptual)}
+
+The SVM optimization problem admits an alternative representation known as the \emph{dual formulation}.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Instead of optimizing over $w$, we introduce variables $\alpha_i$ associated with each data point.
+
+\medskip
+
+\noindent
+\textbf{Dual problem (informal).}
+\[
+\max_{\alpha} \; \sum_{i=1}^n \alpha_i - \frac{1}{2} \sum_{i,j} \alpha_i \alpha_j y_i y_j \langle x_i, x_j \rangle,
+\]
+subject to constraints on $\alpha_i$.
+
+\medskip
+
+\noindent
+\textbf{Important observations.}
+\begin{itemize}
+    \item The solution depends only on inner products $\langle x_i, x_j \rangle$
+    \item Only support vectors have nonzero $\alpha_i$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Reconstruction of $w$.}
+\[
+w = \sum_{i=1}^n \alpha_i y_i x_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The classifier is expressed as a weighted combination of training points.
+
+\medskip
+
+\noindent
+\textbf{Practical significance.}
+\begin{itemize}
+    \item Enables the use of kernel methods
+    \item Reveals sparsity in the solution
+\end{itemize}
+
+\section{Kernel Methods Revisited}
+
+The dual formulation allows us to extend SVMs to nonlinear classification.
+
+\medskip
+
+\noindent
+\textbf{Kernel substitution.}  
+Replace inner products with a kernel function:
+\[
+\langle x_i, x_j \rangle \;\rightarrow\; k(x_i, x_j).
+\]
+
+\medskip
+
+\noindent
+\textbf{Resulting classifier.}
+\[
+f(x) = \sum_{i=1}^n \alpha_i y_i k(x_i, x) + b.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Implicitly maps data into a feature space
+    \item Constructs nonlinear decision boundaries in the original space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Polynomial kernel
+    \item Gaussian (RBF) kernel
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}  
+Data is transformed into a space where it becomes linearly separable, and a maximum-margin separator is found there.
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+\begin{itemize}
+    \item Flexible nonlinear modeling
+    \item Strong theoretical guarantees
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item Computational cost grows with dataset size
+    \item Less scalable than modern deep learning approaches
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Support Vector Machines integrate several core ideas:
+
+\begin{itemize}
+    \item \textbf{Geometry:} margin maximization
+    \item \textbf{Optimization:} convex quadratic programming
+    \item \textbf{Representation:} feature maps and kernels
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insights.}
+\begin{itemize}
+    \item Good classifiers maximize separation between classes
+    \item Only a subset of data points determines the solution
+    \item Nonlinearity can be introduced through kernels
+\end{itemize}
+
+\medskip
+
+\noindent
+SVMs illustrate how combining geometry and optimization leads to powerful learning algorithms.
+
+\section{Outlook}
+
+This chapter introduced support vector machines as a principled approach to classification:
+\begin{itemize}
+    \item margin-based learning,
+    \item soft constraints for real-world data,
+    \item dual formulation and sparsity,
+    \item kernel methods for nonlinear models.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we return to model evaluation and selection, focusing on how to compare models and choose hyperparameters in practice.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective learning balances expressivity with robustness, often through geometric and optimization principles.

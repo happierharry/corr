@@ -1,0 +1,277 @@
+\section{Lecture 6: Regularization and Structure}
+
+\subsection{Motivation}
+
+In the previous lecture, we studied generalization and observed that:
+
+\begin{itemize}
+    \item Models with high capacity can overfit
+    \item Low training error does not guarantee low test error
+\end{itemize}
+
+\medskip
+
+\noindent
+This raises a central question:
+
+\medskip
+
+\noindent
+\textit{How can we guide learning toward solutions that generalize well?}
+
+\medskip
+
+\noindent
+The answer lies in \emph{regularization}, which introduces additional structure or constraints into the learning process.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Regularization shapes the solution space to favor functions with desirable properties.
+
+\subsection{Norm-Based Regularization}
+
+A common approach is to penalize the size of the parameters.
+
+\medskip
+
+\noindent
+\textbf{Regularized objective.}
+\[
+\min_\theta \; L(\theta) + \lambda \|\theta\|_p,
+\]
+where $\lambda > 0$ controls the strength of regularization.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item \textbf{$\ell_2$ regularization (ridge):}
+    \[
+    \Omega(\theta) = \|\theta\|_2^2
+    \]
+
+    \item \textbf{$\ell_1$ regularization (lasso):}
+    \[
+    \Omega(\theta) = \|\theta\|_1
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effects.}
+\begin{itemize}
+    \item $\ell_2$: discourages large weights, promotes smooth solutions
+    \item $\ell_1$: encourages sparsity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Penalizing large parameters reduces model complexity
+    \item Encourages simpler functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Norm-based regularization controls capacity by constraining parameter magnitude.
+
+\subsection{Constraints and Penalization}
+
+Regularization can also be formulated as a constrained optimization problem.
+
+\medskip
+
+\noindent
+\textbf{Constrained formulation.}
+\[
+\min_\theta \; L(\theta) \quad \text{subject to} \quad \|\theta\|_p \leq C.
+\]
+
+\medskip
+
+\noindent
+\textbf{Penalized formulation.}
+\[
+\min_\theta \; L(\theta) + \lambda \|\theta\|_p.
+\]
+
+\medskip
+
+\noindent
+\textbf{Equivalence.}
+\begin{itemize}
+    \item Under suitable conditions, these formulations are equivalent
+    \item $\lambda$ corresponds to a constraint level $C$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric interpretation.}
+\begin{itemize}
+    \item Optimization occurs within a constraint set (e.g., a ball)
+    \item The solution lies where level sets of $L(\theta)$ touch the constraint boundary
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example.}
+\begin{itemize}
+    \item $\ell_2$ constraint: spherical region
+    \item $\ell_1$ constraint: diamond-shaped region (promotes sparsity)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Regularization can be viewed as restricting the feasible set of solutions.
+
+\subsection{Implicit Regularization}
+
+Regularization is not only imposed explicitly; it can also arise implicitly through the learning process.
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+Implicit regularization refers to biases introduced by the optimization algorithm or parameterization, even without explicit penalties.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item Gradient descent in linear models tends to find minimum-norm solutions
+    \item Optimization dynamics favor certain regions of parameter space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Overparameterized models.}
+\begin{itemize}
+    \item Many solutions achieve zero training error
+    \item Optimization selects one among them
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key phenomenon.}
+\begin{itemize}
+    \item Even without explicit regularization, learned solutions can generalize well
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The optimization algorithm itself acts as a form of inductive bias.
+
+\subsection{Early Stopping and Practical Methods}
+
+Regularization can also be implemented through practical training strategies.
+
+\medskip
+
+\noindent
+\textbf{Early stopping.}
+\begin{itemize}
+    \item Stop training before convergence
+    \item Prevents overfitting to noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Early iterations capture dominant patterns
+    \item Later iterations fit noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Other methods.}
+\begin{itemize}
+    \item Noise injection
+    \item Data augmentation
+    \item Dropout (in neural networks)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to optimization.}
+\begin{itemize}
+    \item Training trajectory influences final solution
+    \item Regularization is tied to dynamics, not just objectives
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Regularization can be achieved through both objective design and training procedures.
+
+\subsection{A Unifying Perspective}
+
+Regularization integrates several aspects of learning:
+
+\begin{itemize}
+    \item \textbf{Explicit:} penalties and constraints
+    \item \textbf{Implicit:} optimization dynamics
+    \item \textbf{Practical:} training strategies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Regularization shapes the set of solutions considered by the learning algorithm.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Generalization depends not only on model capacity, but on how solutions are selected within that capacity.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item norm-based regularization,
+    \item constrained and penalized formulations,
+    \item implicit regularization,
+    \item practical regularization methods.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas provide tools for controlling generalization in learning systems.
+
+\medskip
+
+\noindent
+In the next part of the course, we turn to concrete models, beginning with linear regression, where these concepts can be analyzed explicitly.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective learning requires not only fitting data, but shaping the solution toward structure and simplicity.

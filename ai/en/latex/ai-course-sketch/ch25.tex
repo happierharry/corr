@@ -1,0 +1,260 @@
+\chapter{Foundations of Generative Modeling}
+
+\section{Density Estimation and Sampling}
+
+Generative modeling aims to learn the underlying distribution of data and generate new samples from it.
+
+\medskip
+
+\noindent
+\textbf{Objective.}  
+Given data $x \sim p_{\text{data}}$, learn a model $p_\theta(x)$ that approximates the true distribution.
+
+\medskip
+
+\noindent
+\textbf{Density estimation.}
+\begin{itemize}
+    \item Explicit models define a probability density $p_\theta(x)$
+    \item Learning is typically based on maximum likelihood:
+\end{itemize}
+
+\[
+\max_\theta \; \mathbb{E}_{x \sim p_{\text{data}}}[\log p_\theta(x)].
+\]
+
+\medskip
+
+\noindent
+\textbf{Sampling.}  
+Once a model is learned, we generate new samples:
+\[
+x \sim p_\theta(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Two perspectives.}
+\begin{itemize}
+    \item \textbf{Likelihood-based:} directly model $p_\theta(x)$
+    \item \textbf{Implicit:} define a sampling procedure without explicit density
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Challenges.}
+\begin{itemize}
+    \item High-dimensional data
+    \item Complex distributions
+    \item Efficient sampling
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Generative modeling involves both representing distributions and generating samples from them.
+
+\section{Latent Variable Models}
+
+Many generative models introduce latent variables to capture underlying structure.
+
+\medskip
+
+\noindent
+\textbf{Latent variable formulation.}
+\[
+p_\theta(x) = \int p_\theta(x \mid z) \, p(z) \, dz,
+\]
+where $z$ is a latent variable.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $z$ represents hidden factors of variation
+    \item $p(z)$ is a simple prior (e.g., Gaussian)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Generative process.}
+\begin{enumerate}
+    \item Sample $z \sim p(z)$
+    \item Generate $x \sim p_\theta(x \mid z)$
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Learning challenge.}  
+The marginal likelihood involves an intractable integral.
+
+\medskip
+
+\noindent
+\textbf{Inference.}  
+We introduce an approximate posterior $q_\phi(z \mid x)$.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Latent variables provide a structured way to model complex data distributions.
+
+\section{Energy-Based Perspectives}
+
+An alternative view models probability distributions through energy functions.
+
+\medskip
+
+\noindent
+\textbf{Energy-based model (EBM).}
+\[
+p_\theta(x) = \frac{1}{Z(\theta)} \exp(-E_\theta(x)),
+\]
+where $E_\theta(x)$ is an energy function and $Z(\theta)$ is the partition function:
+\[
+Z(\theta) = \int \exp(-E_\theta(x)) \, dx.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Low energy $\rightarrow$ high probability
+    \item High energy $\rightarrow$ low probability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Learning.}
+\begin{itemize}
+    \item Requires estimating gradients involving $Z(\theta)$
+    \item Often uses sampling-based methods
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to physics.}  
+Energy-based models resemble distributions in statistical mechanics.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Energy-based formulations provide a flexible way to define distributions without requiring normalized densities in closed form.
+
+\section{Evaluation of Generative Models}
+
+Evaluating generative models is challenging due to the complexity of high-dimensional distributions.
+
+\medskip
+
+\noindent
+\textbf{Likelihood-based evaluation.}
+\begin{itemize}
+    \item Log-likelihood
+    \item Perplexity (for sequences)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Sample quality.}
+\begin{itemize}
+    \item Visual inspection (e.g., images)
+    \item Human evaluation (e.g., text)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Divergence measures.}
+\begin{itemize}
+    \item Kullback--Leibler divergence
+    \item Jensen--Shannon divergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Distributional metrics.}
+\begin{itemize}
+    \item Inception Score
+    \item Fr\'echet Inception Distance (FID)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Challenges.}
+\begin{itemize}
+    \item Tradeoff between sample quality and diversity
+    \item Difficulty of estimating likelihood in high dimensions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Mode collapse.}  
+Some models generate limited diversity, focusing on a subset of possible outputs.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+No single metric fully captures the quality of a generative model.
+
+\section{A Unifying Perspective}
+
+Generative modeling can be understood through multiple complementary frameworks:
+
+\begin{itemize}
+    \item \textbf{Probabilistic:} modeling $p(x)$ directly
+    \item \textbf{Latent variable:} introducing hidden structure
+    \item \textbf{Energy-based:} defining distributions via energy
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core challenges.}
+\begin{itemize}
+    \item High-dimensional modeling
+    \item Efficient sampling
+    \item Reliable evaluation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Generative models aim to capture the structure of data distributions in a way that enables both understanding and synthesis.
+
+\section{Outlook}
+
+This chapter introduced the foundations of generative modeling:
+\begin{itemize}
+    \item density estimation and sampling,
+    \item latent variable models,
+    \item energy-based perspectives,
+    \item evaluation of generative models.
+\end{itemize}
+
+\medskip
+
+In the next chapters, we study specific classes of generative models, including variational autoencoders, generative adversarial networks, and diffusion models.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Generative modeling seeks not only to predict data, but to understand and reproduce its underlying structure.

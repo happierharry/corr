@@ -1,0 +1,291 @@
+\chapter{Attention and Transformers}
+
+\section{Introduction}
+
+Recurrent models process sequences sequentially, which limits parallelization and makes long-range dependencies difficult to learn. Early sequence-to-sequence (seq2seq) models compress an entire input sequence into a single fixed-size vector, creating a severe information bottleneck.
+
+Attention mechanisms and transformers overcome these limitations by allowing direct interactions between all elements of a sequence. Instead of compressing information into a single state, attention enables \emph{content-based retrieval} across the entire sequence.
+
+\section{Why Recurrence Was Not Enough}
+
+RNN-based seq2seq models map an input sequence to a single hidden vector:
+\[
+(x_1,\dots,x_T) \mapsto h_T.
+\]
+
+This creates:
+\begin{itemize}
+    \item a bottleneck limiting information capacity,
+    \item difficulty in modeling long-range dependencies,
+    \item sequential computation preventing parallelism.
+\end{itemize}
+
+Attention addresses these issues by allowing each output to access all input positions directly.
+
+\section{Attention as Adaptive Weighting}
+
+Attention computes a weighted combination of values based on similarity.
+
+\subsection{Attention Formula}
+
+Given:
+\begin{itemize}
+    \item query $q$,
+    \item keys $k_i$,
+    \item values $v_i$,
+\end{itemize}
+attention is:
+\[
+\mathrm{Attn}(q, K, V)
+=
+\sum_i \alpha_i v_i,
+\quad
+\alpha_i = \frac{\exp(q^\top k_i)}{\sum_j \exp(q^\top k_j)}.
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item $q^\top k_i$ measures similarity,
+    \item $\alpha_i$ selects relevant information,
+    \item output is a weighted aggregation.
+\end{itemize}
+
+Thus attention is a form of content-based retrieval.
+
+\section{Self-Attention and Token Interaction}
+
+In self-attention, queries, keys, and values all come from the same sequence.
+
+\subsection{Matrix Form}
+
+Let $X \in \mathbb{R}^{n \times d}$. Define:
+\[
+Q = X W_Q,\quad K = X W_K,\quad V = X W_V.
+\]
+
+Then:
+\[
+\mathrm{Attn}(X)
+=
+\mathrm{softmax}\!\left(\frac{QK^\top}{\sqrt{d}}\right)V.
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item $QK^\top$ computes all pairwise interactions,
+    \item softmax normalizes attention weights,
+    \item each token aggregates information from all others.
+\end{itemize}
+
+Thus self-attention enables direct token-to-token communication.
+
+\section{Positional Encoding and Order Information}
+
+Self-attention is permutation-invariant: it does not encode order by itself.
+
+To incorporate sequence order, positional encodings are added:
+\[
+X \leftarrow X + P,
+\]
+where $P$ encodes position information.
+
+\subsection{Types}
+
+\begin{itemize}
+    \item fixed sinusoidal encodings,
+    \item learned embeddings.
+\end{itemize}
+
+This allows the model to distinguish positions in the sequence.
+
+\section{Multi-Head Attention}
+
+Instead of a single attention operation, transformers use multiple heads:
+\[
+\mathrm{MultiHead}(X) = \mathrm{concat}(\mathrm{head}_1,\dots,\mathrm{head}_h) W_O.
+\]
+
+Each head computes:
+\[
+\mathrm{head}_i = \mathrm{Attn}(X W_Q^{(i)}, X W_K^{(i)}, X W_V^{(i)}).
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item different heads capture different relationships,
+    \item the model attends to multiple patterns simultaneously.
+\end{itemize}
+
+\section{Transformer Blocks}
+
+A transformer layer consists of:
+\begin{itemize}
+    \item multi-head self-attention,
+    \item feedforward (MLP) layer,
+    \item normalization,
+    \item residual connections.
+\end{itemize}
+
+\subsection{Structure}
+
+\[
+X \to X + \mathrm{Attn}(X) \to \text{Norm} \to X + \mathrm{MLP}(X) \to \text{Norm}.
+\]
+
+This combines attention with nonlinear transformation and stabilization.
+
+\section{Encoder, Decoder, and Causal Masking}
+
+\subsection{Encoder}
+
+Processes the entire sequence with full self-attention.
+
+\subsection{Decoder}
+
+Generates outputs sequentially, using \emph{causal masking} to prevent access to future tokens.
+
+\begin{definition}[Causal Masking]
+In attention weights, enforce:
+\[
+\alpha_{ij} = 0 \quad \text{for } j > i.
+\]
+\end{definition}
+
+This ensures autoregressive behavior.
+
+\subsection{Encoder--Decoder Attention}
+
+The decoder attends both to:
+\begin{itemize}
+    \item its own past outputs,
+    \item the encoder outputs.
+\end{itemize}
+
+\section{From Similarity to Aggregation (Worked Derivation)}
+
+Starting from similarity scores:
+\[
+s_i = q^\top k_i,
+\]
+we normalize:
+\[
+\alpha_i = \frac{e^{s_i}}{\sum_j e^{s_j}},
+\]
+and compute:
+\[
+\mathrm{output} = \sum_i \alpha_i v_i.
+\]
+
+Thus attention is:
+\[
+\text{similarity} \to \text{weights} \to \text{aggregation}.
+\]
+
+\section{Scaling and Limitations}
+
+\subsection{Advantages}
+
+\begin{itemize}
+    \item parallel computation,
+    \item direct modeling of long-range dependencies,
+    \item flexible interaction patterns.
+\end{itemize}
+
+\subsection{Limitations}
+
+\begin{itemize}
+    \item quadratic cost in sequence length,
+    \item large memory usage,
+    \item sensitivity to data scale.
+\end{itemize}
+
+These motivate efficient attention variants.
+
+\section{A Unifying Perspective}
+
+Attention replaces recurrence with direct interaction. Instead of passing information through a chain of states, it allows every element to access every other element in one step.
+
+Transformers combine:
+\begin{itemize}
+    \item attention for interaction,
+    \item MLPs for nonlinear transformation,
+    \item normalization and residuals for stability.
+\end{itemize}
+
+This architecture has become a dominant paradigm in modern machine learning.
+
+\section{Summary}
+
+In this chapter we developed attention mechanisms and transformer architectures. We motivated attention from the limitations of recurrence, defined attention as content-based retrieval, and derived self-attention in matrix form.
+
+We introduced positional encoding, multi-head attention, and transformer blocks, and explained encoder--decoder structures and causal masking. Transformers provide a powerful and flexible framework for sequence modeling.
+
+\chapter*{Part II Exercises: Core Supervised Learning Models and Deep Learning}
+\addcontentsline{toc}{chapter}{Part II Exercises}
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item Compare linear models, kernel methods, and neural networks in terms of:
+    \begin{enumerate}
+        \item representation,
+        \item inductive bias,
+        \item scalability.
+    \end{enumerate}
+
+    \item Show why XOR cannot be solved by a linear classifier but can be solved by a two-layer network.
+
+    \item Write a two-layer neural network explicitly as a composition of functions.
+
+    \item Count the number of parameters in:
+    \begin{enumerate}
+        \item a fully connected layer,
+        \item a convolutional layer.
+    \end{enumerate}
+
+    \item Derive backpropagation updates for a simple two-layer network.
+
+    \item Explain why gradients vanish in deep networks.
+
+    \item Compare ReLU and sigmoid activations in terms of gradient behavior.
+
+    \item Explain why batch normalization improves optimization.
+
+    \item Compare dropout and weight decay conceptually.
+
+    \item Show how a residual block approximates an identity mapping.
+
+    \item Prove translation equivariance of convolution in a simple 1D case.
+
+    \item Compute the output size of a convolution layer given kernel size and stride.
+
+    \item Unroll an RNN for $T$ steps and write it as a feedforward network.
+
+    \item Derive the gradient of an RNN through time.
+
+    \item Compare LSTM and GRU gating mechanisms.
+
+    \item Compute a simple attention output for a toy example.
+
+    \item Compare path length between two tokens in:
+    \begin{enumerate}
+        \item an RNN,
+        \item a transformer.
+    \end{enumerate}
+
+    \item Explain why transformers handle long-range dependencies better than RNNs.
+
+    \item Describe the role of positional encoding.
+
+    \item Explain how multi-head attention increases model capacity.
+
+    \item Design a simple architecture for:
+    \begin{enumerate}
+        \item image classification,
+        \item sequence modeling,
+        \item tabular data.
+    \end{enumerate}
+\end{enumerate}

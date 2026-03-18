@@ -1,0 +1,299 @@
+\chapter{Optimization in Practice}
+
+\section{Stochastic Gradient Descent}
+
+In Chapter 4, we introduced gradient-based optimization as the primary method for training machine learning models. In practice, however, computing full gradients over large datasets is often computationally infeasible.
+
+\medskip
+
+\noindent
+\textbf{Stochastic Gradient Descent (SGD).}  
+Instead of computing the full gradient,
+\[
+\nabla L(\theta) = \frac{1}{n} \sum_{i=1}^n \nabla \ell(f_\theta(x_i), y_i),
+\]
+we approximate it using a single randomly selected data point:
+\[
+\theta_{t+1} = \theta_t - \eta \nabla \ell(f_\theta(x_{i_t}), y_{i_t}).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Each update is a noisy estimate of the true gradient
+    \item The noise arises from sampling
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key properties.}
+\begin{itemize}
+    \item Low computational cost per iteration
+    \item Enables training on large datasets
+    \item Introduces stochasticity into optimization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Convergence behavior (informal).}
+\begin{itemize}
+    \item SGD does not converge exactly to a minimum
+    \item Instead, it fluctuates around regions of low loss
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The stochasticity of SGD can help escape sharp minima and explore the loss landscape more effectively.
+
+\section{Mini-Batching and Efficiency}
+
+In practice, SGD is rarely implemented using single data points. Instead, we use mini-batches.
+
+\medskip
+
+\noindent
+\textbf{Mini-batch SGD.}
+\[
+\theta_{t+1} = \theta_t - \eta \frac{1}{|B_t|} \sum_{i \in B_t} \nabla \ell(f_\theta(x_i), y_i),
+\]
+where $B_t$ is a subset (batch) of data points.
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+\begin{itemize}
+    \item Reduces variance of gradient estimates
+    \item Exploits parallel computation (e.g., GPUs)
+    \item More stable updates than pure SGD
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Batch size tradeoff.}
+\begin{itemize}
+    \item Small batch:
+    \begin{itemize}
+        \item Noisy updates
+        \item Better generalization in some cases
+    \end{itemize}
+    \item Large batch:
+    \begin{itemize}
+        \item More accurate gradients
+        \item Higher computational cost per step
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Efficiency considerations.}
+\begin{itemize}
+    \item Memory constraints limit batch size
+    \item Larger batches benefit from hardware acceleration
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Epochs and iterations.}
+\begin{itemize}
+    \item One epoch: one pass through the dataset
+    \item Iteration: one parameter update
+\end{itemize}
+
+\section{Momentum and Adaptive Methods}
+
+Basic SGD can be slow or unstable, especially in high-dimensional problems. Several enhancements improve its performance.
+
+\subsection{Momentum}
+
+\medskip
+
+\noindent
+\textbf{Update rule.}
+\[
+v_{t+1} = \beta v_t + \nabla L(\theta_t), \quad
+\theta_{t+1} = \theta_t - \eta v_{t+1}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Accumulates past gradients
+    \item Smooths updates and accelerates convergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric intuition.}  
+Momentum helps traverse flat regions quickly and reduces oscillations in directions of high curvature.
+
+\subsection{Adaptive Methods}
+
+Adaptive methods adjust learning rates for individual parameters.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item AdaGrad
+    \item RMSProp
+    \item Adam
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+\begin{itemize}
+    \item Scale updates based on past gradient magnitudes
+    \item Use larger steps for infrequent features
+    \item Use smaller steps for frequently updated parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Adam (conceptual form).}
+\begin{itemize}
+    \item Maintains moving averages of gradients and squared gradients
+    \item Combines momentum and adaptive scaling
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical observation.}
+\begin{itemize}
+    \item Adaptive methods often converge faster
+    \item SGD with momentum may generalize better in some settings
+\end{itemize}
+
+\section{Practical Convergence Behavior}
+
+In real-world settings, optimization rarely follows idealized theoretical behavior.
+
+\medskip
+
+\noindent
+\textbf{Learning rate scheduling.}
+\begin{itemize}
+    \item Decrease learning rate over time
+    \item Common strategies:
+    \begin{itemize}
+        \item step decay,
+        \item exponential decay,
+        \item cosine annealing
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Warm-up.}
+\begin{itemize}
+    \item Start with small learning rates
+    \item Gradually increase to stabilize early training
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Plateaus and sharp drops.}
+\begin{itemize}
+    \item Training loss may decrease slowly, then suddenly improve
+    \item Reflects transitions in the loss landscape
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Noise and generalization.}
+\begin{itemize}
+    \item Noise from SGD can act as implicit regularization
+    \item Helps avoid sharp minima
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stopping criteria.}
+\begin{itemize}
+    \item Fixed number of epochs
+    \item Convergence of training loss
+    \item Validation-based early stopping
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical challenges.}
+\begin{itemize}
+    \item Choosing learning rates
+    \item Tuning hyperparameters
+    \item Balancing speed and stability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization in practice is as much an art as it is a science, guided by both theoretical principles and empirical experience.
+
+\section{A Unifying Perspective}
+
+Optimization in modern machine learning involves multiple interacting components:
+
+\begin{itemize}
+    \item \textbf{Algorithm:} SGD and its variants
+    \item \textbf{Hyperparameters:} learning rate, batch size
+    \item \textbf{Dynamics:} noise, curvature, landscape structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core tradeoffs.}
+\begin{itemize}
+    \item Speed vs stability
+    \item Accuracy vs computational cost
+    \item Optimization vs generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The behavior of optimization algorithms shapes not only how fast models learn, but also what solutions they find.
+
+\section{Outlook}
+
+This chapter examined optimization from a practical perspective:
+\begin{itemize}
+    \item stochastic gradient methods,
+    \item mini-batching and efficiency,
+    \item momentum and adaptive algorithms,
+    \item real-world convergence behavior.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study numerical and statistical stability, focusing on how data preprocessing and conditioning affect learning.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective optimization requires understanding both the algorithm and the structure of the problem it is applied to.

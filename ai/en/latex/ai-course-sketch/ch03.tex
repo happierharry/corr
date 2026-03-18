@@ -1,0 +1,308 @@
+
+\chapter{Hypothesis Spaces and Inductive Bias}
+
+\section{Function Classes and Model Families}
+
+In previous chapters, we formulated learning as the problem of selecting a function that minimizes empirical risk. However, we have not yet addressed a crucial question:
+
+\medskip
+
+\noindent
+\textbf{Which functions are we allowed to choose from?}
+
+\medskip
+
+This question is answered by specifying a \emph{hypothesis space} (or model class)
+\[
+\mathcal{H} = \{ f_\theta : \theta \in \Theta \}.
+\]
+
+\medskip
+
+The hypothesis space defines the set of candidate functions that a learning algorithm can represent.
+
+\medskip
+
+\noindent
+\textbf{Examples of function classes.}
+
+\begin{itemize}
+    \item \textbf{Linear models:}
+    \[
+    f(x) = \langle w, x \rangle + b.
+    \]
+
+    \item \textbf{Polynomial models:}
+    \[
+    f(x) = \sum_{|\alpha| \leq d} c_\alpha x^\alpha.
+    \]
+
+    \item \textbf{Neural networks:}
+    \[
+    f_\theta(x) = W_L \sigma\big(W_{L-1} \sigma(\cdots \sigma(W_1 x))\big).
+    \]
+\end{itemize}
+
+\medskip
+
+Each choice of $\mathcal{H}$ imposes structural assumptions about the relationship between inputs and outputs.
+
+\medskip
+
+\noindent
+\textbf{Expressivity.}  
+A hypothesis space is said to be expressive if it can approximate a wide range of functions.
+
+\medskip
+
+\noindent
+\textbf{Example.}  
+Neural networks with sufficient width can approximate any continuous function on compact domains (universal approximation property).
+
+\medskip
+
+\noindent
+However, expressivity alone does not determine performance. A highly expressive model may fit training data perfectly but fail to generalize.
+
+\medskip
+
+Thus, the choice of $\mathcal{H}$ is not merely about approximation—it is about balancing expressivity, stability, and learnability.
+
+\section{Inductive Bias and Prior Structure}
+
+The hypothesis space introduces an implicit preference for certain functions over others. This preference is known as \emph{inductive bias}.
+
+\medskip
+
+\noindent
+\textbf{Definition (informal).}  
+Inductive bias is the set of assumptions that allows a learning algorithm to generalize beyond the observed data.
+
+\medskip
+
+\noindent
+Without inductive bias, learning is impossible: infinitely many functions can interpolate the training data, but only some will generalize well.
+
+\medskip
+
+\noindent
+\textbf{Sources of inductive bias.}
+
+\begin{itemize}
+    \item \textbf{Model class:}  
+    Linear models favor linear relationships.
+
+    \item \textbf{Architecture:}  
+    Convolutional networks favor locality and translation invariance.
+
+    \item \textbf{Regularization:}  
+    Penalizing large parameters favors simpler functions.
+
+    \item \textbf{Optimization:}  
+    Gradient-based methods may prefer certain solutions among many.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to prior knowledge.}  
+Inductive bias can be viewed as encoding prior knowledge about the problem:
+\begin{itemize}
+    \item smoothness,
+    \item sparsity,
+    \item compositional structure,
+    \item invariances.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Engineering perspective.}  
+Successful models are not neutral—they are carefully designed to reflect structure in the data.
+
+\medskip
+
+\noindent
+For example:
+\begin{itemize}
+    \item CNNs exploit spatial locality in images,
+    \item Transformers exploit relationships between elements in sequences.
+\end{itemize}
+
+\medskip
+
+Inductive bias is therefore not a limitation, but a necessary ingredient for learning.
+
+\section{Bias--Variance Tradeoff (Intuition)}
+
+We now examine how the choice of hypothesis space affects generalization.
+
+\medskip
+
+\noindent
+Consider the expected prediction error at a point $x$:
+\[
+\mathbb{E}\big[(f(x) - y)^2\big].
+\]
+
+\medskip
+
+This error can be conceptually decomposed into three components:
+
+\begin{itemize}
+    \item \textbf{Bias:} error due to systematic approximation
+    \item \textbf{Variance:} error due to sensitivity to data
+    \item \textbf{Noise:} inherent randomness in the data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{High-bias models.}
+\begin{itemize}
+    \item Simple hypothesis spaces (e.g., linear models)
+    \item May underfit the data
+    \item Low variance but large systematic error
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{High-variance models.}
+\begin{itemize}
+    \item Highly expressive models (e.g., deep networks)
+    \item Can fit training data closely
+    \item Sensitive to noise and fluctuations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}  
+Increasing model complexity typically:
+\begin{itemize}
+    \item decreases bias,
+    \item increases variance.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Good generalization requires balancing these two effects.
+
+\medskip
+
+\noindent
+\textbf{Remark.}  
+In modern deep learning, this classical picture is refined: highly overparameterized models can still generalize well due to implicit regularization and optimization effects.
+
+\section{Choosing Representations}
+
+The performance of a learning system depends not only on the function class, but also on how inputs are represented.
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+A representation is a transformation
+\[
+\phi : \mathcal{X} \to \mathcal{Z}
+\]
+that maps raw inputs into a feature space.
+
+\medskip
+
+A model then operates on $\phi(x)$ instead of $x$:
+\[
+f(x) = g(\phi(x)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Example.}
+\begin{itemize}
+    \item Polynomial features: $\phi(x) = (x, x^2, \dots)$
+    \item Learned features in neural networks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+A simple model applied to a rich representation can be more powerful than a complex model applied to raw inputs.
+
+\medskip
+
+\noindent
+\textbf{Feature engineering vs representation learning.}
+
+\begin{itemize}
+    \item Classical approaches rely on manually designed features
+    \item Deep learning learns representations automatically
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Compositional representations.}  
+Deep networks build representations hierarchically:
+\begin{itemize}
+    \item lower layers capture local patterns,
+    \item higher layers capture abstract structure.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric viewpoint.}  
+Representations transform the geometry of the data so that:
+\begin{itemize}
+    \item classes become separable,
+    \item structure becomes simpler,
+    \item learning becomes easier.
+\end{itemize}
+
+\medskip
+
+Thus, choosing a representation is equivalent to choosing a coordinate system in which the learning problem becomes tractable.
+
+\section{A Unifying Perspective}
+
+We can now refine the learning problem:
+
+\begin{enumerate}
+    \item Choose a representation $\phi$
+    \item Choose a hypothesis space $\mathcal{H}$
+    \item Impose inductive bias through structure and regularization
+    \item Optimize empirical risk
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key components of learning:}
+\begin{itemize}
+    \item \textbf{Representation} (how data is encoded)
+    \item \textbf{Function class} (what can be expressed)
+    \item \textbf{Inductive bias} (what is preferred)
+\end{itemize}
+
+\medskip
+
+Modern deep learning systems unify these elements: they learn representations and functions simultaneously, guided by implicit and explicit biases.
+
+\section{Outlook}
+
+This chapter emphasized that learning is not only about fitting data, but about choosing the right space of functions and representations.
+
+\medskip
+
+In the next chapter, we study learning as an optimization problem, focusing on how models are trained in practice.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Generalization arises not from data alone, but from the interaction between data, model structure, and inductive bias.

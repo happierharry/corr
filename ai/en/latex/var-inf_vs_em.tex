@@ -1,0 +1,240 @@
+\section{Variational Inference vs.\ EM}
+
+Variational Inference (VI) and the Expectation--Maximization (EM) algorithm are closely related. Both arise from rewriting the log-likelihood using an auxiliary distribution over latent variables, and both can be interpreted as optimization procedures on a lower bound. However, they are not identical: EM is a special and more restrictive procedure, whereas variational inference is a broader framework.
+
+\subsection{Latent-variable setting}
+
+Suppose \(x\) denotes observed data, \(z\) latent variables, and \(\theta\) model parameters. The joint model is
+\[
+p(x,z \mid \theta),
+\]
+and the observed-data likelihood is
+\[
+p(x\mid \theta)=\sum_z p(x,z\mid \theta)
+\]
+in the discrete case, or
+\[
+p(x\mid \theta)=\int p(x,z\mid \theta)\,dz
+\]
+in the continuous case.
+
+The difficulty is that direct maximization of
+\[
+\log p(x\mid \theta)
+\]
+is often hard because the latent variable \(z\) is unobserved.
+
+\subsection{A common variational identity}
+
+Introduce any distribution \(q(z)\) over the latent variable. Then
+\[
+\log p(x\mid \theta)
+=
+\mathcal{L}(q,\theta)
++
+\mathrm{KL}\!\left(q(z)\,\|\,p(z\mid x,\theta)\right),
+\]
+where
+\[
+\mathcal{L}(q,\theta)
+=
+\mathbb{E}_{q(z)}[\log p(x,z\mid \theta)]
+-
+\mathbb{E}_{q(z)}[\log q(z)].
+\]
+
+Since Kullback--Leibler divergence is nonnegative,
+\[
+\mathrm{KL}\!\left(q(z)\,\|\,p(z\mid x,\theta)\right)\ge 0,
+\]
+we obtain the lower bound
+\[
+\mathcal{L}(q,\theta)\le \log p(x\mid \theta).
+\]
+This lower bound is often called the \emph{evidence lower bound} (ELBO).
+
+Thus both EM and VI are based on the same idea:
+\begin{quote}
+replace the difficult objective \(\log p(x\mid \theta)\) by a tractable lower bound \(\mathcal{L}(q,\theta)\).
+\end{quote}
+
+\subsection{Expectation--Maximization}
+
+EM alternates between two steps.
+
+\subsubsection*{E-step}
+Given the current parameter value \(\theta^{(t)}\), set
+\[
+q^{(t+1)}(z)=p(z\mid x,\theta^{(t)}).
+\]
+This is the exact posterior over the latent variables under the current model.
+
+Because of this exact choice,
+\[
+\mathrm{KL}\!\left(q^{(t+1)}(z)\,\|\,p(z\mid x,\theta^{(t)})\right)=0,
+\]
+so the lower bound is tight at \(\theta^{(t)}\).
+
+\subsubsection*{M-step}
+Then maximize the bound with respect to \(\theta\):
+\[
+\theta^{(t+1)}
+=
+\arg\max_{\theta}\mathcal{L}(q^{(t+1)},\theta).
+\]
+Since the entropy term in \(\mathcal{L}(q,\theta)\) does not depend on \(\theta\), this is equivalent to maximizing
+\[
+Q(\theta\mid \theta^{(t)})
+=
+\mathbb{E}_{p(z\mid x,\theta^{(t)})}
+\big[\log p(x,z\mid \theta)\big].
+\]
+
+Hence EM can be written as:
+\[
+\text{E-step: exact posterior} \qquad
+\text{M-step: maximize expected complete-data log-likelihood.}
+\]
+
+\subsection{Variational Inference}
+
+Variational inference uses the same lower bound
+\[
+\mathcal{L}(q,\theta)
+=
+\mathbb{E}_{q(z)}[\log p(x,z\mid \theta)]
+-
+\mathbb{E}_{q(z)}[\log q(z)],
+\]
+but does \emph{not} require \(q(z)\) to equal the exact posterior.
+
+Instead, one chooses a tractable family of distributions
+\[
+\mathcal{Q}=\{q_\phi(z)\},
+\]
+often parametrized by variational parameters \(\phi\), and solves
+\[
+q_\phi^*(z)
+=
+\arg\max_{q_\phi\in \mathcal Q}\mathcal{L}(q_\phi,\theta),
+\]
+or equivalently
+\[
+q_\phi^*(z)
+=
+\arg\min_{q_\phi\in \mathcal Q}
+\mathrm{KL}\!\left(q_\phi(z)\,\|\,p(z\mid x,\theta)\right).
+\]
+
+Thus VI performs approximate posterior inference:
+\begin{quote}
+instead of using the exact posterior, it finds the best approximation within a restricted family.
+\end{quote}
+
+\subsection{Core difference}
+
+The essential difference is:
+
+\begin{itemize}
+    \item \textbf{EM:} the E-step uses the \emph{exact} posterior
+    \[
+    q(z)=p(z\mid x,\theta).
+    \]
+    \item \textbf{VI:} one restricts \(q\) to a tractable family \(\mathcal Q\), so generally
+    \[
+    q(z)\neq p(z\mid x,\theta).
+    \]
+\end{itemize}
+
+Therefore:
+
+\begin{quote}
+EM is exact posterior updating plus parameter maximization, whereas variational inference is approximate posterior optimization over a chosen family.
+\end{quote}
+
+\subsection{EM as a special case of variational inference}
+
+EM may be viewed as a special case of variational inference in which the variational family is unrestricted and rich enough to contain the true posterior exactly. In that case, the optimal \(q\) is
+\[
+q^*(z)=p(z\mid x,\theta),
+\]
+and the KL divergence becomes zero in every E-step.
+
+Thus:
+\[
+\boxed{\text{EM is a special case of variational optimization.}}
+\]
+
+\subsection{Why VI is broader}
+
+VI becomes necessary when the exact posterior
+\[
+p(z\mid x,\theta)
+\]
+is itself intractable. This happens in many modern latent-variable models, especially in Bayesian models and deep generative models.
+
+In such settings, EM cannot be carried out exactly because the E-step is impossible in closed form. Variational inference then replaces the exact E-step by an approximate optimization:
+\[
+q_\phi(z)\approx p(z\mid x,\theta).
+\]
+
+Hence VI extends the EM philosophy to settings where exact posterior computation is no longer feasible.
+
+\subsection{Optimization viewpoint}
+
+Both methods optimize the same lower bound, but differently:
+
+\begin{itemize}
+    \item \textbf{EM:} coordinate ascent on \(\mathcal{L}(q,\theta)\) with an exact update in \(q\).
+    \item \textbf{VI:} coordinate ascent or gradient-based optimization on \(\mathcal{L}(q_\phi,\theta)\) within a restricted family.
+\end{itemize}
+
+In EM, the bound touches the true log-likelihood at each E-step. In VI, the bound is generally not tight because the approximate family cannot exactly represent the posterior.
+
+\subsection{Comparison table}
+
+\[
+\begin{array}{|l|l|l|}
+\hline
+\textbf{Aspect} & \textbf{EM} & \textbf{Variational Inference} \\
+\hline
+Auxiliary object & q(z) & q_\phi(z) \\
+\hline
+Posterior treatment & \text{exact} & \text{approximate} \\
+\hline
+E-step / inference step &
+q(z)=p(z\mid x,\theta) &
+q_\phi(z)\approx p(z\mid x,\theta) \\
+\hline
+Optimization target & \mathcal{L}(q,\theta) & \mathcal{L}(q_\phi,\theta) \\
+\hline
+KL term after inference update & 0 & \text{usually } > 0 \\
+\hline
+Applicability & \text{when exact posterior is tractable} &
+\text{when exact posterior is intractable} \\
+\hline
+Interpretation & \text{exact latent-variable ML} &
+\text{approximate inference / bound optimization} \\
+\hline
+\end{array}
+\]
+
+\subsection{Conceptual summary}
+
+The best concise relationship is:
+\begin{quote}
+EM and VI are built from the same variational lower-bound identity. EM uses the exact posterior in the auxiliary step, while variational inference replaces it by the best approximation in a restricted family.
+\end{quote}
+
+Equivalently:
+\[
+\boxed{
+\text{EM} = \text{exact variational coordinate ascent},
+\qquad
+\text{VI} = \text{approximate variational optimization}.
+}
+\]
+
+\subsection{Final remark}
+
+In modern machine learning, VI is often discussed mainly as an approximate Bayesian inference method, while EM is often discussed mainly as a maximum-likelihood algorithm for latent-variable models. Mathematically, however, they are very closely connected: both optimize a lower bound obtained by introducing a distribution over latent variables.
