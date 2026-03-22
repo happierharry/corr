@@ -1,0 +1,217 @@
+\section{From Neural Networks to R1CS: A Worked Example}
+
+\subsection{Overview}
+
+In zero-knowledge machine learning (zkML), we wish to prove that a model has been evaluated correctly without revealing inputs or parameters.
+
+The key idea is:
+\[
+\text{model} \;\longrightarrow\; \text{arithmetic computation} \;\longrightarrow\; \text{constraint system (R1CS)}.
+\]
+
+A \textbf{Rank-1 Constraint System (R1CS)} consists of constraints of the form
+\[
+\langle A_i, w \rangle \cdot \langle B_i, w \rangle = \langle C_i, w \rangle,
+\]
+where $w$ is the witness vector.
+
+\subsection{A Small Neural Network}
+
+Consider a one-hidden-layer network:
+\[
+z = W_1 x + b_1, \quad h = \phi(z), \quad y = W_2 h + b_2,
+\]
+with
+\[
+W_1 =
+\begin{bmatrix}
+2 & -1 \\
+1 & 3
+\end{bmatrix}, \quad
+b_1 =
+\begin{bmatrix}
+1 \\
+0
+\end{bmatrix},
+\]
+\[
+W_2 =
+\begin{bmatrix}
+4 & -2
+\end{bmatrix}, \quad
+b_2 = 3.
+\]
+
+We choose a zk-friendly activation:
+\[
+\phi(t) = t^2.
+\]
+
+Thus the computation becomes:
+\[
+z_1 = 2x_1 - x_2 + 1, \quad
+z_2 = x_1 + 3x_2,
+\]
+\[
+h_1 = z_1^2, \quad h_2 = z_2^2,
+\]
+\[
+y = 4h_1 - 2h_2 + 3.
+\]
+
+\subsection{Witness Vector}
+
+Introduce variables for all intermediate values:
+\[
+w = (1, x_1, x_2, z_1, z_2, h_1, h_2, y).
+\]
+
+The leading $1$ is a constant wire.
+
+\subsection{Constraint Construction}
+
+Each computation step is converted into an R1CS constraint.
+
+\paragraph{Constraint 1:}
+\[
+z_1 = 2x_1 - x_2 + 1
+\quad \Rightarrow \quad
+(1 + 2x_1 - x_2)\cdot 1 = z_1.
+\]
+
+\paragraph{Constraint 2:}
+\[
+z_2 = x_1 + 3x_2
+\quad \Rightarrow \quad
+(x_1 + 3x_2)\cdot 1 = z_2.
+\]
+
+\paragraph{Constraint 3:}
+\[
+h_1 = z_1^2
+\quad \Rightarrow \quad
+z_1 \cdot z_1 = h_1.
+\]
+
+\paragraph{Constraint 4:}
+\[
+h_2 = z_2^2
+\quad \Rightarrow \quad
+z_2 \cdot z_2 = h_2.
+\]
+
+\paragraph{Constraint 5:}
+\[
+y = 4h_1 - 2h_2 + 3
+\quad \Rightarrow \quad
+(3 + 4h_1 - 2h_2)\cdot 1 = y.
+\]
+
+\subsection{Matrix Form}
+
+We can write the system as matrices $A, B, C$:
+
+\[
+A =
+\begin{bmatrix}
+1 & 2 & -1 & 0 & 0 & 0 & 0 & 0 \\
+0 & 1 & 3 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+3 & 0 & 0 & 0 & 0 & 4 & -2 & 0
+\end{bmatrix},
+\]
+
+\[
+B =
+\begin{bmatrix}
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 0
+\end{bmatrix},
+\]
+
+\[
+C =
+\begin{bmatrix}
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{bmatrix}.
+\]
+
+\subsection{Verification Example}
+
+Let
+\[
+x_1 = 2, \quad x_2 = 1.
+\]
+
+Then
+\[
+z_1 = 4, \quad z_2 = 5,
+\]
+\[
+h_1 = 16, \quad h_2 = 25,
+\]
+\[
+y = 17.
+\]
+
+So the witness is
+\[
+w = (1, 2, 1, 4, 5, 16, 25, 17).
+\]
+
+Check one constraint:
+\[
+\langle A_5, w \rangle = 3 + 4(16) - 2(25) = 17,
+\quad
+\langle B_5, w \rangle = 1,
+\quad
+\langle C_5, w \rangle = 17.
+\]
+
+Thus
+\[
+17 \cdot 1 = 17.
+\]
+
+\subsection{General Construction Recipe}
+
+Given any feed-forward model:
+
+\begin{enumerate}
+\item Quantize inputs and parameters.
+\item Introduce a variable for each intermediate value.
+\item Decompose computation into primitive operations.
+\item Encode affine operations as
+\[
+(\text{linear form}) \cdot 1 = \text{output}.
+\]
+\item Encode multiplications as
+\[
+a \cdot b = c.
+\]
+\item Assemble all constraints into $(A, B, C)$.
+\item Provide a witness containing all values.
+\end{enumerate}
+
+\subsection{Remarks}
+
+\begin{itemize}
+\item Neural networks operate over $\mathbb{R}$, while R1CS is defined over a finite field.
+\item Therefore, zkML typically proves correctness of a \emph{quantized} version of the model.
+\item Nonlinearities such as ReLU require special treatment (approximation, lookup, or custom constraints).
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key Insight.}  
+A neural network is a compositional function.  
+R1CS expresses the same computation as a system of polynomial constraints.
