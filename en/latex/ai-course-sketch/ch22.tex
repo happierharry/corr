@@ -1,0 +1,249 @@
+\chapter{Convolutional Neural Networks}
+
+\section{Convolution as Structured Linear Operator}
+
+Convolutional neural networks (CNNs) are designed to exploit structure in data, particularly in images and signals. The central operation is convolution, which can be understood as a structured linear transformation.
+
+\medskip
+
+\noindent
+\textbf{Discrete convolution.}  
+For a one-dimensional input $x \in \mathbb{R}^n$ and a kernel $w \in \mathbb{R}^k$, the convolution is defined as
+\[
+(y * w)_i = \sum_{j=1}^k w_j \, x_{i - j}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Two-dimensional convolution.}  
+For images, convolution is applied over spatial dimensions:
+\[
+y(i,j) = \sum_{u,v} w(u,v) \, x(i-u, j-v).
+\]
+
+\medskip
+
+\noindent
+\textbf{Linear operator view.}  
+Convolution can be written as a matrix-vector multiplication:
+\[
+y = K x,
+\]
+where $K$ is a structured (Toeplitz or block-Toeplitz) matrix.
+
+\medskip
+
+\noindent
+\textbf{Key property: parameter sharing.}
+\begin{itemize}
+    \item The same kernel is applied across all locations
+    \item Reduces number of parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Local connectivity.}
+\begin{itemize}
+    \item Each output depends only on a local region of the input
+    \item Reflects spatial locality in data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Convolution imposes structure on linear transformations, making them efficient and suitable for structured data.
+
+\section{Translation Invariance}
+
+A key motivation for convolutional architectures is translation invariance.
+
+\medskip
+
+\noindent
+\textbf{Translation equivariance.}  
+A convolutional layer satisfies:
+\[
+x(\cdot - \tau) \;\rightarrow\; y(\cdot - \tau),
+\]
+meaning that shifting the input results in a corresponding shift in the output.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Features detected at one location can also be detected elsewhere
+    \item The model does not depend on absolute position
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{From equivariance to invariance.}
+\begin{itemize}
+    \item Equivariance preserves spatial structure
+    \item Invariance removes sensitivity to position
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Achieving invariance.}
+\begin{itemize}
+    \item Pooling operations
+    \item Global averaging
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Translation invariance reflects a key property of visual perception: objects can be recognized regardless of their location.
+
+\section{Pooling and Hierarchies}
+
+CNNs typically include pooling operations that reduce spatial resolution while preserving important features.
+
+\medskip
+
+\noindent
+\textbf{Pooling.}
+\begin{itemize}
+    \item Max pooling: selects the maximum value in a region
+    \item Average pooling: computes the average value
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Reduces dimensionality
+    \item Introduces invariance to small transformations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hierarchical structure.}
+\begin{itemize}
+    \item Early layers detect simple features (edges, textures)
+    \item Intermediate layers detect patterns (shapes, parts)
+    \item Deeper layers detect complex structures (objects)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Receptive field.}  
+The region of the input that influences a given unit grows with depth.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs build representations hierarchically, combining local features into global patterns.
+
+\section{Applications in Vision}
+
+CNNs have achieved remarkable success in visual tasks.
+
+\medskip
+
+\noindent
+\textbf{Image classification.}
+\begin{itemize}
+    \item Assign a label to an image
+    \item Example: object recognition
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Object detection.}
+\begin{itemize}
+    \item Identify and localize objects within an image
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Segmentation.}
+\begin{itemize}
+    \item Assign a label to each pixel
+    \item Enables detailed understanding of scenes
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Generative modeling.}
+\begin{itemize}
+    \item Image synthesis
+    \item Super-resolution
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Architectural examples.}
+\begin{itemize}
+    \item Convolutional layers + pooling
+    \item Residual connections
+    \item Encoder--decoder structures
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs are effective because they incorporate domain-specific structure into the model.
+
+\section{A Unifying Perspective}
+
+Convolutional neural networks combine several key ideas:
+
+\begin{itemize}
+    \item \textbf{Structured linear operators:} convolution
+    \item \textbf{Inductive bias:} locality and translation invariance
+    \item \textbf{Hierarchy:} multi-scale representation learning
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Convolutional layers
+    \item Nonlinear activations
+    \item Pooling operations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+By incorporating structure into the architecture, CNNs achieve both efficiency and strong generalization.
+
+\section{Outlook}
+
+This chapter introduced convolutional neural networks:
+\begin{itemize}
+    \item convolution as a structured linear operator,
+    \item translation equivariance and invariance,
+    \item hierarchical feature learning,
+    \item applications in vision.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study sequence models, which extend neural networks to sequential and temporal data.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective models exploit the structure of the data they are designed to process.

@@ -1,0 +1,261 @@
+\section{Lecture 1: Learning as Function Approximation}
+
+\subsection{Motivation}
+
+At its core, machine learning seeks to extract patterns from data in order to make predictions about unseen instances. This goal can be formulated in a unified and mathematically precise way by viewing learning as a problem of function approximation.
+
+\medskip
+
+\noindent
+In many applications, we are given observations of the form:
+\[
+(x_i, y_i), \quad i = 1, \dots, n,
+\]
+where $x_i \in \mathcal{X}$ represents an input and $y_i \in \mathcal{Y}$ represents a corresponding output.
+
+\medskip
+
+\noindent
+The central assumption is that there exists an (unknown) relationship between inputs and outputs:
+\[
+y = f(x),
+\]
+for some function $f : \mathcal{X} \to \mathcal{Y}$.
+
+\medskip
+
+\noindent
+The task of learning is to approximate this unknown function using the observed data.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Machine learning is the problem of constructing an approximation to an unknown function based on finite data.
+
+\subsection{The Learning Problem}
+
+We formalize the learning problem by introducing a parameterized family of functions:
+\[
+\{ f_\theta : \mathcal{X} \to \mathcal{Y} \mid \theta \in \Theta \},
+\]
+called a \emph{model class} or \emph{hypothesis space}.
+
+\medskip
+
+\noindent
+Given data $\{(x_i, y_i)\}_{i=1}^n$, we seek parameters $\theta$ such that $f_\theta$ approximates the unknown function $f$.
+
+\medskip
+
+\noindent
+To quantify approximation quality, we introduce a loss function:
+\[
+\ell : \mathcal{Y} \times \mathcal{Y} \to \mathbb{R}.
+\]
+
+\medskip
+
+\noindent
+The empirical learning problem becomes:
+\[
+\min_{\theta \in \Theta} \; \frac{1}{n} \sum_{i=1}^n \ell\big(f_\theta(x_i), y_i\big).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $f_\theta$ is our approximation to the unknown function $f$
+    \item The loss measures discrepancy between predictions and observations
+    \item Learning corresponds to selecting the best approximation within the model class
+\end{itemize}
+
+\subsection{Examples of Function Approximation}
+
+\subsubsection{Linear Regression}
+
+In linear regression, we assume:
+\[
+f_\theta(x) = w^\top x,
+\]
+where $\theta = w \in \mathbb{R}^d$.
+
+\medskip
+
+\noindent
+Using squared loss:
+\[
+\ell(f(x), y) = (f(x) - y)^2,
+\]
+we obtain the objective:
+\[
+\min_w \sum_{i=1}^n (w^\top x_i - y_i)^2.
+\]
+
+\medskip
+
+\noindent
+This corresponds to approximating $f$ by a linear function.
+
+\subsubsection{Classification}
+
+In classification, outputs belong to discrete classes:
+\[
+y \in \{1, \dots, K\}.
+\]
+
+\medskip
+
+\noindent
+We may model:
+\[
+f_\theta(x) = \arg\max_k p_\theta(y = k \mid x).
+\]
+
+\medskip
+
+\noindent
+Here, the function approximation perspective remains valid: we approximate the mapping from inputs to labels.
+
+\subsubsection{Nonlinear Models}
+
+More expressive models introduce nonlinear transformations:
+\[
+f_\theta(x) = \sigma(Wx + b),
+\]
+or compositions of such transformations (as in neural networks).
+
+\medskip
+
+\noindent
+These allow approximation of more complex functions.
+
+\subsection{Approximation, Estimation, and Optimization}
+
+The learning problem can be decomposed into three interacting components:
+
+\medskip
+
+\noindent
+\textbf{1. Approximation.}  
+The hypothesis space determines which functions can be represented.
+
+\medskip
+
+\noindent
+\textbf{2. Estimation.}  
+Given finite data, we estimate parameters $\theta$.
+
+\medskip
+
+\noindent
+\textbf{3. Optimization.}  
+We solve a numerical problem to find the best parameters.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Machine learning is not a single problem, but the interaction of approximation, estimation, and optimization.
+
+\subsection{Geometry of Function Approximation}
+
+It is often useful to interpret learning geometrically.
+
+\medskip
+
+\noindent
+Let $\mathcal{H} = \{f_\theta\}$ denote the hypothesis space. Then learning can be viewed as finding:
+\[
+f_\theta \in \mathcal{H}
+\]
+that best matches observed data.
+
+\medskip
+
+\noindent
+In linear regression, this corresponds to projecting the target vector $y$ onto the subspace spanned by input features.
+
+\medskip
+
+\noindent
+\textbf{Geometric picture.}
+\begin{itemize}
+    \item Data defines a target point
+    \item Model class defines a set (or manifold)
+    \item Learning finds the closest point in that set
+\end{itemize}
+
+\subsection{Limitations of Finite Data}
+
+Since we only observe finitely many samples, we cannot recover the true function $f$ exactly.
+
+\medskip
+
+\noindent
+Two fundamental challenges arise:
+\begin{itemize}
+    \item \textbf{Underdetermination:} many functions may fit the data
+    \item \textbf{Generalization:} performance on unseen data is not guaranteed
+\end{itemize}
+
+\medskip
+
+\noindent
+This motivates the need for:
+\begin{itemize}
+    \item appropriate model classes
+    \item regularization
+    \item probabilistic reasoning
+\end{itemize}
+
+\subsection{A Unifying Perspective}
+
+Learning as function approximation provides a unifying framework for machine learning:
+
+\begin{itemize}
+    \item \textbf{Supervised learning:} approximate input-output mappings
+    \item \textbf{Classification:} approximate decision functions
+    \item \textbf{Regression:} approximate real-valued functions
+    \item \textbf{Deep learning:} approximate complex compositions of functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core abstraction.}  
+All learning problems can be viewed as selecting a function from a hypothesis space to approximate an unknown target.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The choice of function class determines what can be learned, while the data determines what is actually learned.
+
+\subsection{Outlook}
+
+In this lecture, we introduced the central paradigm of learning as function approximation.
+
+\medskip
+
+\noindent
+However, this formulation raises several important questions:
+
+\begin{itemize}
+    \item How is the data generated?
+    \item What does it mean for a model to generalize?
+    \item How should we choose the loss function?
+\end{itemize}
+
+\medskip
+
+\noindent
+In the next lecture, we address these questions by adopting a probabilistic perspective, where data is modeled as random variables and learning is framed as statistical estimation.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Understanding learning requires combining approximation theory with probabilistic reasoning.

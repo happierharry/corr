@@ -1,0 +1,230 @@
+\chapter{Variational Autoencoders}
+
+\section{Introduction}
+
+Variational Autoencoders (VAEs) combine latent-variable generative modeling with neural networks and variational inference. They provide a principled framework for learning probabilistic generative models while remaining computationally tractable.
+
+This chapter develops VAEs from first principles: we derive the Evidence Lower Bound (ELBO), introduce the encoder--decoder architecture, and explain the reparameterization trick. We also interpret the tradeoff between reconstruction and regularization and discuss common failure modes.
+
+\section{Autoencoding and Latent-Variable Modeling}
+
+A latent-variable generative model assumes:
+\[
+p_\theta(x) = \int p_\theta(x|z)p(z)\,dz.
+\]
+
+In VAEs:
+\begin{itemize}
+    \item $p(z)$ is a simple prior (e.g., $\mathcal{N}(0,I)$),
+    \item $p_\theta(x|z)$ is a neural decoder.
+\end{itemize}
+
+\subsection{Autoencoding View}
+
+We introduce an encoder $q_\phi(z|x)$ that maps data to latent variables. Thus:
+\begin{itemize}
+    \item encoder: $x \to z$,
+    \item decoder: $z \to x$.
+\end{itemize}
+
+Unlike classical autoencoders, this mapping is probabilistic.
+
+\section{Variational Inference and the ELBO}
+
+The log-likelihood is:
+\[
+\log p_\theta(x) = \log \int p_\theta(x,z)\,dz.
+\]
+
+Introduce an approximate posterior $q_\phi(z|x)$:
+\[
+\log p_\theta(x)
+=
+\log \int q_\phi(z|x)\frac{p_\theta(x,z)}{q_\phi(z|x)}\,dz.
+\]
+
+Applying Jensen's inequality:
+\[
+\log p_\theta(x)
+\ge
+\mathbb{E}_{q_\phi(z|x)}\left[\log \frac{p_\theta(x,z)}{q_\phi(z|x)}\right].
+\]
+
+\begin{definition}[ELBO]
+\[
+\mathcal{L}(x;\theta,\phi)
+=
+\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]
+-
+\mathrm{KL}(q_\phi(z|x)\|p(z)).
+\]
+\end{definition}
+
+\subsection{KL Decomposition}
+
+We have:
+\[
+\log p_\theta(x)
+=
+\mathcal{L}(x;\theta,\phi)
++
+\mathrm{KL}(q_\phi(z|x)\|p_\theta(z|x)).
+\]
+
+Thus maximizing the ELBO both:
+\begin{itemize}
+    \item increases likelihood,
+    \item improves approximation of the true posterior.
+\end{itemize}
+
+\section{Encoder--Decoder Architecture}
+
+\begin{itemize}
+    \item Encoder: $q_\phi(z|x)$ outputs parameters of a distribution over $z$,
+    \item Decoder: $p_\theta(x|z)$ generates data from latent variables.
+\end{itemize}
+
+\subsection{Typical Gaussian Encoder}
+
+\[
+q_\phi(z|x) = \mathcal{N}(z \mid \mu_\phi(x), \Sigma_\phi(x)).
+\]
+
+\subsection{Decoder}
+
+\[
+p_\theta(x|z) = \text{neural network output distribution}.
+\]
+
+Thus learning involves jointly optimizing $\theta$ and $\phi$.
+
+\section{Reparameterization Trick}
+
+Direct gradient estimation of the ELBO is difficult due to sampling from $q_\phi(z|x)$.
+
+\subsection{Reparameterization}
+
+For Gaussian latent variables:
+\[
+z \sim \mathcal{N}(\mu, \sigma^2)
+\quad \Longleftrightarrow \quad
+z = \mu + \sigma \odot \epsilon,\quad \epsilon \sim \mathcal{N}(0,I).
+\]
+
+\subsection{Reparameterization Estimator}
+
+The expectation becomes:
+\[
+\mathbb{E}_{q_\phi(z|x)}[f(z)]
+=
+\mathbb{E}_{\epsilon \sim \mathcal{N}(0,I)}[f(\mu_\phi(x) + \sigma_\phi(x)\epsilon)].
+\]
+
+This allows gradients to flow through $\mu_\phi$ and $\sigma_\phi$.
+
+\section{Full VAE Objective}
+
+The ELBO becomes:
+\[
+\mathcal{L}(x)
+=
+\mathbb{E}_{\epsilon}\left[\log p_\theta(x|z)\right]
+-
+\mathrm{KL}(q_\phi(z|x)\|p(z)).
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item first term: reconstruction accuracy,
+    \item second term: regularization toward prior.
+\end{itemize}
+
+Thus VAE balances:
+\[
+\text{reconstruction} \quad \text{vs} \quad \text{latent regularization}.
+\]
+
+\section{Gaussian Latent VAE}
+
+For:
+\[
+q_\phi(z|x)=\mathcal{N}(\mu,\sigma^2),
+\quad
+p(z)=\mathcal{N}(0,I),
+\]
+the KL term has closed form:
+\[
+\mathrm{KL}
+=
+\frac{1}{2}\sum_j \left(
+\mu_j^2 + \sigma_j^2 - \log \sigma_j^2 - 1
+\right).
+\]
+
+This makes training efficient and stable.
+
+\section{Interpretation of the KL Term}
+
+The KL term:
+\begin{itemize}
+    \item encourages $q_\phi(z|x)$ to stay close to $p(z)$,
+    \item prevents overfitting,
+    \item enforces a structured latent space.
+\end{itemize}
+
+\subsection{Tradeoff}
+
+\begin{itemize}
+    \item strong KL: better regularization, worse reconstruction,
+    \item weak KL: better reconstruction, risk of overfitting.
+\end{itemize}
+
+\section{Failure Modes and Variants}
+
+\subsection{Posterior Collapse}
+
+The encoder ignores $x$ and outputs:
+\[
+q_\phi(z|x) \approx p(z).
+\]
+
+Then:
+\begin{itemize}
+    \item latent variables carry little information,
+    \item model behaves like an unconditional generator.
+\end{itemize}
+
+\subsection{Causes}
+
+\begin{itemize}
+    \item overly powerful decoder,
+    \item strong KL regularization.
+\end{itemize}
+
+\subsection{Variants}
+
+\begin{itemize}
+    \item $\beta$-VAE: scale KL term,
+    \item KL annealing,
+    \item richer posterior families.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+VAEs combine:
+\begin{itemize}
+    \item latent-variable generative modeling,
+    \item variational inference,
+    \item neural parameterization.
+\end{itemize}
+
+The ELBO provides a tractable objective balancing data fit and latent structure. The reparameterization trick enables efficient gradient-based learning.
+
+Thus VAEs bridge probabilistic modeling and deep learning.
+
+\section{Summary}
+
+In this chapter we developed variational autoencoders. We derived the ELBO, introduced encoder--decoder architectures, and explained the reparameterization trick. We interpreted the KL term and the reconstruction tradeoff, and discussed failure modes such as posterior collapse.
+
+VAEs provide a principled and flexible framework for generative modeling with latent variables.

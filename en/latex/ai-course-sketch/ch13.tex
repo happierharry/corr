@@ -1,0 +1,273 @@
+\chapter{Numerical and Statistical Stability}
+
+\section{Ill-Conditioning}
+
+In previous chapters, we studied optimization methods and their practical behavior. However, the effectiveness of these methods depends critically on the numerical properties of the problem.
+
+\medskip
+
+\noindent
+\textbf{Definition (informal).}  
+A problem is said to be \emph{ill-conditioned} if small changes in the input lead to large changes in the output.
+
+\medskip
+
+\noindent
+\textbf{Example (linear regression).}  
+The solution
+\[
+w^\star = (X^\top X)^{-1} X^\top y
+\]
+is sensitive to perturbations when $X^\top X$ is nearly singular.
+
+\medskip
+
+\noindent
+\textbf{Condition number.}  
+For a positive definite matrix $A$, the condition number is
+\[
+\kappa(A) = \frac{\lambda_{\max}(A)}{\lambda_{\min}(A)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Large $\kappa(A)$ $\rightarrow$ ill-conditioned problem
+    \item Small $\kappa(A)$ $\rightarrow$ well-conditioned problem
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric intuition.}  
+Ill-conditioning corresponds to elongated level sets of the loss function, making optimization difficult.
+
+\medskip
+
+\noindent
+\textbf{Consequences.}
+\begin{itemize}
+    \item Slow convergence of gradient methods
+    \item Numerical instability in matrix inversion
+    \item Sensitivity to noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Sources of ill-conditioning.}
+\begin{itemize}
+    \item Highly correlated features
+    \item Redundant inputs
+    \item Poor scaling of variables
+\end{itemize}
+
+\section{Scaling and Normalization}
+
+A simple but effective way to improve conditioning is to preprocess the data.
+
+\medskip
+
+\noindent
+\textbf{Feature scaling.}  
+Transform each feature to have comparable magnitude.
+
+\medskip
+
+\noindent
+\textbf{Standardization.}
+\[
+x_j \leftarrow \frac{x_j - \mu_j}{\sigma_j},
+\]
+where $\mu_j$ and $\sigma_j$ are the mean and standard deviation of feature $j$.
+
+\medskip
+
+\noindent
+\textbf{Normalization.}  
+Scale inputs to have bounded norms, e.g.,
+\[
+x \leftarrow \frac{x}{\|x\|}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Effect on optimization.}
+\begin{itemize}
+    \item Makes gradients more balanced across dimensions
+    \item Improves convergence speed
+    \item Reduces numerical instability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to conditioning.}  
+Proper scaling reduces the condition number of the problem.
+
+\medskip
+
+\noindent
+\textbf{Normalization in deep learning.}
+\begin{itemize}
+    \item Batch normalization
+    \item Layer normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalization can be viewed as dynamically adjusting the geometry of the optimization problem.
+
+\section{Sensitivity to Noise}
+
+Real-world data is often noisy. A stable learning algorithm should not be overly sensitive to small perturbations.
+
+\medskip
+
+\noindent
+\textbf{Noise sources.}
+\begin{itemize}
+    \item Measurement errors
+    \item Incomplete observations
+    \item Intrinsic randomness
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect on learning.}
+\begin{itemize}
+    \item Can lead to overfitting
+    \item Can destabilize parameter estimates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example (least squares).}  
+In ill-conditioned problems, small noise in $y$ can cause large changes in $w^\star$.
+
+\medskip
+
+\noindent
+\textbf{Bias--variance perspective.}
+\begin{itemize}
+    \item High-variance models are more sensitive to noise
+    \item Regularization reduces sensitivity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stability as robustness.}  
+A stable algorithm produces similar outputs when inputs are slightly perturbed.
+
+\medskip
+
+\noindent
+\textbf{Algorithmic stability (informal).}  
+If removing or modifying a single data point does not significantly change the learned model, the algorithm is considered stable.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Stability is closely related to generalization: stable algorithms tend to generalize better.
+
+\section{Robustness Considerations}
+
+Beyond numerical stability, we are often concerned with robustness to broader forms of perturbation.
+
+\medskip
+
+\noindent
+\textbf{Types of robustness.}
+\begin{itemize}
+    \item Robustness to noise in data
+    \item Robustness to distribution shifts
+    \item Robustness to adversarial perturbations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Robust loss functions.}
+\begin{itemize}
+    \item Mean squared error: sensitive to outliers
+    \item Absolute error: more robust
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Regularization and robustness.}  
+Constraining model complexity often improves robustness.
+
+\medskip
+
+\noindent
+\textbf{Data augmentation.}  
+Introducing variations in training data can improve robustness to transformations.
+
+\medskip
+
+\noindent
+\textbf{Adversarial perspective (informal).}  
+Small, carefully chosen perturbations can significantly affect model predictions, especially in high-dimensional settings.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Robustness requires both stable models and appropriate assumptions about the data.
+
+\section{A Unifying Perspective}
+
+Numerical and statistical stability are closely related:
+
+\begin{itemize}
+    \item \textbf{Numerical stability:} sensitivity to computational errors
+    \item \textbf{Statistical stability:} sensitivity to data variations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key factors.}
+\begin{itemize}
+    \item Conditioning of the problem
+    \item Data preprocessing
+    \item Model complexity
+    \item Regularization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core insight.}  
+Stable learning systems are those that behave predictably under small perturbations, both numerical and statistical.
+
+\section{Outlook}
+
+This chapter examined stability from both numerical and statistical perspectives:
+\begin{itemize}
+    \item ill-conditioning and its consequences,
+    \item the role of scaling and normalization,
+    \item sensitivity to noise,
+    \item robustness considerations.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we transition from classical models to neural networks, motivating deep learning as a natural extension of these ideas.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Stability is essential for reliable learning: models should not only fit data, but do so in a way that is robust to perturbations and uncertainty.

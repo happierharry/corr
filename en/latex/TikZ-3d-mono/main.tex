@@ -1,0 +1,179 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{calc,patterns}
+
+% =========================================================
+% Monochrome 3D TikZ style library
+% =========================================================
+\tikzset{
+    visible edge/.style={draw=black, thick},
+    hidden edge/.style={draw=black, dashed, thin},
+    construction/.style={draw=black, dotted, thin},
+    axis3d/.style={->, thick},
+
+    face front/.style={draw=none, fill=gray!12},
+    face side/.style={draw=none, fill=gray!22},
+    face top/.style={draw=none, fill=gray!5},
+    face back/.style={draw=none, fill=white},
+    cut face/.style={draw=none, pattern=north east lines, pattern color=black},
+
+    bwlabel/.style={font=\small},
+    bwannot/.style={font=\scriptsize, align=center}
+}
+
+% =========================================================
+% 3D projected axes helper
+% Usage:
+% \begin{tikzpicture}[x={(1cm,0cm)},y={(0.8cm,0.35cm)},z={(0cm,1cm)}]
+% =========================================================
+
+\newcommand{\axesThreeD}[6]{%
+    % #1 #2 #3 = x,y,z lengths
+    % #4 #5 #6 = axis labels
+    \draw[axis3d] (0,0,0) -- (#1,0,0) node[below, bwlabel] {#4};
+    \draw[axis3d] (0,0,0) -- (0,#2,0) node[right, bwlabel] {#5};
+    \draw[axis3d] (0,0,0) -- (0,0,#3) node[left, bwlabel] {#6};
+}
+
+% =========================================================
+% Cuboid macro
+% Usage:
+% \cuboid{<name>}{<origin x>}{<origin y>}{<width>}{<height>}{<offset x>}{<offset y>}
+%
+% This is 2D-oblique style, very robust for textbooks.
+% =========================================================
+\newcommand{\cuboid}[7]{%
+    % front face
+    \coordinate (#1A) at (#2,#3);
+    \coordinate (#1B) at ($(#1A)+(#4,0)$);
+    \coordinate (#1C) at ($(#1A)+(#4,#5)$);
+    \coordinate (#1D) at ($(#1A)+(0,#5)$);
+
+    % back face via offset
+    \coordinate (#1E) at ($(#1A)+(#6,#7)$);
+    \coordinate (#1F) at ($(#1B)+(#6,#7)$);
+    \coordinate (#1G) at ($(#1C)+(#6,#7)$);
+    \coordinate (#1H) at ($(#1D)+(#6,#7)$);
+
+    % fills
+    \fill[face front] (#1A)--(#1B)--(#1C)--(#1D)--cycle;
+    \fill[face side]  (#1B)--(#1F)--(#1G)--(#1C)--cycle;
+    \fill[face top]   (#1D)--(#1C)--(#1G)--(#1H)--cycle;
+
+    % visible edges
+    \draw[visible edge] (#1A)--(#1B)--(#1C)--(#1D)--cycle;
+    \draw[visible edge] (#1B)--(#1F)--(#1G)--(#1C);
+    \draw[visible edge] (#1D)--(#1H)--(#1G);
+
+    % hidden edges
+    \draw[hidden edge] (#1A)--(#1E)--(#1F);
+    \draw[hidden edge] (#1E)--(#1H);
+}
+
+% =========================================================
+% Labeled cuboid macro
+% Usage:
+% \cuboidLabeled{name}{x}{y}{w}{h}{dx}{dy}{front label}{top label}{side label}
+% =========================================================
+\newcommand{\cuboidLabeled}[10]{%
+    \cuboid{#1}{#2}{#3}{#4}{#5}{#6}{#7}
+    \node[bwlabel] at ($(#1A)!0.5!(#1C)$) {#8};
+    \node[bwannot] at ($(#1D)!0.5!(#1G)+(0,0.25)$) {#9};
+    \node[bwannot] at ($(#1B)!0.5!(#1G)+(0.35,0)$) {#10};
+}
+
+% =========================================================
+% Tensor block macro
+% Usage:
+% \tensorblock{name}{x}{y}{w}{h}{dx}{dy}{n}
+% n = number of stacked slices
+% =========================================================
+\newcommand{\tensorblock}[8]{%
+    \foreach \k in {0,...,#8} {
+        \pgfmathsetmacro{\sx}{#2 + 0.18*\k}
+        \pgfmathsetmacro{\sy}{#3 + 0.12*\k}
+        \cuboid{#1\k}{\sx}{\sy}{#4}{#5}{#6}{#7}
+    }
+}
+
+% =========================================================
+% Cylinder macro
+% Usage:
+% \cylinderBW{name}{cx}{cy}{rx}{ry}{height}
+% center of top ellipse = (cx,cy)
+% =========================================================
+\newcommand{\cylinderBW}[6]{%
+    % top ellipse center (#2,#3)
+    % bottom center (#2,#3-#6)
+    \fill[face front] (#2,#3) ellipse (#4 and #5);
+
+    % top ellipse
+    \draw[visible edge] (#2,#3) ellipse (#4 and #5);
+
+    % side walls
+    \draw[visible edge] ($(#2,#3)+(-#4,0)$) -- ($(#2,#3-#6)+(-#4,0)$);
+    \draw[visible edge] ($(#2,#3)+(#4,0)$) -- ($(#2,#3-#6)+(#4,0)$);
+
+    % bottom ellipse
+    \draw[visible edge]
+        ($(#2,#3-#6)+(-#4,0)$)
+        arc[start angle=180,end angle=360,x radius=#4,y radius=#5];
+    \draw[hidden edge]
+        ($(#2,#3-#6)+(#4,0)$)
+        arc[start angle=0,end angle=180,x radius=#4,y radius=#5];
+}
+
+% =========================================================
+% Example document
+% =========================================================
+\begin{document}
+
+\section*{1. Cuboid}
+
+\begin{tikzpicture}
+    \cuboidLabeled{boxA}{0}{0}{3.2}{2.2}{1.0}{0.8}
+        {Front}
+        {Top}
+        {Side}
+\end{tikzpicture}
+
+\bigskip
+
+\section*{2. Tensor block / feature map stack}
+
+\begin{tikzpicture}
+    \tensorblock{T}{0}{0}{2.5}{3.0}{0.7}{0.5}{3}
+    \node[bwlabel] at (1.25,1.5) {$H\times W$};
+    \node[bwannot] at (4.3,2.25) {$C$ channels};
+\end{tikzpicture}
+
+\bigskip
+
+\section*{3. Cylinder}
+
+\begin{tikzpicture}
+    \cylinderBW{cyl}{0}{2.5}{1.4}{0.35}{2.2}
+\end{tikzpicture}
+
+\bigskip
+
+\section*{4. 3D axes with projected coordinates}
+
+\begin{tikzpicture}[x={(1cm,0cm)},y={(0.8cm,0.35cm)},z={(0cm,1cm)}]
+    \axesThreeD{3}{3}{3}{$x$}{$y$}{$z$}
+
+    % Example cube in projected coordinates
+    \fill[face front] (0,0,0) -- (1.5,0,0) -- (1.5,1.5,0) -- (0,1.5,0) -- cycle;
+    \fill[face side]  (1.5,0,0) -- (1.5,1.5,0) -- (1.5,1.5,1.5) -- (1.5,0,1.5) -- cycle;
+    \fill[face top]   (0,1.5,0) -- (1.5,1.5,0) -- (1.5,1.5,1.5) -- (0,1.5,1.5) -- cycle;
+
+    \draw[visible edge] (0,0,0) -- (1.5,0,0) -- (1.5,1.5,0) -- (0,1.5,0) -- cycle;
+    \draw[visible edge] (1.5,0,0) -- (1.5,0,1.5) -- (1.5,1.5,1.5) -- (1.5,1.5,0);
+    \draw[visible edge] (0,1.5,0) -- (0,1.5,1.5) -- (1.5,1.5,1.5);
+
+    \draw[hidden edge] (0,0,0) -- (0,0,1.5) -- (1.5,0,1.5);
+    \draw[hidden edge] (0,0,1.5) -- (0,1.5,1.5);
+\end{tikzpicture}
+
+\end{document}

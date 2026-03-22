@@ -1,0 +1,308 @@
+\chapter{Learning as Optimization}
+
+\section{Optimization Formulations of Learning}
+
+In previous chapters, we formulated learning as the problem of minimizing empirical risk. We now examine this problem through the lens of optimization.
+
+\medskip
+
+Recall that a model is parameterized by $\theta \in \Theta$, and learning consists of solving
+\[
+\min_{\theta \in \Theta} \; \hat{R}_n(\theta)
+\quad \text{where} \quad
+\hat{R}_n(\theta) = \frac{1}{n} \sum_{i=1}^n \ell(f_\theta(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Key observation.}  
+Learning reduces to minimizing a function over a high-dimensional parameter space.
+
+\medskip
+
+This formulation unifies a wide range of models:
+\begin{itemize}
+    \item Linear regression $\rightarrow$ convex quadratic optimization
+    \item Logistic regression $\rightarrow$ convex optimization
+    \item Neural networks $\rightarrow$ highly nonconvex optimization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Structure of the objective.}
+\begin{itemize}
+    \item Sum of losses over data points
+    \item Often smooth (differentiable)
+    \item High-dimensional and possibly nonconvex
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Engineering constraint.}  
+Exact minimization is rarely possible. Instead, we aim to find parameters that are \emph{good enough} within limited computational time.
+
+\medskip
+
+Thus, optimization is not merely a mathematical tool—it determines what models are practically usable.
+
+\section{Gradient-Based Methods}
+
+Most modern learning algorithms rely on gradient-based optimization.
+
+\medskip
+
+\noindent
+\textbf{Gradient descent.}  
+Given a differentiable objective $L(\theta)$, the update rule is
+\[
+\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t),
+\]
+where $\eta > 0$ is the learning rate.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The gradient $\nabla L(\theta)$ points in the direction of steepest increase
+    \item Moving in the negative gradient direction decreases the loss
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}  
+Gradient descent follows the local geometry of the loss surface, moving toward regions of lower value.
+
+\medskip
+
+\noindent
+\textbf{Choice of learning rate.}
+\begin{itemize}
+    \item Too small $\rightarrow$ slow convergence
+    \item Too large $\rightarrow$ instability or divergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example (quadratic loss).}  
+For a convex quadratic function, gradient descent converges to the global minimum under suitable conditions.
+
+\medskip
+
+\noindent
+\textbf{Limitation.}  
+Computing the full gradient requires summing over all data points:
+\[
+\nabla L(\theta) = \frac{1}{n} \sum_{i=1}^n \nabla \ell(f_\theta(x_i), y_i).
+\]
+
+For large datasets, this becomes computationally expensive.
+
+\section{Stochastic Optimization}
+
+To address the computational cost of full gradients, we use stochastic approximations.
+
+\medskip
+
+\noindent
+\textbf{Stochastic Gradient Descent (SGD).}  
+At each step, sample a data point (or mini-batch) and compute an approximate gradient:
+\[
+\theta_{t+1} = \theta_t - \eta \nabla \ell(f_\theta(x_{i_t}), y_{i_t}).
+\]
+
+\medskip
+
+\noindent
+\textbf{Mini-batch SGD.}
+\[
+\theta_{t+1} = \theta_t - \eta \frac{1}{|B_t|} \sum_{i \in B_t} \nabla \ell(f_\theta(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Key properties.}
+\begin{itemize}
+    \item Lower computational cost per iteration
+    \item Introduces noise into the optimization process
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The noise in SGD is not purely detrimental—it can help escape poor local minima and improve generalization.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Small batch size $\rightarrow$ noisy but cheap updates
+    \item Large batch size $\rightarrow$ stable but expensive updates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical methods.}
+\begin{itemize}
+    \item Momentum: accelerates convergence by smoothing updates
+    \item Adaptive methods (e.g., Adam): adjust learning rates per parameter
+\end{itemize}
+
+\medskip
+
+Stochastic optimization is the backbone of modern deep learning.
+
+\section{Geometry of Loss Landscapes}
+
+To understand optimization behavior, it is useful to consider the geometry of the loss function.
+
+\medskip
+
+\noindent
+\textbf{Loss landscape.}  
+The function
+\[
+L(\theta)
+\]
+defines a surface over parameter space.
+
+\medskip
+
+\noindent
+\textbf{Critical points.}
+\begin{itemize}
+    \item Local minima: $\nabla L(\theta) = 0$, $L$ is locally minimal
+    \item Saddle points: $\nabla L(\theta) = 0$, but not minima
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Convex vs nonconvex.}
+\begin{itemize}
+    \item Convex problems: all local minima are global
+    \item Nonconvex problems: multiple local minima and saddle points
+\end{itemize}
+
+\medskip
+
+Neural networks give rise to highly nonconvex loss landscapes, yet gradient-based methods often succeed in practice.
+
+\medskip
+
+\noindent
+\textbf{Flat vs sharp minima.}
+\begin{itemize}
+    \item Flat minima: loss changes slowly around the solution
+    \item Sharp minima: loss changes rapidly
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+Solutions found by SGD tend to lie in flatter regions, which are often associated with better generalization.
+
+\medskip
+
+\noindent
+\textbf{High-dimensional effects.}  
+In high dimensions:
+\begin{itemize}
+    \item Saddle points are more common than poor local minima
+    \item Many directions may have near-zero curvature
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric intuition.}  
+Optimization can be viewed as navigating a complex landscape shaped by:
+\begin{itemize}
+    \item model architecture,
+    \item data distribution,
+    \item parameterization.
+\end{itemize}
+
+\section{Optimization and Generalization}
+
+Optimization does more than minimize training loss—it influences generalization.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Different optimization algorithms may converge to different solutions, even if they achieve similar training error.
+
+\medskip
+
+\noindent
+\textbf{Implicit bias.}  
+Gradient-based methods exhibit a preference for certain solutions among many possible minimizers.
+
+\medskip
+
+\noindent
+\textbf{Example.}
+\begin{itemize}
+    \item In overparameterized linear models, gradient descent often finds minimum-norm solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Implication.}  
+Optimization is part of the modeling process—it implicitly regularizes the learned function.
+
+\section{A Unifying Perspective}
+
+We can now refine the learning process:
+
+\begin{enumerate}
+    \item Define a loss function based on data and model
+    \item Formulate an optimization problem
+    \item Apply gradient-based methods (often stochastic)
+    \item Obtain a solution shaped by both the objective and the optimization dynamics
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Three interacting aspects:}
+\begin{itemize}
+    \item \textbf{Objective} (what is minimized)
+    \item \textbf{Algorithm} (how it is minimized)
+    \item \textbf{Geometry} (structure of the loss landscape)
+\end{itemize}
+
+\medskip
+
+Modern machine learning succeeds not only because good objectives are defined, but because efficient optimization methods can exploit their structure.
+
+\section{Outlook}
+
+This chapter introduced optimization as a central component of learning:
+\begin{itemize}
+    \item learning as minimizing empirical risk,
+    \item gradient-based methods as the primary tool,
+    \item stochasticity as both a necessity and an advantage.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study generalization more carefully, addressing the fundamental question of why models that fit data well can still perform well on unseen examples.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Learning is not only about what we optimize, but also about how we optimize it.

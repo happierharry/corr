@@ -1,0 +1,425 @@
+\section{Sequential Data and Recurrent Computation}
+
+Not all data are naturally organized on a spatial grid.
+Many important problems involve sequences:
+text, speech, time series, event streams, trajectories, and controlled interactions with an environment.
+Such data carry a form of structure different from the spatial locality emphasized in convolutional models.
+The crucial regularity is \emph{order in time}.
+An observation at one step may change the meaning of what comes later, and an action taken now may influence all future states.
+A suitable architecture must therefore process information \emph{sequentially} while carrying forward a summary of the past.
+
+\medskip
+
+This is the central idea of recurrence.
+A recurrent model does not treat a sequence merely as a long vector.
+Instead, it updates an internal state as new elements arrive.
+That state plays the role of memory, context, and computational workspace.
+The purpose of this section is not only to define recurrent networks, but also to explain why they are mathematically delicate to train.
+The same architectural device that gives them temporal structure --- repeated application of one transition map --- also produces long products of Jacobians in the gradient.
+That is the origin of vanishing and exploding gradients.
+
+\subsection*{Sequential structure and the state-space viewpoint}
+
+A sequence of length $T$ is an ordered tuple
+\[
+ x_{1:T} = (x_1, x_2, \dots, x_T),
+\]
+where each $x_t$ belongs to some input space $\mathcal{X}$.
+The ordered nature of the tuple matters.
+In language, reordering words changes meaning.
+In time series, the future depends on the past rather than vice versa.
+In control, the choice made at time $t$ alters the state from which future decisions are taken.
+
+\medskip
+
+A natural mathematical language for such problems is the language of \emph{state-space evolution}.
+One introduces a hidden state $h_t \in \mathcal{H}$ that summarizes, in a compressed way, the information from the past that is relevant for future computation.
+The model is then built from two ingredients:
+
+\begin{itemize}
+    \item a \emph{recurrence map} that updates the hidden state when a new input arrives;
+    \item an \emph{output map} that converts the hidden state into a prediction or emitted symbol.
+\end{itemize}
+
+This viewpoint is close in spirit to dynamical systems.
+The state evolves step by step according to a fixed rule, except that the rule is driven by the input sequence.
+A recurrent neural network is therefore best understood as a learnable nonlinear dynamical system.
+
+\subsection*{Core definitions}
+
+\begin{definition}[Sequence model]
+Let $\mathcal{X}$ be an input space, $\mathcal{Y}$ an output space, and $\mathcal{H}$ a hidden-state space.
+A \emph{sequence model} processes an ordered input $x_{1:T}$ and produces outputs $y_{1:T}$ or a final output $y_T$ by repeatedly updating an internal state.
+\end{definition}
+
+\begin{definition}[Recurrent neural network]
+A \emph{recurrent neural network} (RNN) is a parametric model specified by a recurrence map
+\[
+F_\theta : \mathcal{H} \times \mathcal{X} \to \mathcal{H}
+\]
+and an output map
+\[
+G_\theta : \mathcal{H} \to \mathcal{Y},
+\]
+with dynamics
+\[
+ h_t = F_\theta(h_{t-1},x_t),
+ \qquad
+ y_t = G_\theta(h_t),
+\]
+for $t=1,\dots,T$, starting from an initial state $h_0$.
+\end{definition}
+
+\begin{definition}[Discrete-time dynamical-system viewpoint]
+An RNN is a \emph{discrete-time input-driven dynamical system} because the hidden state evolves by repeated application of the same transition rule.
+The input $x_t$ acts as an external forcing term, while the parameter vector $\theta$ determines the dynamics.
+\end{definition}
+
+\begin{definition}[Hidden state, recurrence map, and output map]
+The variable $h_t$ is called the \emph{hidden state} at time $t$.
+The map $F_\theta$ is the \emph{recurrence map} or \emph{state-update rule}.
+The map $G_\theta$ is the \emph{output map} or \emph{readout}.
+Because the same $F_\theta$ is reused at every time step, an RNN exhibits weight sharing across time.
+\end{definition}
+
+\medskip
+
+The most classical RNN chooses
+\[
+F_\theta(h_{t-1},x_t) = \sigma(W_h h_{t-1} + W_x x_t + b),
+\qquad
+G_\theta(h_t)=W_y h_t + c,
+\]
+where $\sigma$ is a nonlinearity such as $\tanh$ or a logistic sigmoid.
+This simple formula already contains the central architectural idea:
+the present state is computed from the previous state together with the new input.
+
+\subsection*{Recurrence as depth through time}
+
+A recurrent network contains a loop in its abstract definition, but when the sequence length $T$ is fixed one may \emph{unroll} the recurrence into a depth-$T$ computation graph:
+\[
+ h_0 \xrightarrow[]{F_\theta(\cdot,x_1)} h_1 \xrightarrow[]{F_\theta(\cdot,x_2)} h_2 \xrightarrow[]{} \cdots \xrightarrow[]{F_\theta(\cdot,x_T)} h_T.
+\]
+This graph is deep not because one stacked $T$ different layers, but because one applied the \emph{same} layer $T$ times.
+That is the distinctive feature of recurrence.
+It is depth with parameter sharing across time.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.28\textwidth}
+\centering
+\begin{tikzpicture}[>=Latex, node distance=1.2cm]
+\tikzstyle{boxnode}=[draw, rounded corners, minimum width=1.9cm, minimum height=0.9cm, align=center]
+\node[boxnode] (rnn) {RNN cell\\$F_\theta,G_\theta$};
+\node[left=1.4cm of rnn] (xin) {$x_t$};
+\node[above=1.1cm of rnn] (htm) {$h_{t-1}$};
+\node[right=1.4cm of rnn] (yout) {$y_t$};
+\node[below=1.1cm of rnn] (ht) {$h_t$};
+\draw[->, thick] (xin) -- (rnn);
+\draw[->, thick] (htm) -- (rnn);
+\draw[->, thick] (rnn) -- (yout);
+\draw[->, thick] (rnn) -- (ht);
+\end{tikzpicture}
+\caption{Folded recurrent cell.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.64\textwidth}
+\centering
+\begin{tikzpicture}[>=Latex, node distance=1.4cm]
+\tikzstyle{cellnode}=[draw, rounded corners, minimum width=1.4cm, minimum height=0.85cm, align=center]
+\node[cellnode] (c1) {$F_\theta$};
+\node[cellnode, right=of c1] (c2) {$F_\theta$};
+\node[cellnode, right=of c2] (c3) {$F_\theta$};
+\node[cellnode, right=of c3] (c4) {$F_\theta$};
+\draw[->, thick] ($(c1.west)+(-0.8,0)$) -- node[above] {$h_0$} (c1.west);
+\draw[->, thick] (c1.east) -- node[above] {$h_1$} (c2.west);
+\draw[->, thick] (c2.east) -- node[above] {$h_2$} (c3.west);
+\draw[->, thick] (c3.east) -- node[above] {$h_3$} (c4.west);
+\draw[->, thick] (c4.east) -- node[above] {$h_4$} ($(c4.east)+(0.8,0)$);
+\foreach \i/\node in {1/c1,2/c2,3/c3,4/c4} {
+  \draw[->, thick] (\node.north) -- ++(0,0.8) node[above] {$x_{\i}$};
+}
+\foreach \i/\node in {1/c1,2/c2,3/c3,4/c4} {
+  \draw[->, thick] (\node.south) -- ++(0,-0.8) node[below] {$y_{\i}$};
+}
+\node[below=1.8cm of c2, align=center] {same parameters $\theta$ reused\\at every time step};
+\end{tikzpicture}
+\caption{Unrolled computation graph.}
+\end{subfigure}
+\caption{A recurrent network may be viewed either as a single folded cell or as a deep computation graph unrolled through time.
+The unrolled view makes clear that recurrence creates depth by repeated use of the same transition map.}
+\label{fig:folded-unrolled-rnn}
+\end{figure}
+
+\Cref{fig:folded-unrolled-rnn} is important conceptually.
+The folded diagram emphasizes the architectural idea of a state updated through time.
+The unrolled diagram emphasizes the optimization problem.
+Once unfolded, the RNN becomes an ordinary but very deep computational graph, and gradients must travel backward through every temporal step.
+
+\subsection*{Backpropagation through time}
+
+Suppose that a loss is accumulated across time:
+\[
+\mathcal{L}(\theta)=\sum_{t=1}^{T} \ell_t(y_t)=\sum_{t=1}^{T} \ell_t\bigl(G_\theta(h_t)\bigr),
+\qquad
+h_t=F_\theta(h_{t-1},x_t).
+\]
+Because the same parameters $\theta$ appear in every transition, differentiating $\mathcal{L}$ requires accounting for all paths by which a perturbation of $\theta$ at one time step changes later hidden states.
+This procedure is called \emph{backpropagation through time} (BPTT).
+
+\medskip
+
+A useful way to derive BPTT is to introduce the \emph{adjoint state}
+\[
+\delta_t := \frac{\partial \mathcal{L}}{\partial h_t},
+\]
+viewed as a row vector.
+Then the chain rule gives a backward recursion.
+Write
+\[
+A_t := \frac{\partial F_\theta}{\partial h}(h_{t-1},x_t)
+\qquad\text{and}\qquad
+B_t := \frac{\partial G_\theta}{\partial h}(h_t),
+\]
+for the Jacobians of the recurrence map and output map with respect to the hidden state.
+If the loss at time $t$ depends only on $y_t$, then
+\[
+\delta_t
+= \frac{\partial \ell_t}{\partial y_t} B_t
+  + \delta_{t+1} A_{t+1},
+\qquad t=T-1,T-2,\dots,1,
+\]
+with terminal condition
+\[
+\delta_T = \frac{\partial \ell_T}{\partial y_T} B_T.
+\]
+In words: the gradient at time $t$ consists of a \emph{local contribution} from the current loss plus a \emph{future contribution} transported backward through the recurrent dynamics.
+
+\medskip
+
+The parameter gradient is then obtained by summing the effect of the parameters at every time step:
+\[
+\frac{\partial \mathcal{L}}{\partial \theta}
+=
+\sum_{t=1}^{T}
+\left(
+\frac{\partial \ell_t}{\partial \theta}
++
+\delta_t \frac{\partial F_\theta}{\partial \theta}(h_{t-1},x_t)
+\right),
+\]
+where the first term accounts for any direct dependence of $\ell_t$ on $\theta$ through the output map.
+This is the exact analogue of reverse-mode differentiation in feedforward networks, except that the reverse pass now follows the temporal chain.
+
+\begin{proposition}[Gradient transport through recurrent Jacobians]
+Consider an RNN with hidden-state recursion $h_t=F_\theta(h_{t-1},x_t)$ and loss
+\[
+\mathcal{L}=\sum_{t=1}^{T} \ell_t\bigl(G_\theta(h_t)\bigr).
+\]
+For $1 \leq t < s \leq T$, the contribution of the loss at time $s$ to the hidden-state gradient at time $t$ is transported by the Jacobian product
+\[
+\frac{\partial \ell_s}{\partial h_t}
+=
+\frac{\partial \ell_s}{\partial h_s}
+\prod_{k=t+1}^{s}
+\frac{\partial h_k}{\partial h_{k-1}}.
+\]
+Equivalently, if $A_k = \partial F_\theta/\partial h(h_{k-1},x_k)$, then
+\[
+\frac{\partial \ell_s}{\partial h_t}
+=
+\frac{\partial \ell_s}{\partial h_s} A_s A_{s-1}\cdots A_{t+1}.
+\]
+Hence long-range gradient transport is controlled by repeated multiplication of recurrent Jacobians.
+\end{proposition}
+
+\begin{proof}
+Fix $s>t$.
+By the chain rule,
+\[
+\frac{\partial \ell_s}{\partial h_t}
+=
+\frac{\partial \ell_s}{\partial h_s}
+\frac{\partial h_s}{\partial h_t}.
+\]
+Because $h_s$ depends on $h_t$ only through the intermediate states $h_{t+1},\dots,h_{s-1}$, another repeated application of the chain rule yields
+\[
+\frac{\partial h_s}{\partial h_t}
+=
+\frac{\partial h_s}{\partial h_{s-1}}
+\frac{\partial h_{s-1}}{\partial h_{s-2}}
+\cdots
+\frac{\partial h_{t+1}}{\partial h_t}.
+\]
+Substituting $A_k = \partial h_k/\partial h_{k-1}$ gives the stated formula.
+The final sentence follows because the norm of a long matrix product may decay rapidly, grow rapidly, or become highly anisotropic depending on the singular values of the factors.
+\end{proof}
+
+\medskip
+
+This proposition explains why recurrence is mathematically delicate.
+If the Jacobians $A_k$ tend to contract vectors, then gradient signals from distant times are attenuated exponentially and one obtains \emph{vanishing gradients}.
+If the Jacobians tend to expand vectors, the reverse signals may blow up and one obtains \emph{exploding gradients}.
+The issue is not accidental.
+It is built into the repeated use of the same transition map.
+
+\subsection*{Vanishing and exploding gradients}
+
+To see the mechanism more explicitly, consider a local linearization.
+If the recurrence is approximated near a trajectory by
+\[
+ h_t \approx A_t h_{t-1} + b_t,
+\]
+then a gradient propagated backward over $m$ steps is multiplied by a product of $m$ matrices.
+A rough norm estimate gives
+\[
+\left\| \frac{\partial \ell_s}{\partial h_t} \right\|
+\leq
+\left\|\frac{\partial \ell_s}{\partial h_s}\right\|
+\prod_{k=t+1}^{s} \|A_k\|.
+\]
+If the typical norm $\|A_k\|$ is smaller than $1$, the product tends to shrink exponentially with sequence distance.
+If it is larger than $1$, the product may grow exponentially.
+Even when neither case holds uniformly, repeated multiplication can make the gradient concentrate in a few unstable directions and disappear in others.
+
+\medskip
+
+For the classical nonlinear RNN
+\[
+ h_t = \sigma(W_h h_{t-1} + W_x x_t + b),
+\]
+we have
+\[
+A_t
+= \operatorname{Diag}\!\bigl(\sigma'(W_h h_{t-1}+W_x x_t+b)\bigr) W_h.
+\]
+Thus both the recurrent weight matrix $W_h$ and the derivative of the nonlinearity influence gradient transport.
+Saturating nonlinearities such as sigmoid or $\tanh$ can make the diagonal factor small, which further encourages vanishing gradients.
+This is one reason naive RNNs often struggle with long-term dependencies.
+
+\subsection*{A worked scalar example}
+
+A simple scalar model makes the previous proposition concrete.
+Although the example is linear, it isolates the essential mechanism and may be viewed as a local approximation to a nonlinear recurrence.
+
+\begin{example}[A scalar recurrent model]
+Consider the scalar recurrence
+\[
+ h_t = \alpha h_{t-1} + x_t,
+ \qquad y_t = h_t,
+\]
+with initial state $h_0=0$ and final-time loss
+\[
+\mathcal{L} = \frac{1}{2}(h_T-\widetilde{h})^2.
+\]
+Then
+\[
+ h_T = \sum_{s=1}^{T} \alpha^{T-s} x_s.
+\]
+Moreover,
+\[
+\frac{\partial \mathcal{L}}{\partial h_t} = \alpha^{T-t}(h_T-\widetilde{h}),
+\]
+so the backward signal from time $T$ to time $t$ is scaled by the factor $\alpha^{T-t}$.
+Therefore:
+\begin{itemize}
+    \item if $|\alpha|<1$, the gradient decays exponentially with temporal distance;
+    \item if $|\alpha|>1$, the gradient grows exponentially;
+    \item if $|\alpha|\approx 1$, information can be preserved much longer.
+\end{itemize}
+\end{example}
+
+\begin{proof}
+Repeated substitution gives
+\[
+ h_1 = x_1,
+ \quad
+ h_2 = \alpha x_1 + x_2,
+ \quad \dots \quad,
+ h_T = \sum_{s=1}^{T} \alpha^{T-s}x_s.
+\]
+Since
+\[
+\mathcal{L} = \frac12 (h_T-\widetilde{h})^2,
+\]
+we have
+\[
+\frac{\partial \mathcal{L}}{\partial h_t}
+=
+\frac{\partial \mathcal{L}}{\partial h_T}
+\frac{\partial h_T}{\partial h_t}
+=
+(h_T-\widetilde{h})\alpha^{T-t}.
+\]
+This is exactly the scalar version of the Jacobian-product formula.
+\end{proof}
+
+\medskip
+
+This worked example makes the long-dependency problem transparent.
+Suppose an input $x_3$ is important for the prediction at time $T=100$.
+If $|\alpha|<1$, then the contribution of that early event to the final gradient is suppressed by a factor of roughly $|\alpha|^{97}$.
+Learning to preserve that information becomes extremely difficult.
+The recurrence is elegant, but the optimization geometry is hostile.
+
+\subsection*{Why recurrence remains important}
+
+Despite these difficulties, recurrent computation remains conceptually fundamental.
+It is a natural architecture whenever the task itself unfolds through time and whenever one wishes to summarize a growing past by a state.
+It uses parameters efficiently because the same transition map is reused at every time step.
+It also matches the causal structure of many real problems, especially streaming or online ones.
+
+\medskip
+
+At the same time, the gradient analysis above shows that recurrence alone is not enough.
+One must also control how memory is stored and transported.
+This observation leads directly to gated architectures such as LSTMs and GRUs, which modify the recurrent update so that some information can move additively rather than being repeatedly multiplied through unstable Jacobians.
+Thus the next section is not a change of topic but a structural refinement of the dynamical systems picture developed here.
+
+\whattoremember{A recurrent neural network is a learnable discrete-time dynamical system with hidden state $h_t$, recurrence map $F_\theta$, and output map $G_\theta$.
+When unrolled through time it becomes a deep computation graph with shared parameters.
+Backpropagation through time sends gradients backward through products of recurrent Jacobians, which is why long-range dependencies create vanishing or exploding gradients.}
+
+\commonconfusion{The hidden state is not a literal record of the entire past.
+It is a compressed state chosen by the model and training process.
+Also, the difficulty with RNNs is not merely that they are ``old'' or have been displaced by newer architectures.
+The difficulty is mathematical: long-range credit assignment requires transporting gradients through repeated Jacobian products, and that transport is unstable unless the recurrence is designed to preserve information carefully.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Let $h_t = \sigma(W_h h_{t-1} + W_x x_t + b)$ and $y_t = W_y h_t$.
+Write down the Jacobian $\partial h_t/\partial h_{t-1}$.
+Which two ingredients determine whether the backward signal is likely to contract or expand?
+\end{exercise}
+
+\begin{exercise}
+Suppose an RNN is used only for sequence classification, so that the loss depends only on $y_T$.
+Explain why the gradient with respect to an early hidden state $h_t$ still depends on all later Jacobians.
+Relate your answer to the unrolled computation graph.
+\end{exercise}
+
+\begin{exercise}
+For the scalar recurrence $h_t=\alpha h_{t-1}+x_t$ with $h_0=0$, compute $h_4$ explicitly in terms of $x_1,x_2,x_3,x_4$ and $\alpha$.
+Which inputs are weighted most strongly when $|\alpha|<1$?
+Which are weighted most strongly when $|\alpha|>1$?
+\end{exercise}
+
+\begin{exercise}
+Assume that $\|A_k\|\leq \rho<1$ for all $k$.
+Show that the contribution of the loss at time $s$ to the gradient at time $t$ is bounded by a constant times $\rho^{s-t}$.
+Interpret this bound in words.
+\end{exercise}
+
+\begin{exercise}
+Why is it reasonable to describe an RNN as depth with weight sharing across time?
+In what sense is this analogous to, and different from, weight sharing in a convolutional network?
+\end{exercise}
+
+\subsection*{Notes and references}
+
+Classical recurrent networks were developed for temporal context and sequence processing, with early influential work by Elman.
+The reverse-mode differentiation viewpoint for recurrent systems appears in the literature on ordered derivatives and backpropagation through time, including work by Werbos.
+The vanishing-gradient difficulty was analyzed in influential papers by Bengio, Simard, and Frasconi, and by Hochreiter.
+For mathematically inclined readers, recurrent networks may also be viewed as nonlinear state-space models or input-driven dynamical systems.
+That viewpoint will matter again when we discuss gated recurrence in the next section and sequence alternatives such as attention later in the chapter.

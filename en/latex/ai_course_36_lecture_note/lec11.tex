@@ -1,0 +1,420 @@
+\section{Lecture 11: Model Evaluation and Selection}
+
+\subsection{Motivation}
+
+In previous lectures, we developed models for prediction:
+\begin{itemize}
+    \item linear and logistic regression,
+    \item kernel methods and support vector machines.
+\end{itemize}
+
+\medskip
+
+\noindent
+However, a fundamental question remains:
+
+\medskip
+
+\noindent
+\textit{How do we know whether a model is good?}
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Model evaluation estimates how well a model generalizes to unseen data.
+
+\subsection{Training, Validation, and Testing}
+
+We typically split data into three parts:
+
+\medskip
+
+\noindent
+\textbf{Training set.}
+\begin{itemize}
+    \item Used to fit model parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Validation set.}
+\begin{itemize}
+    \item Used to tune hyperparameters
+    \item Guides model selection
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Test set.}
+\begin{itemize}
+    \item Used only for final evaluation
+    \item Provides an unbiased estimate of performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Workflow.}
+\begin{enumerate}
+    \item Train models on training data
+    \item Select best model using validation data
+    \item Report final performance on test data
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key principle.}  
+The test set must not influence model selection.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Proper data splitting is essential for reliable evaluation.
+
+\subsection{Cross-Validation}
+
+When data is limited, a single split may be unreliable.
+
+\medskip
+
+\noindent
+\textbf{$k$-fold cross-validation.}
+\begin{itemize}
+    \item Partition data into $k$ subsets (folds)
+    \item Train on $k-1$ folds, validate on remaining fold
+    \item Repeat for all folds
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Estimate.}
+\[
+\text{CV error} = \frac{1}{k} \sum_{j=1}^k \text{error}_j.
+\]
+
+\medskip
+
+\noindent
+\textbf{Benefits.}
+\begin{itemize}
+    \item More stable estimate of generalization error
+    \item Efficient use of data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+\begin{itemize}
+    \item Higher computational cost
+    \item Choice of $k$ affects bias–variance of estimate
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Cross-validation approximates test performance without requiring a large held-out set.
+
+\subsection{Performance Metrics}
+
+The choice of metric depends on the task.
+
+\medskip
+
+\noindent
+\textbf{Regression metrics.}
+\begin{itemize}
+    \item Mean squared error (MSE):
+    \[
+    \frac{1}{n} \sum (y_i - \hat{y}_i)^2
+    \]
+    \item Mean absolute error (MAE)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Classification metrics.}
+
+\begin{itemize}
+    \item Accuracy:
+    \[
+    \frac{\text{correct predictions}}{\text{total}}
+    \]
+    \item Precision, recall
+    \item F1-score
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Probabilistic metrics.}
+\begin{itemize}
+    \item Cross-entropy loss
+    \item Log-likelihood
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Important consideration.}
+\begin{itemize}
+    \item Metrics should reflect the goal of the task
+    \item Different metrics emphasize different aspects of performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Choosing the right metric is part of defining the learning problem.
+
+\subsection{ROC Curves and AUC}
+
+In many classification problems, especially those involving probabilistic predictions, evaluating performance using a single threshold (e.g., accuracy) can be misleading.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Instead of fixing a threshold, evaluate performance across all possible thresholds.
+
+\subsubsection{True and False Positive Rates}
+
+Consider binary classification with labels $y \in \{0,1\}$.
+
+\medskip
+
+\noindent
+\textbf{Definitions.}
+
+\begin{itemize}
+    \item \textbf{True Positive Rate (TPR)} (Recall):
+    \[
+    \text{TPR} = \frac{\text{True Positives}}{\text{Actual Positives}}
+    \]
+
+    \item \textbf{False Positive Rate (FPR)}:
+    \[
+    \text{FPR} = \frac{\text{False Positives}}{\text{Actual Negatives}}
+    \]
+\end{itemize}
+
+\subsubsection{ROC Curve}
+
+The \emph{Receiver Operating Characteristic (ROC)} curve plots:
+\[
+\text{TPR} \quad \text{vs} \quad \text{FPR}
+\]
+as the classification threshold varies.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item Each point corresponds to a different threshold
+    \item The curve shows the tradeoff between sensitivity and false alarms
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Special cases.}
+
+\begin{itemize}
+    \item Perfect classifier: reaches $(0,1)$ (top-left corner)
+    \item Random classifier: diagonal line $\text{TPR} = \text{FPR}$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+ROC curves evaluate ranking quality rather than fixed-threshold decisions.
+
+\subsubsection{Area Under the Curve (AUC)}
+
+The \emph{Area Under the ROC Curve (AUC)} is defined as:
+\[
+\text{AUC} = \int_0^1 \text{TPR}(\text{FPR}) \, d(\text{FPR}).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item $\text{AUC} = 1$: perfect classifier
+    \item $\text{AUC} = 0.5$: random guessing
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Probabilistic interpretation.}
+
+\medskip
+
+\noindent
+AUC equals the probability that:
+\[
+\text{score}(x^+) > \text{score}(x^-),
+\]
+where $x^+$ is a positive example and $x^-$ is a negative example.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+AUC measures how well the model ranks positive examples above negative ones.
+
+\subsubsection{When to Use ROC and AUC}
+
+\textbf{Advantages.}
+
+\begin{itemize}
+    \item Threshold-independent evaluation
+    \item Useful for imbalanced datasets
+    \item Captures ranking performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+
+\begin{itemize}
+    \item Does not reflect specific operating points
+    \item May be overly optimistic in highly skewed settings
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical guidance.}
+
+\begin{itemize}
+    \item Use ROC/AUC when comparing models broadly
+    \item Use precision/recall when class imbalance is critical
+\end{itemize}
+
+\subsubsection{Connection to Previous Concepts}
+
+\begin{itemize}
+    \item Logistic regression outputs probabilities used for ranking
+    \item Cross-entropy optimizes likelihood, not directly AUC
+    \item Evaluation metrics define what ``good performance'' means
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Different metrics emphasize different aspects of prediction quality; choosing the right one is essential.
+
+\subsection{Model Comparison}
+
+We often need to choose between multiple models or hyperparameters.
+
+\medskip
+
+\noindent
+\textbf{Approach.}
+\begin{itemize}
+    \item Train multiple models
+    \item Evaluate using validation or cross-validation
+    \item Select best-performing model
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hyperparameters.}
+\begin{itemize}
+    \item Regularization strength
+    \item Kernel parameters
+    \item Model complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Overfitting to validation data.}
+\begin{itemize}
+    \item Excessive tuning can overfit validation set
+    \item Requires careful experimental design
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Statistical considerations.}
+\begin{itemize}
+    \item Performance differences may be due to noise
+    \item Multiple evaluations increase risk of overfitting
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Model selection is itself a learning problem and must be treated carefully.
+
+\subsection{A Unifying Perspective}
+
+Model evaluation connects several aspects of learning:
+
+\begin{itemize}
+    \item \textbf{Generalization:} performance on unseen data
+    \item \textbf{Optimization:} training minimizes empirical loss
+    \item \textbf{Regularization:} controls model complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Evaluation estimates how well learned models approximate the true underlying function.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Reliable evaluation requires separating model fitting from model assessment.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item data splitting strategies,
+    \item cross-validation,
+    \item performance metrics,
+    \item model comparison.
+\end{itemize}
+
+\medskip
+
+\noindent
+These tools are essential for practical machine learning.
+
+\medskip
+
+\noindent
+In the next lecture, we return to optimization, focusing on practical aspects such as stochastic gradient descent and modern optimization methods.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+A model is only as good as its performance on unseen data, and evaluation must reflect this.

@@ -1,0 +1,265 @@
+\chapter{Normalizing Flows}
+
+\section{Change of Variables Formula}
+
+Normalizing flows provide a class of generative models based on invertible transformations of probability distributions.
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Start with a simple base distribution $z \sim p(z)$ and transform it into a complex distribution $x = f_\theta(z)$.
+
+\medskip
+
+\noindent
+\textbf{Change of variables formula.}  
+If $f$ is invertible and differentiable, then
+\[
+p_\theta(x)
+=
+p(z) \left| \det \left( \frac{\partial z}{\partial x} \right) \right|,
+\quad \text{where } z = f^{-1}(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Equivalent form.}
+\[
+\log p_\theta(x)
+=
+\log p(z)
++
+\log \left| \det \left( \frac{\partial z}{\partial x} \right) \right|.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Density changes according to local volume distortion
+    \item The determinant measures expansion or contraction
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalizing flows transform simple distributions into complex ones while keeping track of density changes.
+
+\section{Invertible Transformations}
+
+The design of normalizing flows relies on constructing invertible transformations that are both expressive and computationally efficient.
+
+\medskip
+
+\noindent
+\textbf{Requirements.}
+\begin{itemize}
+    \item $f$ must be invertible
+    \item The Jacobian determinant must be tractable
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Composition of transformations.}
+\[
+x = f_L \circ f_{L-1} \circ \cdots \circ f_1(z).
+\]
+
+\medskip
+
+\noindent
+\textbf{Jacobian factorization.}
+\[
+\log \left| \det \frac{\partial z}{\partial x} \right|
+=
+\sum_{\ell=1}^L
+\log \left| \det \frac{\partial h_{\ell-1}}{\partial h_\ell} \right|.
+\]
+
+\medskip
+
+\noindent
+\textbf{Types of transformations.}
+\begin{itemize}
+    \item Affine coupling layers
+    \item Autoregressive transformations
+    \item Volume-preserving flows
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Expressivity vs computational efficiency
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Careful design of invertible mappings enables tractable and expressive generative models.
+
+\section{Exact Likelihood Computation}
+
+A key advantage of normalizing flows is the ability to compute exact likelihoods.
+
+\medskip
+
+\noindent
+\textbf{Likelihood.}
+\[
+\log p_\theta(x)
+=
+\log p(f^{-1}(x))
++
+\log \left| \det \left( \frac{\partial f^{-1}}{\partial x} \right) \right|.
+\]
+
+\medskip
+
+\noindent
+\textbf{Comparison with other models.}
+\begin{itemize}
+    \item VAEs: approximate likelihood
+    \item GANs: implicit likelihood
+    \item Flows: exact likelihood
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Sampling.}
+\begin{itemize}
+    \item Sample $z \sim p(z)$
+    \item Compute $x = f_\theta(z)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Inference.}
+\begin{itemize}
+    \item Compute $z = f_\theta^{-1}(x)$
+    \item Evaluate density using change of variables
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Efficiency considerations.}
+\begin{itemize}
+    \item Jacobian determinant must be efficiently computable
+    \item Often achieved via triangular or structured matrices
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalizing flows provide a rare combination of exact likelihood and efficient sampling.
+
+\section{Model Design}
+
+Designing effective normalizing flows involves balancing expressivity and tractability.
+
+\medskip
+
+\noindent
+\textbf{Coupling layers.}
+\begin{itemize}
+    \item Partition variables into two parts
+    \item Transform one part conditioned on the other
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Autoregressive flows.}
+\begin{itemize}
+    \item Model dependencies sequentially
+    \item Triangular Jacobian simplifies determinant computation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stacking transformations.}
+\begin{itemize}
+    \item Multiple layers increase expressivity
+    \item Each layer contributes to transformation complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Invertible neural networks.}
+\begin{itemize}
+    \item Architectures designed to ensure invertibility
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item Architectural constraints for invertibility
+    \item Computational cost for high-dimensional data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Model design in flows requires balancing flexibility with computational constraints.
+
+\section{A Unifying Perspective}
+
+Normalizing flows combine several key ideas:
+
+\begin{itemize}
+    \item \textbf{Transformations:} mapping simple distributions to complex ones
+    \item \textbf{Invertibility:} enabling exact density computation
+    \item \textbf{Composition:} building expressive models through layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Base distribution $p(z)$
+    \item Invertible mapping $f_\theta$
+    \item Jacobian determinant
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+By carefully designing invertible transformations, we can build expressive generative models with exact likelihoods.
+
+\section{Outlook}
+
+This chapter introduced normalizing flows:
+\begin{itemize}
+    \item change of variables for density transformation,
+    \item invertible transformations,
+    \item exact likelihood computation,
+    \item practical model design.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study diffusion models, which approach generative modeling through stochastic processes and iterative refinement.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Structured transformations of probability distributions provide a powerful framework for generative modeling.

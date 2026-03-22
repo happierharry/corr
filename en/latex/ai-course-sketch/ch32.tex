@@ -1,0 +1,275 @@
+\chapter{Large-Scale Generative Models}
+
+\section{Diffusion in Practice (e.g., Stable Diffusion)}
+
+Diffusion models have become one of the dominant approaches to large-scale generative modeling, particularly in image synthesis.
+
+\medskip
+
+\noindent
+\textbf{From theory to practice.}  
+Practical diffusion systems extend the basic framework with architectural and algorithmic improvements:
+\begin{itemize}
+    \item U-Net architectures for denoising
+    \item Conditioning mechanisms (e.g., text embeddings)
+    \item Efficient sampling strategies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Latent diffusion.}  
+Instead of operating directly in pixel space, models operate in a lower-dimensional latent space:
+\begin{itemize}
+    \item Encode images into latent representations
+    \item Perform diffusion in latent space
+    \item Decode back to pixel space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+\begin{itemize}
+    \item Reduced computational cost
+    \item Improved scalability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Conditioning.}  
+Generative models can be guided by additional inputs:
+\begin{itemize}
+    \item Text prompts
+    \item Class labels
+    \item Other modalities
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Modern diffusion systems combine probabilistic modeling with powerful neural architectures and conditioning mechanisms.
+
+\section{Large Language Models}
+
+Large language models (LLMs) are generative models for sequences, typically based on transformer architectures.
+
+\medskip
+
+\noindent
+\textbf{Autoregressive modeling.}  
+LLMs model the joint distribution of a sequence:
+\[
+p(x_1, \dots, x_T) = \prod_{t=1}^T p(x_t \mid x_1, \dots, x_{t-1}).
+\]
+
+\medskip
+
+\noindent
+\textbf{Training objective.}
+\[
+\max_\theta \; \mathbb{E} \left[ \sum_{t=1}^T \log p_\theta(x_t \mid x_{<t}) \right].
+\]
+
+\medskip
+
+\noindent
+\textbf{Transformer backbone.}
+\begin{itemize}
+    \item Self-attention layers
+    \item Feedforward networks
+    \item Residual connections and normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Capabilities.}
+\begin{itemize}
+    \item Text generation
+    \item Question answering
+    \item Code generation
+    \item Reasoning tasks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Pretraining and fine-tuning.}
+\begin{itemize}
+    \item Pretrained on large corpora
+    \item Adapted to downstream tasks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+LLMs leverage scale and architecture to model complex sequential dependencies.
+
+\section{Scaling Laws}
+
+Empirical studies reveal systematic relationships between model performance and scale.
+
+\medskip
+
+\noindent
+\textbf{Scaling factors.}
+\begin{itemize}
+    \item Model size (number of parameters)
+    \item Dataset size
+    \item Compute resources
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Empirical law.}
+\[
+\text{Error} \propto N^{-\alpha},
+\]
+where $N$ represents scale and $\alpha > 0$.
+
+\medskip
+
+\noindent
+\textbf{Implications.}
+\begin{itemize}
+    \item Larger models tend to perform better
+    \item Gains diminish with scale
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Compute-optimal tradeoffs.}
+\begin{itemize}
+    \item Balance model size and dataset size
+    \item Efficient allocation of computational resources
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Emergent behavior.}
+\begin{itemize}
+    \item New capabilities appear at large scale
+    \item Not easily predicted from small models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Scaling is a fundamental driver of performance in modern machine learning systems.
+
+\section{Engineering Considerations}
+
+Large-scale generative models require careful engineering to train and deploy.
+
+\medskip
+
+\noindent
+\textbf{Distributed training.}
+\begin{itemize}
+    \item Data parallelism
+    \item Model parallelism
+    \item Pipeline parallelism
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hardware acceleration.}
+\begin{itemize}
+    \item GPUs and specialized accelerators
+    \item Memory and bandwidth constraints
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Optimization challenges.}
+\begin{itemize}
+    \item Large batch sizes
+    \item Learning rate scheduling
+    \item Stability at scale
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Inference considerations.}
+\begin{itemize}
+    \item Latency vs throughput
+    \item Model compression and quantization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Data considerations.}
+\begin{itemize}
+    \item Data quality and diversity
+    \item Preprocessing and filtering
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Safety and alignment.}
+\begin{itemize}
+    \item Controlling model outputs
+    \item Mitigating harmful or biased behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Engineering plays a crucial role in transforming theoretical models into practical systems.
+
+\section{A Unifying Perspective}
+
+Large-scale generative models integrate multiple dimensions:
+
+\begin{itemize}
+    \item \textbf{Modeling:} probabilistic and neural architectures
+    \item \textbf{Computation:} large-scale optimization
+    \item \textbf{Data:} massive and diverse datasets
+    \item \textbf{Systems:} distributed and efficient implementations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Performance emerges from the interaction between models, data, and computation.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Modern generative models are not defined solely by their mathematical formulation, but by their scale and system-level design.
+
+\section{Outlook}
+
+This chapter examined large-scale generative models:
+\begin{itemize}
+    \item diffusion models in practice,
+    \item large language models,
+    \item scaling laws,
+    \item engineering considerations.
+\end{itemize}
+
+\medskip
+
+This concludes our study of modern generative modeling techniques.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Advances in machine learning arise from the combination of theory, architecture, data, and computation at scale.

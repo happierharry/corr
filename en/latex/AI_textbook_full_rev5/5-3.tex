@@ -1,0 +1,440 @@
+\section{Variational Autoencoders: Deep Latent-Variable Modeling}
+
+Section~5.2 showed that latent-variable learning becomes difficult when the posterior distribution
+\[
+p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}
+\]
+is not easy to compute exactly.
+Variational autoencoders (VAEs) respond to that difficulty by learning a tractable approximation to the posterior while keeping a probabilistic latent-variable model.
+They are therefore one of the clearest bridges between classical latent-variable modeling and modern deep learning.
+
+\medskip
+
+\noindent
+\textbf{Section role.}
+This section develops the VAE in textbook form.
+It derives the evidence lower bound (ELBO) as an identity, proves that the ELBO equals the log-likelihood minus a posterior KL term, explains the reparameterization trick carefully, discusses the standard Gaussian encoder parameterization, and works through a one-dimensional VAE example in full.
+The section should be read as the variational counterpart to the EM section that precedes it.
+
+\subsection*{The latent-variable model and the variational approximation}
+
+A VAE begins with a latent-variable generative model
+\[
+p_\theta(x,z)=p_\theta(x\mid z)p(z),
+\]
+where $z\in \mathcal Z$ is latent, $p(z)$ is usually a simple prior such as $\mathcal N(0,I)$, and $p_\theta(x\mid z)$ is a flexible decoder or likelihood model.
+The induced data model is
+\[
+p_\theta(x)=\int p_\theta(x,z)\,dz = \int p_\theta(x\mid z)p(z)\,dz.
+\]
+In principle one would like to maximize
+\[
+\log p_\theta(x),
+\]
+but this requires integrating over all latent values.
+The posterior
+\[
+p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}
+\]
+therefore becomes the central intractable object.
+
+The VAE introduces a tractable approximate posterior
+\[
+q_\phi(z\mid x),
+\]
+parameterized by an encoder network.
+The decoder parameters $\theta$ and encoder parameters $\phi$ are optimized jointly.
+
+\subsection*{The ELBO as an identity}
+
+The key mathematical fact is not merely that the ELBO is a lower bound.
+More strongly, it is part of an exact decomposition of the log-likelihood.
+This is the variational identity underlying the whole method.
+
+\begin{theorem}[ELBO identity]
+For any observation $x$, any model $p_\theta(x,z)$, and any variational distribution $q_\phi(z\mid x)$ with support containing the support of the posterior, define
+\[
+\mathcal L(x;\theta,\phi)
+=
+\mathbb E_{q_\phi(z\mid x)}\left[\log p_\theta(x,z)-\log q_\phi(z\mid x)\right].
+\]
+Then
+\[
+\log p_\theta(x)
+=
+\mathcal L(x;\theta,\phi)
++
+D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)\bigr).
+\]
+Equivalently,
+\[
+\mathcal L(x;\theta,\phi)
+=
+\log p_\theta(x)
+-
+D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)\bigr).
+\]
+In particular,
+\[
+\mathcal L(x;\theta,\phi)\le \log p_\theta(x),
+\]
+with equality if and only if $q_\phi(z\mid x)=p_\theta(z\mid x)$ almost everywhere.
+\end{theorem}
+
+\begin{proof}
+Start from Bayes' rule:
+\[
+p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}.
+\]
+Taking logarithms gives
+\[
+\log p_\theta(x)=\log p_\theta(x,z)-\log p_\theta(z\mid x).
+\]
+Now take expectation with respect to $q_\phi(z\mid x)$:
+\[
+\log p_\theta(x)
+=
+\mathbb E_{q_\phi}\bigl[\log p_\theta(x,z)-\log p_\theta(z\mid x)\bigr].
+\]
+Add and subtract $\mathbb E_{q_\phi}[\log q_\phi(z\mid x)]$ to obtain
+\[
+\log p_\theta(x)
+=
+\mathbb E_{q_\phi}\bigl[\log p_\theta(x,z)-\log q_\phi(z\mid x)\bigr]
++
+\mathbb E_{q_\phi}\bigl[\log q_\phi(z\mid x)-\log p_\theta(z\mid x)\bigr].
+\]
+The first term is $\mathcal L(x;\theta,\phi)$ and the second is
+\[
+D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p_\theta(z\mid x)\bigr).
+\]
+Since KL divergence is nonnegative, the lower-bound statement follows immediately.
+Equality holds exactly when the KL divergence is zero, which occurs precisely when the two distributions coincide almost everywhere.
+\end{proof}
+
+This theorem is the precise analogue of the decomposition used in EM.
+The difference is that EM uses the exact posterior in the E-step whenever possible, whereas the VAE uses a parameterized family $q_\phi(z\mid x)$ that may not contain the exact posterior.
+
+\begin{proposition}[Standard ELBO decomposition]
+If the model factorizes as
+\[
+p_\theta(x,z)=p_\theta(x\mid z)p(z),
+\]
+then the ELBO can be written as
+\[
+\mathcal L(x;\theta,\phi)
+=
+\mathbb E_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)]
+-
+D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr).
+\]
+\end{proposition}
+
+\begin{proof}
+Expand the joint term:
+\[
+\log p_\theta(x,z)=\log p_\theta(x\mid z)+\log p(z).
+\]
+Substituting into the definition of $\mathcal L$ gives
+\[
+\mathcal L
+=
+\mathbb E_{q_\phi}[\log p_\theta(x\mid z)]
++
+\mathbb E_{q_\phi}[\log p(z)-\log q_\phi(z\mid x)].
+\]
+The second expectation is exactly
+\[
+- D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr).
+\]
+\end{proof}
+
+The two terms have a clean interpretation.
+The expected log-likelihood term asks whether samples from the approximate posterior contain enough information to explain the observation.
+The KL term regularizes the approximate posterior toward the prior, which keeps the latent space organized and makes sampling possible.
+
+\subsection*{A Jensen derivation of the lower bound}
+
+The previous theorem gives the cleanest conceptual identity, but it is also useful to see how Jensen's inequality produces the lower bound directly.
+Starting from
+\[
+\log p_\theta(x)
+=
+\log \int q_\phi(z\mid x)\frac{p_\theta(x,z)}{q_\phi(z\mid x)}\,dz,
+\]
+concavity of the logarithm implies
+\[
+\log p_\theta(x)
+\ge
+\mathbb E_{q_\phi(z\mid x)}\left[\log \frac{p_\theta(x,z)}{q_\phi(z\mid x)}\right]
+=
+\mathcal L(x;\theta,\phi).
+\]
+This derivation explains the phrase ``evidence lower bound.''
+The theorem above then explains the exact slack in the bound: the slack is the KL divergence to the true posterior.
+
+\subsection*{Encoder and decoder as probabilistic maps}
+
+A VAE is often summarized by the schematic
+\[
+x \longrightarrow q_\phi(z\mid x) \longrightarrow z \longrightarrow p_\theta(x\mid z).
+\]
+However, the probabilistic meaning matters more than the picture.
+The encoder does not deterministically compress $x$ into a code.
+Rather, it outputs a distribution over plausible latent causes of $x$.
+The decoder then maps latent samples back into a distribution over observations.
+
+\begin{figure}[ht]
+\centering
+\setlength{\fboxsep}{7pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{c}
+\fbox{\parbox{0.82\textwidth}{\centering
+Observation $x$
+}}\\[0.5em]
+$\Downarrow$ encoder network produces parameters of $q_\phi(z\mid x)$\\[0.5em]
+\fbox{\parbox{0.82\textwidth}{\centering
+Approximate posterior $q_\phi(z\mid x)$ with mean $\mu_\phi(x)$ and scale $\sigma_\phi(x)$
+}}\\[0.5em]
+$\Downarrow$ sample latent variable by reparameterization\\[0.5em]
+\fbox{\parbox{0.82\textwidth}{\centering
+Latent point $z=\mu_\phi(x)+\sigma_\phi(x)\odot \varepsilon$, \quad $\varepsilon\sim \mathcal N(0,I)$
+}}\\[0.5em]
+$\Downarrow$ decoder network defines $p_\theta(x\mid z)$\\[0.5em]
+\fbox{\parbox{0.82\textwidth}{\centering
+Decoder likelihood, reconstruction path, and sampling path from $z\sim p(z)$
+}}
+\end{tabular}
+\caption{The VAE pipeline. The encoder produces a variational posterior, reparameterization turns posterior sampling into a differentiable transformation, and the decoder maps latent samples to an observation model. At generation time, one samples from the prior and follows only the decoder path.}
+\label{fig:vae-pipeline}
+\end{figure}
+
+\subsection*{Gaussian encoder parameterization}
+
+The standard practical choice is a Gaussian variational family.
+For a latent dimension $m$, one writes
+\[
+q_\phi(z\mid x)=\mathcal N\bigl(z\mid \mu_\phi(x),\operatorname{diag}(\sigma_\phi^2(x))\bigr),
+\]
+where both
+\[
+\mu_\phi(x)\in \mathbb R^m,
+\qquad
+\sigma_\phi(x)\in \mathbb R_{>0}^m
+\]
+are produced by the encoder network.
+In implementation one usually outputs a log-variance or log-standard-deviation vector,
+for example
+\[
+\alpha_\phi(x)=\log \sigma_\phi^2(x),
+\]
+and then sets
+\[
+\sigma_\phi(x)=\exp\!\left(\tfrac12 \alpha_\phi(x)\right).
+\]
+This has two advantages.
+First, the positivity constraint on variances is enforced automatically.
+Second, the KL term against a standard normal prior has a closed form:
+\[
+D_{\mathrm{KL}}\bigl(\mathcal N(\mu,\operatorname{diag}(\sigma^2))\,\|\,\mathcal N(0,I)\bigr)
+=
+\frac12\sum_{j=1}^m\bigl(\mu_j^2+\sigma_j^2-\log \sigma_j^2-1\bigr).
+\]
+This closed-form term is one of the reasons diagonal-Gaussian VAEs became the standard starting point.
+
+\subsection*{The reparameterization trick}
+
+The ELBO contains an expectation with respect to $q_\phi(z\mid x)$.
+If $z$ is sampled directly from a distribution depending on $\phi$, naive differentiation through that sampling step is problematic.
+The reparameterization trick resolves this by moving the randomness to a parameter-free auxiliary variable.
+
+\begin{proposition}[Reparameterization for diagonal Gaussians]
+Suppose
+\[
+q_\phi(z\mid x)=\mathcal N\bigl(z\mid \mu_\phi(x),\operatorname{diag}(\sigma_\phi^2(x))\bigr).
+\]
+Let $\varepsilon\sim \mathcal N(0,I)$ and define
+\[
+z = \mu_\phi(x)+\sigma_\phi(x)\odot \varepsilon.
+\]
+Then $z\sim q_\phi(z\mid x)$, and for any integrable function $f$,
+\[
+\mathbb E_{z\sim q_\phi(z\mid x)}[f(z)]
+=
+\mathbb E_{\varepsilon\sim \mathcal N(0,I)}\bigl[f(\mu_\phi(x)+\sigma_\phi(x)\odot \varepsilon)\bigr].
+\]
+\end{proposition}
+
+\begin{proof}
+If $\varepsilon\sim \mathcal N(0,I)$, then each component $z_j=\mu_j+\sigma_j\varepsilon_j$ is Gaussian with mean $\mu_j$ and variance $\sigma_j^2$.
+Because the covariance of $\varepsilon$ is the identity and the transformation is diagonal, the resulting covariance matrix is $\operatorname{diag}(\sigma_1^2,\dots,\sigma_m^2)$.
+Hence $z$ has exactly the claimed Gaussian distribution.
+The expectation identity is then just a change of variables induced by this affine transformation.
+\end{proof}
+
+The practical significance is that the Monte Carlo estimator
+\[
+\mathcal L(x;\theta,\phi)
+\approx
+\frac{1}{L}\sum_{\ell=1}^L \log p_\theta\bigl(x\mid \mu_\phi(x)+\sigma_\phi(x)\odot \varepsilon^{(\ell)}\bigr)
+-
+D_{\mathrm{KL}}\bigl(q_\phi(z\mid x)\,\|\,p(z)\bigr)
+\]
+with $\varepsilon^{(\ell)}\sim \mathcal N(0,I)$ is differentiable with respect to both $\theta$ and $\phi$.
+The noise source does not depend on the network parameters; all parameter dependence sits inside an ordinary differentiable map.
+
+\subsection*{A worked one-dimensional VAE example}
+
+To make the algebra concrete, consider a scalar latent variable $z\in\mathbb R$ and a scalar observation $x\in\mathbb R$.
+Let the prior be
+\[
+p(z)=\mathcal N(0,1),
+\]
+and let the decoder be
+\[
+p_\theta(x\mid z)=\mathcal N(x\mid z,1).
+\]
+This means the decoder uses $z$ itself as the mean of a unit-variance Gaussian.
+For one observed value $x=1.2$, choose the variational encoder
+\[
+q_\phi(z\mid x)=\mathcal N(z\mid \mu,\sigma^2)
+\]
+with
+\[
+\mu=0.8,
+\qquad
+\sigma^2=0.25.
+\]
+The ELBO is
+\[
+\mathcal L(x;\theta,\phi)=\mathbb E_q[\log p_\theta(x\mid z)]-D_{\mathrm{KL}}(q(z\mid x)\|p(z)).
+\]
+We compute the two terms separately.
+
+For the reconstruction term,
+\[
+\log p_\theta(x\mid z)=-\frac12\log(2\pi)-\frac12(x-z)^2.
+\]
+Therefore
+\[
+\mathbb E_q[\log p_\theta(x\mid z)]
+=
+-\frac12\log(2\pi)-\frac12\mathbb E_q[(x-z)^2].
+\]
+Since
+\[
+\mathbb E_q[(x-z)^2]=(x-\mu)^2+\sigma^2,
+\]
+we get
+\[
+\mathbb E_q[(1.2-z)^2]=(1.2-0.8)^2+0.25=0.16+0.25=0.41.
+\]
+Hence
+\[
+\mathbb E_q[\log p_\theta(x\mid z)]
+=
+-\frac12\log(2\pi)-0.205.
+\]
+Using $\tfrac12\log(2\pi)\approx 0.9189$, this becomes
+\[
+\mathbb E_q[\log p_\theta(x\mid z)]\approx -1.1239.
+\]
+
+Next compute the KL term from $q=\mathcal N(\mu,\sigma^2)$ to $p=\mathcal N(0,1)$:
+\[
+D_{\mathrm{KL}}(q\|p)=\frac12\bigl(\mu^2+\sigma^2-\log \sigma^2-1\bigr).
+\]
+Substituting $\mu=0.8$ and $\sigma^2=0.25$ gives
+\[
+D_{\mathrm{KL}}(q\|p)
+=
+\frac12\bigl(0.64+0.25-\log 0.25-1\bigr).
+\]
+Since $\log 0.25\approx -1.3863$,
+\[
+D_{\mathrm{KL}}(q\|p)
+\approx
+\frac12(0.64+0.25+1.3863-1)
+=
+\frac12(1.2763)
+\approx 0.6382.
+\]
+Therefore the ELBO is
+\[
+\mathcal L(x;\theta,\phi)
+\approx
+-1.1239-0.6382=-1.7621.
+\]
+
+This worked example shows the trade-off directly.
+A posterior centered close to the observation improves reconstruction, but moving too far from the standard normal prior increases the KL penalty.
+The VAE objective balances these two pressures.
+
+\subsection*{Posterior collapse and the role of the decoder}
+
+The ELBO identity also explains one of the most important pathologies of VAEs.
+If the decoder is so expressive that it can model $x$ well with little help from $z$, optimization may drive
+\[
+q_\phi(z\mid x) \approx p(z),
+\]
+in which case the KL term becomes small and the latent variable carries little information about the observation.
+This is called \emph{posterior collapse}.
+In that regime the latent channel is underused even though the model may still achieve a reasonable data likelihood.
+
+\medskip
+
+\noindent
+Posterior collapse is not a contradiction of the ELBO identity.
+It is a consequence of the fact that the ELBO balances two terms rather than maximizing mutual information between $x$ and $z$ directly.
+This is why later variants such as $\beta$-VAEs, KL annealing, weakened decoders, and richer priors are often introduced.
+
+\subsection*{What is mathematically established, and what remains practical design}
+
+The mathematically established parts of the section are the ELBO identity, the lower-bound interpretation, and the reparameterization equality for Gaussian variational families.
+The diagonal-Gaussian KL formula is also exact.
+What is not guaranteed by theory alone is that the chosen variational family is expressive enough, that the learned latent variables will be semantically meaningful, or that optimization will avoid posterior collapse.
+Those features depend strongly on architecture, objective weighting, decoder strength, and data regime.
+Thus the VAE is both a principled probabilistic model and an area where design choices matter substantially.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item A VAE is a latent-variable model with a learned approximate posterior $q_\phi(z\mid x)$.
+    \item The ELBO is not merely a heuristic objective; it is the log-likelihood minus a posterior KL divergence.
+    \item The standard ELBO contains a reconstruction term and a KL regularization term.
+    \item Reparameterization makes Monte Carlo training differentiable by moving randomness to an auxiliary variable.
+    \item Gaussian encoders are standard because they are easy to parameterize and their KL term is closed form.
+    \item Posterior collapse occurs when the latent variable becomes uninformative under the learned solution.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item \textbf{The encoder is not a deterministic compression map.} It defines a distribution over latent explanations.
+    \item \textbf{The ELBO is not the same as the log-likelihood.} The gap is exactly the KL divergence to the true posterior.
+    \item \textbf{Sampling from the prior and encoding a data point are different operations.} Generation uses $z\sim p(z)$; inference uses $q_\phi(z\mid x)$.
+    \item \textbf{A small KL term is not always good.} It may indicate regularization, but it may also signal posterior collapse.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Starting from Bayes' rule, re-derive the ELBO identity for a single observation and identify the term that becomes zero when the variational posterior equals the true posterior.
+    \item For the one-dimensional worked example, change the variational variance from $\sigma^2=0.25$ to $\sigma^2=1$ and recompute both ELBO terms. How does the balance between reconstruction and regularization change?
+    \item Show that for a diagonal-Gaussian encoder and standard normal prior,
+    \[
+    D_{\mathrm{KL}}\bigl(\mathcal N(\mu,\operatorname{diag}(\sigma^2))\|\mathcal N(0,I)\bigr)
+    =
+    \frac12\sum_j(\mu_j^2+\sigma_j^2-\log \sigma_j^2-1).
+    \]
+    \item Explain in words why reparameterization helps gradient-based training but direct sampling from a parameter-dependent distribution does not lead as cleanly to low-variance pathwise gradients.
+    \item Give a careful argument for why an expressive decoder can encourage posterior collapse. Which term in the ELBO makes this possible?
+    \item Compare EM and VAEs as two responses to latent-variable learning. What does EM do exactly that the VAE replaces by amortized approximation?
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+VAEs are one of the central modern latent-variable models because they combine probabilistic generative modeling with neural function approximation and scalable optimization.
+The ELBO identity belongs to the larger framework of variational inference; the distinctive contribution of the VAE is the use of an amortized encoder and the pathwise reparameterization idea that makes end-to-end training practical.
+The standard diagonal-Gaussian setup is pedagogically useful because the KL term is explicit, but many later variants enrich the prior, posterior family, or decoder architecture.
+For the logic of this chapter, the most important conceptual point is that VAEs preserve the latent-variable viewpoint of EM while replacing exact posterior computation by learned approximate inference in a flexible deep model.

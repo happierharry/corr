@@ -1,0 +1,418 @@
+\chapter{Numerical and Statistical Stability}
+
+\section{Introduction}
+
+A model may be mathematically well-defined and achieve low training error, yet still behave poorly in practice. Two key reasons are numerical instability and statistical instability. Numerical instability arises from finite-precision computation and ill-conditioned problems. Statistical instability arises when small changes in the dataset lead to large changes in the learned model.
+
+This chapter makes these notions concrete. We study conditioning, floating-point effects, sensitivity to perturbations, and variability under resampling. Stability is not only a technical concern; it is a prerequisite for reliable and trustworthy machine learning.
+
+\section{What Stability Means Numerically}
+
+Computations in practice are carried out in finite precision. Real numbers are approximated, and arithmetic operations introduce rounding errors.
+
+A numerical procedure is \emph{stable} if small errors in inputs or intermediate computations lead to small errors in outputs. Conversely, an unstable procedure can amplify tiny perturbations into large deviations.
+
+In learning problems, numerical instability may manifest as:
+\begin{itemize}
+    \item large variation in fitted parameters,
+    \item sensitivity to scaling of features,
+    \item failure of optimization to converge reliably.
+\end{itemize}
+
+\section{Conditioning of Learning Problems}
+
+The conditioning of a problem measures how sensitive its solution is to perturbations in the input.
+
+\begin{definition}[Condition Number]
+For a matrix $A$, the condition number is
+\[
+\kappa(A)=\|A\|\cdot \|A^{-1}\|,
+\]
+when $A$ is invertible.
+\end{definition}
+
+In linear regression, the matrix of interest is $X^\top X$. If $\kappa(X^\top X)$ is large, the problem is ill-conditioned.
+
+\subsection{Perturbation Intuition}
+
+Suppose we solve
+\[
+A\theta=b.
+\]
+If $A$ is well-conditioned, small changes in $b$ produce small changes in $\theta$. If $A$ is ill-conditioned, small perturbations in $b$ may produce large changes in $\theta$.
+
+In least squares, noise in $y$ or small changes in $X$ can be greatly amplified when $X^\top X$ is nearly singular.
+
+\subsection{Consequences}
+
+Ill-conditioning leads to:
+\begin{itemize}
+    \item unstable parameter estimates,
+    \item sensitivity to noise,
+    \item numerical difficulties in inversion,
+    \item poor generalization if instability reflects overfitting.
+\end{itemize}
+
+Regularization (e.g., ridge regression) improves conditioning by adding a stabilizing term.
+
+\section{Floating-Point Issues}
+
+Computers represent numbers using finite precision. This leads to:
+\begin{itemize}
+    \item rounding errors,
+    \item loss of significance,
+    \item accumulation of numerical error.
+\end{itemize}
+
+\subsection{Example: Loss of Significance}
+
+Subtracting nearly equal numbers can lead to large relative error. In iterative algorithms, such effects may accumulate.
+
+\subsection{Practical Implications}
+
+In machine learning:
+\begin{itemize}
+    \item gradients may become inaccurate,
+    \item optimization may stall or diverge,
+    \item normalization and scaling become important.
+\end{itemize}
+
+Well-designed algorithms aim to be robust to such effects.
+
+\section{Sensitivity to Preprocessing and Scaling}
+
+Many learning algorithms are sensitive to the scale of input features.
+
+\subsection{Feature Scaling}
+
+If one feature has much larger magnitude than others, it can dominate the objective and distort optimization. For example, in gradient descent:
+\begin{itemize}
+    \item directions corresponding to large-scale features may lead to large gradients,
+    \item small-scale features may be neglected.
+\end{itemize}
+
+Standardization (zero mean, unit variance) often improves conditioning and convergence.
+
+\subsection{Worked Example}
+
+Consider least squares with features of vastly different scales. The level sets of the objective become elongated ellipsoids, leading to slow convergence of gradient descent. Rescaling features makes the geometry more isotropic and improves optimization.
+
+\section{Statistical Stability Under Resampling}
+
+Numerical stability concerns computation. Statistical stability concerns the dependence of the learned model on the dataset.
+
+\subsection{Resampling Variability}
+
+If we draw two different training samples from the same distribution and train the same algorithm, we may obtain different models. The extent of this variation reflects statistical stability.
+
+High-variance models (e.g., very flexible models) may change significantly with small data perturbations.
+
+\subsection{Train/Test Instability}
+
+A model that fits training data extremely well may perform inconsistently on new data if it is unstable. This is closely related to overfitting:
+\begin{itemize}
+    \item unstable models adapt to noise,
+    \item stable models capture persistent structure.
+\end{itemize}
+
+\subsection{Robustness of Estimates}
+
+A stable estimator changes little when:
+\begin{itemize}
+    \item a data point is removed,
+    \item noise is added,
+    \item the dataset is slightly perturbed.
+\end{itemize}
+
+Robustness is therefore a desirable property both statistically and practically.
+
+\section{Algorithmic Stability (Preview)}
+
+Algorithmic stability formalizes the idea that small changes in the training set should not drastically change the learned predictor.
+
+Informally, an algorithm is stable if replacing one training example leads to only a small change in the output model or predictions.
+
+This concept connects directly to generalization: stable algorithms tend to generalize better because they are less sensitive to sampling variability.
+
+We will revisit this idea in more detail in later theoretical chapters.
+
+\section{Stability as a Precursor to Trustworthy ML}
+
+Stability is not merely a technical condition; it is essential for reliability:
+\begin{itemize}
+    \item numerically unstable methods may produce arbitrary results,
+    \item statistically unstable models may not reproduce across datasets,
+    \item unstable systems are difficult to debug and trust.
+\end{itemize}
+
+A trustworthy machine learning system should be:
+\begin{itemize}
+    \item numerically stable,
+    \item statistically stable,
+    \item robust to perturbations in data and computation.
+\end{itemize}
+
+Regularization, proper preprocessing, careful optimization, and sound evaluation protocols all contribute to stability.
+
+\section{A Unifying Perspective}
+
+Stability links numerical analysis, statistics, and machine learning. Conditioning governs how input perturbations affect solutions, floating-point arithmetic introduces unavoidable noise, and statistical variability determines how models change across datasets.
+
+The key principle is:
+\[
+\text{small perturbations} \;\Rightarrow\; \text{small changes in output}.
+\]
+When this principle fails, both computation and generalization suffer.
+
+\section{Summary}
+
+In this chapter we examined numerical and statistical stability in learning systems. We defined conditioning and explained how ill-conditioned problems amplify perturbations. We discussed floating-point issues and their practical consequences, and showed how preprocessing and scaling affect stability.
+
+We then turned to statistical stability, highlighting variability under resampling and its connection to overfitting and robustness. Finally, we introduced algorithmic stability as a bridge between stability and generalization. These ideas emphasize that reliable learning requires not only good models, but also stable computations and estimators.
+
+\chapter*{Part I Exercises: Foundations of Learning}
+\addcontentsline{toc}{chapter}{Part I Exercises: Foundations of Learning}
+
+\section*{Conceptual Foundations}
+
+\begin{enumerate}
+    \item Explain the slogan
+    \[
+    \text{learning} = \text{approximation} + \text{data} + \text{structure}.
+    \]
+    Give one concrete example illustrating each component.
+
+    \item For each of the following tasks, identify:
+    \begin{enumerate}
+        \item the input space,
+        \item the output space,
+        \item a plausible loss function,
+        \item a suitable hypothesis class.
+    \end{enumerate}
+    Tasks:
+    \begin{enumerate}
+        \item predicting house prices,
+        \item spam classification,
+        \item next-word prediction,
+        \item image classification.
+    \end{enumerate}
+
+    \item Give an example of two distinct functions that agree on a finite training set but differ on unseen inputs. What does this show about learning from finite data?
+
+    \item Explain why unrestricted learning is impossible from finite data. State the no-free-lunch intuition in your own words.
+
+    \item What is inductive bias? Give one example from:
+    \begin{enumerate}
+        \item linear models,
+        \item kernel methods,
+        \item convolutional neural networks,
+        \item transformers.
+    \end{enumerate}
+
+    \item Explain the difference between explicit and implicit inductive bias.
+
+    \item Compare invariance and equivariance. Give one machine learning example of each.
+
+    \item Why is architecture a form of inductive bias?
+
+    \item Explain the difference between supervised, unsupervised, and self-supervised learning using the function-approximation viewpoint.
+
+    \item Why is simplicity representation-dependent rather than absolute?
+\end{enumerate}
+
+\section*{Probability, Risk, and Optimal Prediction}
+
+\begin{enumerate}
+\setcounter{enumi}{10}
+    \item Let $(X,Y)$ be a random pair and $\ell$ a loss function. Define:
+    \begin{enumerate}
+        \item population risk,
+        \item empirical risk,
+        \item Bayes-optimal predictor.
+    \end{enumerate}
+
+    \item Show that for a real-valued random variable $Y$, the quantity
+    \[
+    \mathbb E[(Y-a)^2]
+    \]
+    is minimized at $a=\mathbb E[Y]$.
+
+    \item Show that
+    \[
+    \mathbb E[(Y-a)^2\mid X=x]
+    \]
+    is minimized by
+    \[
+    a=\mathbb E[Y\mid X=x].
+    \]
+
+    \item Explain why a conditional median minimizes conditional expected absolute loss.
+
+    \item For binary classification under zero-one loss, show that the Bayes classifier predicts the most probable class.
+
+    \item Suppose that for a fixed input $x$,
+    \[
+    \mathbb P(Y=1\mid X=x)=0.7,\qquad \mathbb P(Y=0\mid X=x)=0.3.
+    \]
+    What is the Bayes classifier at $x$? What is the conditional Bayes error?
+
+    \item Let
+    \[
+    Y=g(X)+\varepsilon,\qquad \mathbb E[\varepsilon\mid X]=0.
+    \]
+    Show that
+    \[
+    \mathbb E[Y\mid X]=g(X).
+    \]
+
+    \item Distinguish aleatoric uncertainty from epistemic uncertainty. Give one example of each.
+
+    \item Why might a probabilistic predictor be more useful than a deterministic predictor in high-stakes applications?
+
+    \item Compare the Bayesian and frequentist interpretations of uncertainty in model parameters.
+\end{enumerate}
+
+\section*{Optimization and Regularization}
+
+\begin{enumerate}
+\setcounter{enumi}{20}
+    \item State the empirical risk minimization principle.
+
+    \item Let
+    \[
+    J(\theta)=\frac1n\sum_{i=1}^n (x_i^\top\theta-y_i)^2.
+    \]
+    Compute $\nabla J(\theta)$.
+
+    \item Derive the gradient descent update for least squares.
+
+    \item Explain why gradient descent can be interpreted as minimizing a local linear approximation of the objective.
+
+    \item Define convexity and strong convexity. Why are these useful in optimization?
+
+    \item Compare the constrained problem
+    \[
+    \min_\theta J(\theta)\quad \text{subject to } \Omega(\theta)\le c
+    \]
+    with the penalized problem
+    \[
+    \min_\theta J(\theta)+\lambda\Omega(\theta).
+    \]
+
+    \item Give one example where optimization error is large even though approximation error may be small.
+
+    \item State the penalized ERM formulation.
+
+    \item Derive the ridge regression solution
+    \[
+    \hat\theta_{\mathrm{ridge}}=(X^\top X+n\lambda I)^{-1}X^\top y
+    \]
+    starting from the regularized least-squares objective.
+
+    \item Explain the shrinkage interpretation of ridge regression.
+
+    \item Compare $\ell_1$ and $\ell_2$ penalties geometrically. Why can $\ell_1$ produce sparsity?
+
+    \item Explain how data augmentation acts as regularization.
+
+    \item Why can early stopping be understood as a form of regularization?
+
+    \item Give one example of implicit regularization from optimization.
+\end{enumerate}
+
+\section*{Generalization, Evaluation, and Stability}
+
+\begin{enumerate}
+\setcounter{enumi}{34}
+    \item Define the generalization gap of a predictor.
+
+    \item Explain the difference between underfitting and overfitting.
+
+    \item Describe the classical relation between model complexity, training error, and test error.
+
+    \item In polynomial regression, what happens when the degree is too small? What can happen when it is too large?
+
+    \item Explain the difference among approximation error, estimation error, and optimization error.
+
+    \item State the bias--variance tradeoff in words.
+
+    \item What is the intuition behind uniform convergence?
+
+    \item Why does concentration of empirical averages matter in learning theory?
+
+    \item Explain the difference between interpolation and extrapolation.
+
+    \item What is double descent, at a high level?
+
+    \item Why is accuracy a misleading metric in imbalanced classification?
+
+    \item Compare ROC curves with precision--recall curves. When is precision--recall typically more informative?
+
+    \item Explain the purpose of training, validation, and test splits.
+
+    \item Why does repeated reuse of the test set introduce optimistic bias?
+
+    \item Outline a correct hyperparameter tuning workflow.
+
+    \item Give two examples of data leakage.
+
+    \item What is confounding in model evaluation?
+
+    \item Why should performance estimates be reported with uncertainty rather than as exact values?
+
+    \item Define the condition number of an invertible matrix.
+
+    \item Explain why ill-conditioning can make least-squares estimation unstable.
+
+    \item What kinds of floating-point issues can affect optimization in practice?
+
+    \item Why does feature scaling improve optimization behavior?
+
+    \item Explain the difference between numerical stability and statistical stability.
+
+    \item What is algorithmic stability, informally?
+
+    \item Why is stability a prerequisite for trustworthy machine learning?
+\end{enumerate}
+
+\section*{Integrated Problems}
+
+\begin{enumerate}
+\setcounter{enumi}{58}
+    \item Consider a regression problem with a small dataset and many polynomial features.
+    Discuss:
+    \begin{enumerate}
+        \item approximation error,
+        \item estimation error,
+        \item conditioning,
+        \item regularization,
+        \item expected generalization behavior.
+    \end{enumerate}
+
+    \item A classifier achieves $99\%$ training accuracy and $72\%$ test accuracy.
+    Give at least four plausible explanations using concepts from Part I.
+
+    \item You are given a tabular medical dataset with highly correlated features and moderate label noise.
+    Propose:
+    \begin{enumerate}
+        \item a reasonable baseline model,
+        \item an evaluation protocol,
+        \item at least two regularization or stability measures,
+        \item one appropriate metric beyond raw accuracy.
+    \end{enumerate}
+
+    \item Compare the following two workflows:
+    \begin{enumerate}
+        \item normalize features using the full dataset before splitting,
+        \item split first, then fit normalization on training data only.
+    \end{enumerate}
+    Explain why one is valid and the other leaks information.
+
+    \item Suppose two models have the same number of parameters, but one is much more stable under resampling.
+    What might this suggest about effective complexity and generalization?
+
+    \item Explain how the themes of Part I connect:
+    \[
+    \text{inductive bias},\quad \text{optimization},\quad \text{regularization},\quad \text{generalization},\quad \text{stability}.
+    \]
+\end{enumerate}

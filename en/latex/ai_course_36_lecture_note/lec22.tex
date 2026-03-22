@@ -1,0 +1,483 @@
+\section{Lecture 22: Sequence Models (RNN, LSTM, GRU)}
+
+\subsection{Motivation}
+
+Many real-world data are sequential:
+
+\begin{itemize}
+    \item text (sentences, documents),
+    \item speech signals,
+    \item time series data.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How can we model data where order and temporal dependencies matter?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Sequence models process inputs step-by-step, maintaining a hidden state that summarizes past information.
+
+\subsection{Recurrent Neural Networks}
+
+A recurrent neural network (RNN) updates a hidden state over time:
+
+\[
+h_t = \sigma(W_h h_{t-1} + W_x x_t + b),
+\]
+
+\[
+y_t = W_y h_t.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item $h_t$ stores information about the past
+    \item The same parameters are reused across time steps
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Unrolled view.}
+
+\begin{itemize}
+    \item RNN can be viewed as a deep network with shared weights
+    \item Depth corresponds to sequence length
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+RNNs extend neural networks to sequential data via parameter sharing over time.
+
+\subsection{Long-Term Dependencies}
+
+\textbf{Problem.}
+
+\begin{itemize}
+    \item Information from early time steps may be lost
+    \item Gradients decay or explode over long sequences
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Mathematical intuition.}
+
+\[
+\frac{\partial L}{\partial h_t}
+= \prod_{k=t}^{T} \frac{\partial h_{k+1}}{\partial h_k}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Observation.}
+
+\begin{itemize}
+    \item Similar to deep networks in space, but now in time
+    \item Suffers from vanishing/exploding gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Sequence length plays the role of depth in RNNs.
+
+\subsection{Gated Architectures: LSTM}
+
+Long Short-Term Memory (LSTM) networks introduce gates to control information flow.
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+
+\begin{itemize}
+    \item \textbf{Cell state} $c_t$: long-term memory
+    \item \textbf{Gates:}
+    \begin{itemize}
+        \item input gate
+        \item forget gate
+        \item output gate
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Update equations (conceptual).}
+
+\begin{itemize}
+    \item Forget:
+    \[
+    f_t = \sigma(W_f x_t + U_f h_{t-1})
+    \]
+
+    \item Input:
+    \[
+    i_t = \sigma(W_i x_t + U_i h_{t-1})
+    \]
+
+    \item Candidate:
+    \[
+    \tilde{c}_t = \tanh(W_c x_t + U_c h_{t-1})
+    \]
+
+    \item Cell update:
+    \[
+    c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+
+\begin{itemize}
+    \item gates regulate information flow
+    \item prevent uncontrolled decay or explosion
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+LSTM introduces controlled memory dynamics.
+
+\subsection{Gated Recurrent Units (GRU)}
+
+GRU is a simplified gated architecture.
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+
+\begin{itemize}
+    \item update gate
+    \item reset gate
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Characteristics.}
+
+\begin{itemize}
+    \item fewer parameters than LSTM
+    \item similar performance in many tasks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+GRU simplifies gating while retaining effectiveness.
+
+\subsection{Limitations of Recurrence}
+
+Despite improvements, RNN-based models have limitations.
+
+\medskip
+
+\noindent
+\textbf{Sequential computation.}
+
+\begin{itemize}
+    \item cannot fully parallelize across time steps
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Long-range dependencies.}
+
+\begin{itemize}
+    \item still difficult to capture very long dependencies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Training difficulty.}
+
+\begin{itemize}
+    \item optimization remains challenging
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Recurrence introduces inherent computational and optimization constraints.
+
+\subsection{Continuous-Time and Dynamical Systems Perspective (Advanced)}
+
+Recurrent neural networks can be interpreted as discrete-time dynamical systems.
+
+\medskip
+
+\noindent
+Recall the RNN update:
+\[
+h_t = \sigma(W_h h_{t-1} + W_x x_t + b).
+\]
+
+\medskip
+
+\noindent
+\textbf{Dynamical systems view.}
+
+\begin{itemize}
+    \item $h_t$ is the state of the system at time $t$
+    \item the update defines a nonlinear map:
+    \[
+    h_t = F(h_{t-1}, x_t)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+RNNs evolve a hidden state through time via repeated application of a nonlinear transformation.
+
+\subsection{Connection to Discrete Dynamical Systems}
+
+If inputs are fixed or absent, the system becomes autonomous:
+\[
+h_t = F(h_{t-1}).
+\]
+
+\medskip
+
+\noindent
+\textbf{Behavior.}
+
+\begin{itemize}
+    \item fixed points: $h^* = F(h^*)$
+    \item stable vs unstable dynamics
+    \item attractors in state space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+RNNs can store information in stable states of the dynamics.
+
+\subsection{Continuous-Time Limit}
+
+We can interpret the recurrence as a discretization of a continuous-time system.
+
+\medskip
+
+\noindent
+Consider:
+\[
+h_{t+1} = h_t + \Delta t \, F(h_t, x_t).
+\]
+
+\medskip
+
+\noindent
+In the limit $\Delta t \to 0$, this becomes an ordinary differential equation:
+\[
+\frac{dh(t)}{dt} = F(h(t), x(t)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item hidden state evolves continuously over time
+    \item RNN is a discretized flow in state space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+RNNs approximate continuous-time dynamical systems.
+
+\subsection{Gradient Flow and Stability}
+
+Backpropagation through time corresponds to sensitivity analysis of the dynamical system.
+
+\medskip
+
+\noindent
+\textbf{Gradient evolution.}
+
+\[
+\frac{\partial L}{\partial h_t}
+= \left( \prod_{k=t}^{T} \frac{\partial h_{k+1}}{\partial h_k} \right)
+\frac{\partial L}{\partial h_T}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Connection to dynamics.}
+
+\begin{itemize}
+    \item gradients depend on Jacobians of the system
+    \item stability of dynamics determines gradient behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Lyapunov intuition.}
+
+\begin{itemize}
+    \item contracting dynamics $\Rightarrow$ vanishing gradients
+    \item expanding dynamics $\Rightarrow$ exploding gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradient instability reflects instability of the underlying dynamical system.
+
+\subsection{Gating as Controlled Dynamics}
+
+LSTM and GRU can be interpreted as modifying the dynamics.
+
+\medskip
+
+\noindent
+\textbf{Example (LSTM cell).}
+
+\[
+c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item $f_t$ controls memory retention
+    \item $i_t$ controls input injection
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gates act as adaptive coefficients controlling system stability.
+
+\subsection{Connection to Residual Networks}
+
+Recall residual networks:
+\[
+h_{k+1} = h_k + F(h_k).
+\]
+
+\medskip
+
+\noindent
+\textbf{Parallel.}
+
+\begin{itemize}
+    \item ResNet: depth as time (spatial layers)
+    \item RNN: time as time (temporal steps)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Unified view.}
+
+\begin{itemize}
+    \item both are discretizations of continuous flows
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Deep networks and sequence models share a common dynamical systems foundation.
+
+\subsection{Broader Connections}
+
+This perspective connects to:
+
+\begin{itemize}
+    \item \textbf{Neural ODEs:} continuous-depth models
+    \item \textbf{Control theory:} stability and feedback
+    \item \textbf{Dynamical systems:} attractors and trajectories
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Learning in sequence models can be viewed as learning a dynamical system that evolves representations over time.
+
+\subsection{A Unifying Perspective}
+
+Sequence models extend neural networks by:
+
+\begin{itemize}
+    \item introducing temporal structure,
+    \item sharing parameters across time,
+    \item maintaining a hidden state.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning involves propagating information through time as well as depth.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+RNNs treat time as another dimension of computation.
+
+\subsection{Outlook}
+
+In this lecture, we introduced:
+
+\begin{itemize}
+    \item recurrent neural networks,
+    \item long-term dependency problems,
+    \item gated architectures (LSTM, GRU),
+    \item limitations of recurrence.
+\end{itemize}
+
+\medskip
+
+\noindent
+These limitations motivate alternative architectures.
+
+\medskip
+
+\noindent
+In the next lecture, we study attention mechanisms and transformers, which overcome many limitations of recurrent models.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Efficient sequence modeling requires balancing memory, computation, and parallelism.

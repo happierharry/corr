@@ -1,0 +1,283 @@
+\section{Lecture 12: Optimization in Practice}
+
+\subsection{Motivation}
+
+In Lecture 4, we studied gradient-based optimization in an idealized setting.
+
+\medskip
+
+\noindent
+However, modern machine learning involves:
+
+\begin{itemize}
+    \item large datasets,
+    \item high-dimensional parameter spaces,
+    \item non-convex objectives.
+\end{itemize}
+
+\medskip
+
+\noindent
+This raises practical questions:
+
+\medskip
+
+\noindent
+\textit{How do we efficiently optimize large-scale models?}
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Efficient optimization relies on stochastic approximations and carefully designed update rules.
+
+\subsection{Stochastic Gradient Descent}
+
+Recall the empirical objective:
+\[
+L(\theta) = \frac{1}{n} \sum_{i=1}^n \ell_i(\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Gradient descent.}
+\[
+\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Stochastic gradient descent (SGD).}
+\[
+\theta_{t+1} = \theta_t - \eta \nabla \ell_i(\theta_t),
+\]
+where $i$ is sampled randomly.
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item Low computational cost per update
+    \item Noisy gradient estimates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Expectation.}
+\[
+\mathbb{E}[\nabla \ell_i(\theta)] = \nabla L(\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+SGD approximates true gradients using random samples.
+
+\subsection{Mini-Batching and Efficiency}
+
+Instead of a single sample, we often use a mini-batch $B$:
+
+\[
+\theta_{t+1} = \theta_t - \eta \frac{1}{|B|} \sum_{i \in B} \nabla \ell_i(\theta_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+\begin{itemize}
+    \item Reduces variance of gradient estimate
+    \item Efficient use of parallel hardware (e.g., GPUs)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+\begin{itemize}
+    \item Small batches:
+    \begin{itemize}
+        \item Noisy but fast
+    \end{itemize}
+    \item Large batches:
+    \begin{itemize}
+        \item Stable but computationally expensive
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Mini-batching balances efficiency and stability.
+
+\subsection{Momentum and Adaptive Methods}
+
+\textbf{Momentum.}
+
+Introduce a velocity variable:
+\[
+v_{t+1} = \beta v_t + \nabla L(\theta_t),
+\]
+\[
+\theta_{t+1} = \theta_t - \eta v_{t+1}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Accumulates past gradients
+    \item Smooths updates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Accelerates convergence in consistent directions
+    \item Reduces oscillations in ill-conditioned problems
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Adaptive methods.}
+
+Adjust learning rates per parameter:
+\[
+\theta_{t+1} = \theta_t - \eta D_t^{-1} \nabla L(\theta_t),
+\]
+where $D_t$ depends on past gradients.
+
+\medskip
+
+\noindent
+\textbf{Examples (conceptually).}
+\begin{itemize}
+    \item Scale updates based on gradient magnitude
+    \item Larger steps for infrequent features
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+\begin{itemize}
+    \item Faster initial progress
+    \item Sometimes poorer generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization methods influence both convergence and generalization.
+
+\subsection{Practical Convergence Behavior}
+
+\textbf{Non-convexity.}
+\begin{itemize}
+    \item Many local minima and saddle points
+    \item Exact convergence guarantees are limited
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Empirical observations.}
+\begin{itemize}
+    \item SGD often finds good solutions
+    \item Noise helps escape saddle points
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Learning rate.}
+\begin{itemize}
+    \item Critical hyperparameter
+    \item Often decreased over time
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Generalization effects.}
+\begin{itemize}
+    \item Noisy updates can favor flatter minima
+    \item Optimization dynamics act as implicit regularization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stopping criteria.}
+\begin{itemize}
+    \item Fixed number of iterations
+    \item Convergence of loss
+    \item Validation performance (early stopping)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization behavior in practice differs significantly from classical theory.
+
+\subsection{A Unifying Perspective}
+
+Optimization in modern machine learning involves:
+
+\begin{itemize}
+    \item \textbf{Stochasticity:} approximate gradients
+    \item \textbf{Dynamics:} iterative updates in parameter space
+    \item \textbf{Adaptivity:} adjusting updates based on history
+    \item \textbf{Regularization:} implicit effects of optimization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Optimization is not just a computational tool, but a fundamental component of learning.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The choice of optimization algorithm affects both training efficiency and generalization performance.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item stochastic gradient descent,
+    \item mini-batching,
+    \item momentum and adaptive methods,
+    \item practical convergence behavior.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas are essential for training modern machine learning models.
+
+\medskip
+
+\noindent
+In the next lecture, we examine numerical and statistical stability, focusing on how data scaling and noise affect learning.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective learning depends on both the objective and the optimization dynamics used to minimize it.

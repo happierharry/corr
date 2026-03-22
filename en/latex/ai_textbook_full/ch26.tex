@@ -1,0 +1,210 @@
+\chapter{Likelihood-Based Learning with Latent Variables}
+
+\section{Introduction}
+
+Many generative models introduce hidden or latent variables to capture underlying structure in data. While this increases modeling flexibility, it also complicates learning: likelihood functions now involve integrals or sums over unobserved variables.
+
+This chapter develops maximum likelihood learning in latent-variable models. We introduce marginal likelihood, derive the Expectation--Maximization (EM) algorithm, and show how intractability leads naturally to variational approximations.
+
+\section{Why Latent Variables Are Useful}
+
+Latent variables $z$ represent hidden causes or factors explaining observed data $x$.
+
+\begin{itemize}
+    \item in clustering, $z$ indicates cluster membership,
+    \item in representation learning, $z$ encodes underlying features,
+    \item in generative models, $z$ controls variation in outputs.
+\end{itemize}
+
+They allow complex distributions to be expressed as mixtures or compositions of simpler ones.
+
+\section{Latent-Variable Models and Marginalization}
+
+\begin{definition}[Latent-Variable Model]
+A latent-variable model specifies a joint distribution:
+\[
+p_\theta(x,z) = p_\theta(x|z)p(z),
+\]
+where $z$ is unobserved.
+\end{definition}
+
+The marginal distribution over observed data is:
+\[
+p_\theta(x) = \int p_\theta(x,z)\,dz.
+\]
+
+\subsection{Marginal Log-Likelihood}
+
+Given data $\{x_i\}_{i=1}^n$, the objective is:
+\[
+\ell(\theta) = \sum_{i=1}^n \log p_\theta(x_i)
+= \sum_{i=1}^n \log \int p_\theta(x_i, z)\,dz.
+\]
+
+This integral often makes optimization difficult.
+
+\section{Maximum Likelihood with Hidden Variables}
+
+Unlike fully observed models, the likelihood involves sums or integrals over latent variables:
+\[
+\log p_\theta(x) = \log \int p_\theta(x,z)\,dz.
+\]
+
+This creates two challenges:
+\begin{itemize}
+    \item \textbf{inference:} computing the posterior $p_\theta(z|x)$,
+    \item \textbf{learning:} maximizing the marginal likelihood.
+\end{itemize}
+
+These are coupled problems: learning requires inference, and inference depends on the model.
+
+\section{The EM Algorithm: Intuition}
+
+EM alternates between estimating latent variables and updating parameters.
+
+\begin{itemize}
+    \item \textbf{E-step:} estimate distribution over latent variables,
+    \item \textbf{M-step:} maximize expected complete-data log-likelihood.
+\end{itemize}
+
+\subsection{Key Idea}
+
+Instead of optimizing $\log p_\theta(x)$ directly, EM optimizes a surrogate objective based on the current estimate of latent variables.
+
+\section{Lower-Bound Viewpoint via Jensen}
+
+Let $q(z)$ be any distribution. Then:
+\[
+\log p_\theta(x)
+= \log \int q(z)\frac{p_\theta(x,z)}{q(z)}\,dz
+\ge
+\int q(z)\log \frac{p_\theta(x,z)}{q(z)}\,dz.
+\]
+
+\begin{definition}[Evidence Lower Bound (ELBO)]
+\[
+\mathcal{L}(q,\theta)
+=
+\mathbb{E}_{q(z)}[\log p_\theta(x,z)]
+-
+\mathbb{E}_{q(z)}[\log q(z)].
+\]
+\end{definition}
+
+This provides a lower bound on $\log p_\theta(x)$.
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item the bound becomes tight when $q(z)=p_\theta(z|x)$,
+    \item EM can be viewed as alternating optimization of this bound.
+\end{itemize}
+
+\section{The EM Algorithm: Derivation}
+
+EM alternates:
+
+\subsection{E-step}
+
+Set:
+\[
+q(z) = p_{\theta^{\text{old}}}(z|x).
+\]
+
+\subsection{M-step}
+
+Maximize:
+\[
+\theta^{\text{new}} = \arg\max_\theta
+\mathbb{E}_{z \sim p_{\theta^{\text{old}}}(z|x)}
+[\log p_\theta(x,z)].
+\]
+
+\subsection{Monotonicity}
+
+Each iteration increases the log-likelihood:
+\[
+\ell(\theta^{\text{new}}) \ge \ell(\theta^{\text{old}}).
+\]
+
+Thus EM is guaranteed to improve (or maintain) likelihood at each step.
+
+\section{Worked Example: Gaussian Mixture Model}
+
+Consider a mixture of $K$ Gaussians:
+\[
+p_\theta(x) = \sum_{k=1}^K \pi_k \, \mathcal{N}(x \mid \mu_k, \Sigma_k).
+\]
+
+Introduce latent variables $z \in \{1,\dots,K\}$.
+
+\subsection{E-step}
+
+Compute responsibilities:
+\[
+\gamma_{ik}
+=
+p(z=k \mid x_i)
+=
+\frac{\pi_k \mathcal{N}(x_i \mid \mu_k, \Sigma_k)}
+{\sum_j \pi_j \mathcal{N}(x_i \mid \mu_j, \Sigma_j)}.
+\]
+
+\subsection{M-step}
+
+Update parameters:
+\[
+\mu_k = \frac{\sum_i \gamma_{ik} x_i}{\sum_i \gamma_{ik}},
+\qquad
+\pi_k = \frac{1}{n} \sum_i \gamma_{ik}.
+\]
+
+This alternates soft clustering and parameter updates.
+
+\section{Limits of Exact Inference}
+
+In many models, computing $p_\theta(z|x)$ is intractable:
+\begin{itemize}
+    \item high-dimensional latent spaces,
+    \item complex dependencies,
+    \item non-conjugate models.
+\end{itemize}
+
+This makes exact EM impractical.
+
+\subsection{Consequences}
+
+\begin{itemize}
+    \item need for approximate inference,
+    \item motivates variational inference,
+    \item leads to modern deep generative models.
+\end{itemize}
+
+\section{Why Latent Variables Complicate Optimization}
+
+Latent variables introduce:
+\begin{itemize}
+    \item non-convex objectives,
+    \item multiple modes,
+    \item dependence on inference quality.
+\end{itemize}
+
+Optimization becomes a joint problem of:
+\begin{itemize}
+    \item fitting parameters,
+    \item inferring hidden structure.
+\end{itemize}
+
+Thus learning is more complex than in fully observed models.
+
+\section{A Unifying Perspective}
+
+Latent-variable models express complex distributions through hidden structure. Maximum likelihood requires marginalizing over latent variables, which leads to intractability.
+
+EM provides a principled approach by alternating between inference and optimization, while the ELBO offers a variational perspective. These ideas form the foundation for modern methods such as variational autoencoders.
+
+\section{Summary}
+
+In this chapter we developed likelihood-based learning with latent variables. We defined latent-variable models and marginal likelihood, and explained why hidden variables complicate optimization. We derived the EM algorithm and interpreted it through a lower-bound (ELBO) perspective.
+
+We also worked through Gaussian mixtures and discussed the limits of exact inference. These ideas provide the conceptual bridge to variational inference and modern generative models.

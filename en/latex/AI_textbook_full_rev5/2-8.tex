@@ -1,0 +1,248 @@
+\section{Residual Learning and the Possibility of Very Deep Models}
+\markright{2.8.\ Residual Learning}
+\thispagestyle{plain}
+
+The previous sections explained how optimization can be stabilized through better activations, normalization, and initialization.
+Residual learning goes one step further.
+It does not merely adjust the training procedure around a deep network.
+It changes the architecture itself so that depth becomes easier to optimize.
+
+\medskip
+
+This is why residual learning is a natural climax to the chapter.
+It answers one of the deepest practical questions in deep learning:
+why can very deep models work at all, rather than collapsing under their own optimization difficulty?
+
+\subsection*{Why plain depth is not enough}
+
+A deeper model is more expressive in principle.
+It can represent all the functions of a shallower model and often many more.
+But expressivity is not the same thing as trainability.
+A plain deep network may have enough capacity to represent a useful solution and yet still be hard to optimize.
+
+\medskip
+
+This mismatch appears in the \emph{degradation problem}.
+As depth increases, a plain network may perform worse not only on test data but even on the training set.
+That is a sign that the issue is not simply overfitting.
+The issue is that optimization itself becomes harder.
+
+
+\subsection*{Residual blocks}
+
+The key idea is to rewrite a desired transformation as identity plus correction.
+
+\begin{definition}[Residual block]
+A residual block is a map of the form
+\[
+R(x)=x+F(x),
+\]
+where $F$ is a learned residual function.
+The direct path carrying $x$ forward is called the \emph{identity shortcut} or \emph{skip connection}.
+When dimensions do not match exactly, the shortcut may be replaced by a simple projection, but the central idea remains the same: the block preserves a direct pathway and learns a correction rather than a full replacement.
+\end{definition}
+
+This changes the role of depth.
+A plain block must reconstruct a new representation from the current one.
+A residual block may preserve what is already useful and modify only what needs correction.
+
+\medskip
+
+That reformulation helps optimization because many useful deep transformations are plausibly closer to ``identity plus adjustment'' than to ``entirely new representation at every stage.''
+The architecture therefore builds a favorable bias directly into the parameterization.
+
+\begin{center}
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\begin{tikzpicture}[>=Latex, node distance=0.65cm]
+\tikzset{block/.style={draw, rounded corners, minimum width=2.8cm, minimum height=0.95cm, align=center, font=\small}}
+\node (xin) {$x$};
+\node[block, right=of xin] (plain) {learn full map\\$H(x)$};
+\node[right=of plain] (yout) {$y$};
+\draw[thick,->] (xin) -- (plain);
+\draw[thick,->] (plain) -- (yout);
+\end{tikzpicture}
+\subcaption{Plain block.}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\centering
+\begin{tikzpicture}[>=Latex, node distance=0.65cm]
+\tikzset{block/.style={draw, rounded corners, minimum width=2.8cm, minimum height=0.95cm, align=center, font=\small}}
+\node (xin) {$x$};
+\node[block, right=1.2cm of xin] (res) {learn residual\\$F(x)$};
+\node[circle, draw, minimum size=0.55cm, right=1.2cm of res] (sum) {$+$};
+\node[right=0.9cm of sum] (yout) {$x+F(x)$};
+\draw[thick,->] (xin) -- (res);
+\draw[thick,->] (res) -- (sum);
+\draw[thick,->] (xin) |- ($(sum.north)+(0,0.55)$) -- (sum);
+\draw[thick,->] (sum) -- (yout);
+\end{tikzpicture}
+\subcaption{Residual block with identity shortcut.}
+\end{minipage}
+\caption{Residual learning changes the problem from ``learn a full transformation'' to ``learn a correction to the identity.'' This architectural change is small in form but major in optimization consequences.}
+\end{figure}
+
+
+\begin{proposition}[Residual blocks are perturbations of the identity when the residual is small]
+Let $R(x)=x+F(x)$ on a normed vector space.
+Suppose that on some region of interest,
+\[
+\|F(x)\|\le \varepsilon
+\qquad\text{and}\qquad
+\|J_F(x)\|\le \varepsilon
+\]
+for some $\varepsilon>0$.
+Then on that region,
+\[
+\|R(x)-x\|\le \varepsilon
+\qquad\text{and}\qquad
+\|J_R(x)-I\|\le \varepsilon.
+\]
+So the residual block is simultaneously a small perturbation of the identity in its function values and in its local Jacobian.
+\end{proposition}
+
+\begin{proof}
+By definition,
+\[
+R(x)-x=F(x),
+\]
+so the first bound is immediate.
+For the Jacobian,
+\[
+J_R(x)=J_{x+F}(x)=I+J_F(x).
+\]
+Hence
+\[
+J_R(x)-I=J_F(x),
+\]
+and therefore
+\[
+\|J_R(x)-I\|=\|J_F(x)\|\le \varepsilon.
+\]
+Thus both the map and its linearization remain close to the identity whenever the residual branch is small.
+\end{proof}
+
+This proposition captures the main intuition of residual learning in one line.
+If the network has no strong reason to change the representation, it can stay near identity.
+That is far easier to preserve architecturally than in a plain deep stack, where each block must still learn how to carry information forward.
+
+\subsection*{Identity pathways and gradient flow}
+
+The skip connection helps both forward and backward information flow.
+Forward information can pass through the identity path without being repeatedly distorted.
+Backward information can pass through a Jacobian of the form
+\[
+J_R(x)=I+J_F(x)
+\]
+rather than through only $J_F(x)$.
+This does not solve every optimization problem, but it makes gradient propagation substantially more robust.
+
+\begin{center}
+\begin{tikzpicture}[>=Latex, node distance=0.75cm and 0.75cm]
+\tikzset{block/.style={draw, rounded corners, minimum width=2.65cm, minimum height=1.0cm, align=center, font=\small}}
+\node (x) {$h_k$};
+\node[block, right=1.25cm of x] (F) {residual branch\\$F_k(h_k)$};
+\node[circle, draw, minimum size=0.58cm, right=1.25cm of F] (sum) {$+$};
+\node[right=1.0cm of sum] (y) {$h_{k+1}$};
+
+\draw[thick,->] (x) -- (F);
+\draw[thick,->] (F) -- (sum);
+\draw[thick,->] (x) |- ($(sum.north)+(0,0.75)$) -- (sum);
+\draw[thick,->] (sum) -- (y);
+
+\node[font=\small, align=center] at ($(x)!0.5!(sum)+(0,1.35)$) {identity path carries signal directly};
+\node[font=\small, align=center] at ($(F.south)+(0,-1.0)$) {residual branch learns a correction};
+\end{tikzpicture}
+\caption{Identity-path viewpoint. A residual block does not force every unit of information through the learned branch. The shortcut creates a direct route for representation flow and a corresponding additive term in the Jacobian during backpropagation.}
+\end{figure}
+
+\medskip
+
+This explains why residual connections are more than a convenience.
+They are an architectural mechanism for making depth compatible with optimization.
+
+\subsection*{Depth as iterative refinement}
+
+Residual learning also changes the interpretation of depth.
+If
+\[
+h_{k+1}=h_k+F_k(h_k),
+\]
+then each block can be read as an update rule:
+keep what is already useful, then add a correction.
+Depth becomes a sequence of refinements rather than a sequence of complete reconstructions.
+
+\begin{center}
+\begin{tikzpicture}[>=Latex, node distance=0.65cm and 0.65cm]
+\tikzset{state/.style={draw, rounded corners, minimum width=1.9cm, minimum height=0.8cm, align=center, font=\small}}
+\node[state] (h0) {$h_0$};
+\node[state, right=of h0] (h1) {$h_1=h_0+F_0(h_0)$};
+\node[state, right=of h1] (h2) {$h_2=h_1+F_1(h_1)$};
+\node[state, right=of h2] (h3) {$h_3=h_2+F_2(h_2)$};
+\draw[thick,->] (h0) -- (h1);
+\draw[thick,->] (h1) -- (h2);
+\draw[thick,->] (h2) -- (h3);
+\node[font=\small, align=center] at ($(h1.south)+(0,-0.85)$) {first correction};
+\node[font=\small, align=center] at ($(h2.south)+(0,-0.85)$) {further refinement};
+\node[font=\small, align=center] at ($(h3.south)+(0,-0.85)$) {accumulated representation};
+\end{tikzpicture}
+\caption{Depth accumulation as refinement. A residual network can be understood as repeatedly adding learned corrections to a running representation. This makes very deep models easier to interpret conceptually.}
+\end{figure}
+
+\begin{remark}[Residual networks, iterative refinement, and continuous-depth limits]
+The update rule
+\[
+h_{k+1}=h_k+F_k(h_k)
+\]
+resembles a discrete iterative method.
+If one writes it suggestively as
+\[
+h_{k+1}-h_k \approx \Delta t\, G_k(h_k),
+\]
+then depth begins to look like a time discretization of a flow.
+This is the bridge to continuous-depth viewpoints such as neural ordinary differential equations.
+Even before taking any limit, however, the residual-network picture is already valuable: it interprets deep representation learning as controlled iterative refinement.
+\end{remark}
+
+\subsection*{Why residuals changed deep learning}
+
+Residual connections mattered historically because they made far deeper networks trainable.
+But their conceptual importance is even broader.
+They showed that optimization success in deep learning depends not only on having gradients and compute, but also on parameterizing the model in a way that makes useful solutions easier to reach.
+
+\medskip
+
+This is the deepest lesson of the section:
+architecture can encode optimization bias.
+Residual structure tells the model that preserving information is the default and changing it is a learned correction.
+That is a much better starting point for very deep optimization than forcing every block to rebuild everything from scratch.
+
+\commonconfusion{Residual connections do \emph{not} magically solve every optimization issue. They improve gradient flow and make identity-like behavior accessible, but they do not remove the need for good initialization, sensible normalization, appropriate learning rates, or enough model capacity. Residual structure helps because it changes the architecture in a favorable direction; it is not a universal cure.}
+
+\whattoremember{A residual block has the form $R(x)=x+F(x)$. When $F$ and its Jacobian are small, the block is a perturbation of the identity, which makes information and gradients easier to preserve. Residual networks therefore reinterpret depth as iterative refinement: each block adds a learned correction rather than replacing the representation outright. This architectural idea was one of the key reasons very deep models became practical.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Let $R(x)=x+F(x)$ for a differentiable map $F: \mathbb R^d \to \mathbb R^d$.
+Compute the Jacobian $J_R(x)$ in terms of $J_F(x)$.
+Then explain why the identity term matters for gradient propagation in deep residual networks.
+\end{exercise}
+
+\begin{exercise}
+Explain in words why identity shortcuts help optimization.
+Your answer should discuss both forward information flow and backward gradient flow, and should make clear why the degradation problem is not the same thing as lack of expressive capacity.
+\end{exercise}
+
+\begin{exercise}
+Consider a toy task where the desired map is very close to the identity, for example $H(x)=x+0.1\sin(x)$ in one dimension.
+Why might a residual parameterization $H(x)=x+F(x)$ be easier to optimize than asking a plain network block to learn $H$ directly from scratch?
+Give an informal argument based on parameterization and trainability.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+This section presents residual learning as the architectural climax of the trainability story.
+The formal proposition makes precise the phrase ``perturbation of identity,'' while the iterative-refinement remark explains why residual networks naturally connect to dynamical-systems viewpoints.
+The most important conceptual point is that very deep learning became practical not only because optimization algorithms improved, but because the model architecture was redesigned so that preserving information became easy and refinement became the natural role of depth.

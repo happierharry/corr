@@ -1,0 +1,197 @@
+\section{Convolutional Neural Networks in R1CS}
+
+\subsection{Overview}
+
+Convolutional layers are structured linear operators with parameter sharing.
+From the perspective of zero-knowledge proofs, they are compiled into constraints
+in exactly the same way as fully connected layers, but with a specific indexing structure.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+A convolution is a linear map:
+\[
+y = \text{Conv}(x; K) + b,
+\]
+so each output entry becomes an affine constraint in R1CS.
+
+\subsection{A Minimal CNN Example}
+
+Consider a single-channel $3 \times 3$ input:
+\[
+X =
+\begin{bmatrix}
+x_{11} & x_{12} & x_{13} \\
+x_{21} & x_{22} & x_{23} \\
+x_{31} & x_{32} & x_{33}
+\end{bmatrix}.
+\]
+
+Let the convolution kernel be $2 \times 2$:
+\[
+K =
+\begin{bmatrix}
+k_{11} & k_{12} \\
+k_{21} & k_{22}
+\end{bmatrix},
+\quad \text{bias } b.
+\]
+
+We use stride $1$ and no padding. The output is $2 \times 2$:
+\[
+Y =
+\begin{bmatrix}
+y_{11} & y_{12} \\
+y_{21} & y_{22}
+\end{bmatrix}.
+\]
+
+\subsection{Convolution as Linear Computation}
+
+Each output entry is:
+\[
+y_{11} = k_{11}x_{11} + k_{12}x_{12} + k_{21}x_{21} + k_{22}x_{22} + b,
+\]
+\[
+y_{12} = k_{11}x_{12} + k_{12}x_{13} + k_{21}x_{22} + k_{22}x_{23} + b,
+\]
+\[
+y_{21} = k_{11}x_{21} + k_{12}x_{22} + k_{21}x_{31} + k_{22}x_{32} + b,
+\]
+\[
+y_{22} = k_{11}x_{22} + k_{12}x_{23} + k_{21}x_{32} + k_{22}x_{33} + b.
+\]
+
+\subsection{Witness Vector}
+
+Flatten all variables into a witness:
+\[
+w = (1,\; x_{11},x_{12},\ldots,x_{33},\; y_{11},y_{12},y_{21},y_{22}).
+\]
+
+\subsection{R1CS Constraints for Convolution}
+
+Each output pixel gives one affine constraint:
+\[
+(\text{linear combination of inputs} + b)\cdot 1 = y_{ij}.
+\]
+
+For example, for $y_{11}$:
+\[
+(k_{11}x_{11} + k_{12}x_{12} + k_{21}x_{21} + k_{22}x_{22} + b)\cdot 1 = y_{11}.
+\]
+
+Similarly for the other entries.
+
+\medskip
+
+\noindent
+\textbf{Observation.}
+Convolution does not introduce new types of constraints.  
+It is simply a sparse, structured linear map.
+
+\subsection{Adding Nonlinearity}
+
+Suppose we apply a polynomial activation:
+\[
+h_{ij} = y_{ij}^2.
+\]
+
+Each activation becomes:
+\[
+y_{ij} \cdot y_{ij} = h_{ij}.
+\]
+
+Thus we add one multiplicative constraint per output entry.
+
+\subsection{Full Constraint Set}
+
+For each output location $(i,j)$:
+\begin{itemize}
+\item One affine constraint:
+\[
+(\text{weighted patch} + b)\cdot 1 = y_{ij}
+\]
+\item One multiplication constraint:
+\[
+y_{ij} \cdot y_{ij} = h_{ij}
+\]
+\end{itemize}
+
+\subsection{Matrix View (Im2Col Perspective)}
+
+We can rewrite convolution as matrix multiplication.
+
+Define:
+\[
+\text{vec}(K) = (k_{11}, k_{12}, k_{21}, k_{22}),
+\]
+
+and extract patches:
+\[
+p_1 = (x_{11},x_{12},x_{21},x_{22}),
+\]
+\[
+p_2 = (x_{12},x_{13},x_{22},x_{23}),
+\]
+\[
+p_3 = (x_{21},x_{22},x_{31},x_{32}),
+\]
+\[
+p_4 = (x_{22},x_{23},x_{32},x_{33}).
+\]
+
+Then:
+\[
+y_i = \langle \text{vec}(K), p_i \rangle + b.
+\]
+
+Thus convolution reduces to:
+\[
+y = W_{\text{conv}} x + b,
+\]
+where $W_{\text{conv}}$ is a sparse matrix with repeated parameters.
+
+\subsection{Generalization}
+
+For a general convolution layer:
+
+\begin{itemize}
+\item Input: $C_{\text{in}} \times H \times W$
+\item Kernel: $C_{\text{out}} \times C_{\text{in}} \times k \times k$
+\item Output: $C_{\text{out}} \times H' \times W'$
+\end{itemize}
+
+Each output element is:
+\[
+y_{c,i,j} = \sum_{c'} \sum_{u,v}
+K_{c,c',u,v} \cdot x_{c',i+u,j+v} + b_c.
+\]
+
+Each such equation becomes one affine R1CS constraint.
+
+\subsection{Complexity}
+
+Let $N = C_{\text{out}} H' W'$ be the number of output elements.
+
+\begin{itemize}
+\item Affine constraints: $N$
+\item Multiplication constraints (activation): $N$
+\item Total constraints: $O(N \cdot k^2 \cdot C_{\text{in}})$ operations
+\end{itemize}
+
+\subsection{Remarks}
+
+\begin{itemize}
+\item Convolution is efficient in R1CS due to parameter sharing.
+\item The main cost arises from the number of output elements.
+\item Nonlinearities dominate constraint complexity in practice.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key Insight.}  
+A convolutional network is still a composition of linear maps and pointwise nonlinearities.  
+Thus, it naturally compiles into R1CS with no new primitives beyond those used for MLPs.

@@ -1,0 +1,287 @@
+\chapter{Activation Functions and Architectures}
+
+\section{Nonlinear Activations}
+
+Nonlinear activation functions are a fundamental component of neural networks. They enable networks to represent complex, non-linear relationships that cannot be captured by linear transformations alone.
+
+\medskip
+
+\noindent
+\textbf{Role of activation functions.}  
+Each layer in a neural network applies a transformation of the form
+\[
+z \mapsto \sigma(W z + b),
+\]
+where $\sigma$ is applied elementwise.
+
+\medskip
+
+\noindent
+\textbf{Why nonlinearity is necessary.}  
+If $\sigma$ is linear, then a composition of layers reduces to a single linear transformation:
+\[
+W_L W_{L-1} \cdots W_1 x,
+\]
+eliminating the benefit of depth.
+
+\medskip
+
+\noindent
+\textbf{Common activation functions.}
+
+\begin{itemize}
+    \item \textbf{Sigmoid:}
+    \[
+    \sigma(z) = \frac{1}{1 + e^{-z}}
+    \]
+
+    \item \textbf{Tanh:}
+    \[
+    \sigma(z) = \tanh(z)
+    \]
+
+    \item \textbf{ReLU (Rectified Linear Unit):}
+    \[
+    \sigma(z) = \max(0, z)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item Sigmoid and tanh are smooth but can saturate
+    \item ReLU is simple and avoids saturation in the positive region
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Variants.}
+\begin{itemize}
+    \item Leaky ReLU
+    \item ELU
+    \item GELU
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Gradient behavior.}
+\begin{itemize}
+    \item Saturating activations $\rightarrow$ vanishing gradients
+    \item Piecewise linear activations $\rightarrow$ stable gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The choice of activation function strongly influences both expressivity and optimization dynamics.
+
+\section{Architectural Design Patterns}
+
+Beyond individual layers, the overall structure of a neural network plays a crucial role in its performance.
+
+\medskip
+
+\noindent
+\textbf{Fully connected networks.}  
+Each layer connects to all units in the previous layer.
+
+\medskip
+
+\noindent
+\textbf{Convolutional architectures.}
+\begin{itemize}
+    \item Exploit spatial locality
+    \item Share parameters across locations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Residual connections.}
+\begin{itemize}
+    \item Add identity mappings between layers:
+    \[
+    z^{(\ell+1)} = z^{(\ell)} + F(z^{(\ell)})
+    \]
+    \item Improve gradient flow and stability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Normalization layers.}
+\begin{itemize}
+    \item Batch normalization
+    \item Layer normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Modular design.}  
+Modern architectures are often composed of repeated blocks (e.g., convolutional blocks, transformer blocks).
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Architectural design encodes inductive biases that guide learning.
+
+\section{Depth versus Width}
+
+The structure of a neural network is characterized by its depth and width.
+
+\medskip
+
+\noindent
+\textbf{Width.}  
+Number of units in each layer.
+
+\medskip
+
+\noindent
+\textbf{Depth.}  
+Number of layers.
+
+\medskip
+
+\noindent
+\textbf{Shallow wide networks.}
+\begin{itemize}
+    \item Can approximate many functions
+    \item May require large numbers of parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Deep networks.}
+\begin{itemize}
+    \item Capture hierarchical structure
+    \item Often more parameter-efficient
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Expressivity comparison.}  
+Certain functions can be represented efficiently by deep networks but require exponentially large shallow networks.
+
+\medskip
+
+\noindent
+\textbf{Optimization considerations.}
+\begin{itemize}
+    \item Deeper networks are harder to train
+    \item Techniques such as residual connections mitigate this
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth provides a natural way to encode compositional structure.
+
+\section{Expressivity Considerations}
+
+The expressive power of a neural network depends on its architecture and activation functions.
+
+\medskip
+
+\noindent
+\textbf{Expressivity.}  
+The ability of a model to approximate a wide range of functions.
+
+\medskip
+
+\noindent
+\textbf{Factors affecting expressivity.}
+\begin{itemize}
+    \item Depth and width
+    \item Choice of activation function
+    \item Connectivity structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Piecewise linear networks.}  
+ReLU networks represent functions composed of many linear regions.
+
+\medskip
+
+\noindent
+\textbf{Geometric viewpoint.}  
+Each layer partitions the input space, increasing the complexity of the representation.
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+\begin{itemize}
+    \item High expressivity $\rightarrow$ better approximation
+    \item But increased risk of overfitting and optimization difficulty
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Implicit constraints.}  
+Architectures restrict the class of functions that can be represented, providing inductive bias.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Expressivity alone is not sufficient; effective learning requires a balance between representation power and trainability.
+
+\section{A Unifying Perspective}
+
+Activation functions and architectures jointly determine:
+
+\begin{itemize}
+    \item how information flows through the network,
+    \item how complex functions can be represented,
+    \item how easily the model can be trained.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Nonlinear activations
+    \item Layer connectivity
+    \item Architectural patterns
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The design of neural architectures is a central aspect of modern machine learning, combining mathematical structure with empirical performance.
+
+\section{Outlook}
+
+This chapter examined the role of activation functions and architectures:
+\begin{itemize}
+    \item nonlinear activations enabling expressive models,
+    \item architectural patterns shaping learning,
+    \item tradeoffs between depth and width,
+    \item factors influencing expressivity.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study normalization methods, which play a key role in stabilizing and accelerating training.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+The effectiveness of deep learning systems depends not only on their size, but on how they are structured.

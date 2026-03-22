@@ -1,0 +1,393 @@
+\section[Self-Supervised Learning]{Self-Supervised Learning as Predictive Representation Learning}
+
+Section 4.1 introduced the chapter's main thesis: modern machine learning increasingly seeks a representation
+\[
+\phi : X \to Z
+\]
+that can be reused across many downstream tasks.
+The next question is where such a representation comes from when task-specific labels are scarce.
+One major answer is \emph{self-supervised learning}.
+In self-supervision, the learning signal is extracted from structure already present in the data.
+The model is not given an external class label for every example.
+Instead it is trained to solve a predictive problem constructed from the example itself.
+
+\medskip
+
+This section is one of the conceptual cores of the chapter because it explains why modern pretraining is not merely ``training without labels.''
+It is better understood as \emph{predictive representation learning}.
+The pretraining objective is chosen so that success requires the model to organize inputs into internal coordinates that preserve reusable regularities.
+In language, those regularities may include syntax, discourse, and semantic compatibility.
+In vision, they may include shape, object identity, spatial composition, and invariances to nuisance variation.
+In temporal data, they may include latent state and dynamical structure.
+
+\subsection*{An abstract view of self-supervised learning}
+
+Let $X$ be an input space and let $P_X$ be a distribution over raw observations.
+A self-supervised system first constructs from $x \sim P_X$ one or more derived objects: masked views, augmented views, contexts, future targets, or paired modalities.
+These derived objects define a prediction problem.
+The representation map $\phi_\theta$ and possibly an auxiliary head $h_\theta$ are then trained to minimize a loss that depends only on these internally constructed targets.
+
+\begin{definition}[Abstract self-supervised objective]
+A self-supervised learning problem is an optimization problem of the form
+\[
+\min_{\theta}
+\; \mathbb{E}_{x \sim P_X}
+\; \mathbb{E}_{\omega \sim Q(\cdot \mid x)}
+\big[
+\ell_{\mathrm{ssl}}\big(\phi_\theta, h_\theta; x, \omega\big)
+\big],
+\]
+where $\omega$ is an auxiliary random object derived from $x$ and sampled from a rule $Q(\cdot \mid x)$.
+The variable $\omega$ may encode a mask, an augmentation, a context window, a time index, or a pairing relation.
+The loss is self-supervised when its target is determined from $x$ and $\omega$ rather than from an externally supplied task label.
+\end{definition}
+
+This abstraction is useful because it separates the enduring mathematical structure from implementation details.
+Every self-supervised method chooses:
+\begin{itemize}
+    \item what predictive relation should be extracted from the data,
+    \item what family of transformations or corruptions defines the task,
+    \item what representation must be learned to solve that task.
+\end{itemize}
+In this sense self-supervision is not one method but a design pattern.
+
+\subsection*{A taxonomy of self-supervised objectives}
+
+Three large families organize most modern self-supervised learning: masked prediction, autoregressive prediction, and contrastive learning.
+They differ in what is hidden, what is predicted, and what kind of invariance or dependency structure is encouraged.
+
+\paragraph{1. Masked prediction.}
+Part of the input is hidden and the model is asked to infer the missing content from the visible part.
+If $x = (x_1,\dots,x_T)$ is a structured input and $M \subseteq \{1,\dots,T\}$ is a set of masked positions, we write the visible context as $x_{\bar M}$ and the masked content as $x_M$.
+A canonical masked objective is
+\[
+\mathcal{L}_{\mathrm{mask}}(\theta)
+=
+\mathbb{E}_{x,M}
+\big[
+-\log p_\theta(x_M \mid x_{\bar M}, M)
+\big].
+\]
+This trains the model to reconstruct hidden information from context.
+The objective does not directly tell the model what semantic abstractions to learn, but it does force the representation to capture dependencies among observed parts.
+
+\paragraph{2. Autoregressive prediction.}
+In sequential data one may ask the model to predict each token from the past.
+For a sequence $x_1,\dots,x_T$, the objective is
+\[
+\mathcal{L}_{\mathrm{AR}}(\theta)
+=
+\mathbb{E}_{x}
+\Big[
+\sum_{t=1}^{T}
+-\log p_\theta(x_t \mid x_{<t})
+\Big].
+\]
+This is a standard conditional log-likelihood.
+It encourages the representation at time $t$ to summarize the preceding context in a way useful for continuation.
+Next-token prediction in language models is the most visible modern example.
+
+\paragraph{3. Contrastive learning.}
+Rather than reconstructing hidden content, contrastive learning distinguishes compatible pairs from incompatible ones.
+Let $a$ and $a'$ be random augmentations, and let
+\[
+u = a(x), \qquad v = a'(x)
+\]
+be two views of the same underlying example.
+Let $\tilde v_1,\dots,\tilde v_K$ be views of other examples.
+With an encoder $\phi_\theta$ and similarity function $s(\cdot,\cdot)$, a typical contrastive loss takes the form
+\[
+\mathcal{L}_{\mathrm{con}}(\theta)
+=
+\mathbb{E}
+\left[
+-\log
+\frac{\exp(s(z,z^+)/\tau)}
+{\exp(s(z,z^+)/\tau)+\sum_{k=1}^{K} \exp(s(z,z_k^-)/\tau)}
+\right],
+\]
+where $z=\phi_\theta(u)$, $z^+=\phi_\theta(v)$, and $z_k^- = \phi_\theta(\tilde v_k)$.
+The temperature $\tau>0$ controls how sharply similarities are weighted.
+The objective pushes together representations of related views and pushes apart representations of unrelated examples.
+
+\subsection*{Positives, negatives, augmentations, and contexts}
+
+The notation above is standard enough that it deserves explicit definitions.
+
+\begin{definition}[Augmentation]
+An \emph{augmentation} is a transformation $a : X \to X'$ that preserves enough of the underlying content for the transformed object to remain a valid view of the same example for the pretraining task.
+In images, augmentations may include cropping, color perturbation, or flipping.
+In language, they may be more constrained because arbitrary edits can destroy meaning.
+\end{definition}
+
+\begin{definition}[Positive pair and negative pair]
+In contrastive learning, a \emph{positive pair} is a pair of views $(u,v)$ deemed compatible because they are generated from the same underlying source example or matched context.
+A \emph{negative pair} is a pair $(u,\tilde v)$ deemed incompatible because the two views come from different source examples or mismatched contexts.
+\end{definition}
+
+\begin{definition}[Context]
+A \emph{context} is the observed part of a structured input that is used to predict another part.
+For masked learning the context is typically $x_{\bar M}$.
+For autoregression the context at position $t$ is the prefix $x_{<t}$.
+More generally, a context is any information retained after a task-specific corruption or restriction has been applied.
+\end{definition}
+
+These definitions matter because a large part of self-supervised design is hidden inside them.
+Choosing an augmentation implicitly decides what information the representation should ignore.
+Choosing positives and negatives decides what counts as semantic compatibility.
+Choosing a context rule decides what dependencies the model is forced to model.
+
+\subsection*{What contrastive learning is trying to do}
+
+There are two complementary ways to understand contrastive learning.
+One is geometric: views of the same object should map nearby, while views of different objects should not collapse into one indistinguishable cluster.
+The other is information-theoretic: the representation of one view should retain information predictive of another compatible view.
+A standard formal statement linking these viewpoints is the InfoNCE lower-bound result.
+
+\begin{proposition}[InfoNCE lower-bound intuition]
+Let $(U,V)$ be jointly distributed random variables, and let $V_1,\dots,V_N$ be candidates such that one candidate is paired with $U$ according to the joint law and the others are sampled independently from the marginal law of $V$.
+If a scoring function $f_\theta(U,V)$ is trained with the multiclass contrastive objective
+\[
+\mathcal{L}_{\mathrm{NCE}}(\theta)
+=
+\mathbb{E}
+\left[
+-\log
+\frac{\exp(f_\theta(U,V_1))}
+{\sum_{j=1}^{N} \exp(f_\theta(U,V_j))}
+\right],
+\]
+then, under the standard sampling construction above,
+\[
+I(U;V) \ge \log N - \mathcal{L}_{\mathrm{NCE}}(\theta)
+\]
+for the optimal scoring rule and, more generally, low contrastive loss is evidence that the score retains information useful for identifying the correct paired view among negatives.
+\end{proposition}
+
+\paragraph{Proof sketch and interpretation.}
+The classification problem hidden inside InfoNCE asks the model to identify which candidate $V_j$ is paired with $U$.
+If $U$ and $V$ share substantial mutual information, then this identification problem is easier than chance.
+The optimal logit is related to a log-density ratio between the joint distribution and the product of marginals.
+Substituting that optimal score into the cross-entropy objective yields the inequality above.
+The proposition should be read carefully.
+It does not say that every practical contrastive pipeline estimates mutual information well.
+It says that under a mathematically clean negative-sampling construction, successful contrastive discrimination is linked to preserving shared information between two views.
+
+This proposition is useful because it elevates contrastive learning above pure heuristic.
+There is a real theorem-level bridge from a discrimination objective to an information quantity.
+At the same time, the theorem does not automatically settle practice.
+Finite batch size, imperfect negatives, architecture choice, projector heads, and augmentation design all affect what the learned representation actually becomes.
+
+\subsection*{What is known, what is empirical, and what remains heuristic}
+
+Because self-supervised learning is now a central methodology, it is important to distinguish three layers of understanding.
+
+\paragraph{What is mathematically well grounded.}
+Masked prediction and autoregressive prediction are conditional likelihood objectives on induced prediction tasks.
+The optimization problem is explicit.
+If the model class is rich enough and optimization succeeds, the optimum is tied to modeling a conditional distribution.
+Contrastive learning also has formal analyses, including the lower-bound interpretation above and geometric analyses of alignment and non-collapse in simplified settings.
+Thus self-supervision is not merely folklore.
+
+\paragraph{What is strongly supported empirically.}
+Large-scale pretraining can produce representations that transfer remarkably well across downstream tasks.
+Masked language modeling, next-token prediction, and contrastive image learning have all been shown in practice to learn features useful far beyond the pretraining objective itself.
+Linear probing and fine-tuning experiments repeatedly demonstrate that pretrained representations encode substantial reusable structure.
+These are empirical facts about current systems.
+
+\paragraph{What remains design practice or heuristic.}
+Many decisive choices still come from engineering judgment rather than closed theory.
+How much masking should be used?
+What augmentations preserve semantic identity rather than destroy it?
+How many negatives are helpful?
+What temperature should be used in contrastive loss?
+Why do predictor heads and stop-gradient tricks help in some image methods?
+Why do some objectives transfer better than others even when training loss looks similar?
+These questions are only partially understood.
+The current field combines theorem, experiment, and craft.
+
+\subsection*{Worked example: masked language modeling}
+
+A compact toy example makes the predictive structure concrete.
+Consider the sentence
+\[
+\text{``the cat sat on the mat''}.
+\]
+Suppose positions $3$ and $6$ are masked.
+The visible context is therefore
+\[
+(\text{the},\text{cat},\texttt{[MASK]},\text{on},\text{the},\texttt{[MASK]}).
+\]
+A masked language model produces contextual representations
+\[
+h_t = \phi_\theta(x_{\bar M},M)_t
+\]
+for each position $t$, and then predicts the token at each masked position via a softmax head:
+\[
+p_\theta(x_t = w \mid x_{\bar M},M)
+=
+\frac{\exp(W_w^{\top} h_t + b_w)}{\sum_{w'} \exp(W_{w'}^{\top} h_t + b_{w'})}.
+\]
+If the correct targets are ``sat'' and ``mat,'' the contribution to the loss is
+\[
+-\log p_\theta(\text{sat} \mid x_{\bar M},M, t=3)
+-\log p_\theta(\text{mat} \mid x_{\bar M},M, t=6).
+\]
+
+Why can this teach useful representation rather than mere word filling?
+Because correct prediction requires the model to exploit several kinds of dependency at once.
+At position $3$, the local context ``the cat \_ on'' strongly suggests a verb compatible with the subject.
+At position $6$, the phrase ``on the \_'' suggests a noun, but selecting ``mat'' over alternatives is easier if the model also preserves coherence with the earlier words.
+Thus the internal state must encode grammatical and semantic compatibility across the sentence.
+
+\begin{example}[What is learned in the toy masked example]
+The model is not explicitly told to learn syntax, parts of speech, or semantic role.
+Those structures emerge as useful internal variables because they help predict the masked tokens.
+This is a recurring pattern in self-supervision: the objective names one task, but the representation internalizes latent regularities needed to solve it.
+\end{example}
+
+One should also note a limitation.
+Masked prediction is not the same as direct generation.
+It teaches the model to use bidirectional context for infilling, not necessarily to produce a left-to-right continuation policy.
+This is one reason why different self-supervised objectives can lead to different downstream strengths.
+
+\subsection*{Worked example: contrastive image learning}
+
+Now consider a toy image example.
+Let $x$ be an image of a bicycle.
+Apply two random augmentations:
+\[
+u = a(x), \qquad v = a'(x),
+\]
+where one augmentation crops the left side of the bicycle and the other changes color and brightness.
+Although the two resulting views are visually different, they still correspond to the same underlying object.
+Take another image $x'$ of a dog and form a negative view $\tilde v = a''(x')$.
+Suppose the encoder produces normalized embeddings
+\[
+z = \phi_\theta(u),
+\qquad
+z^+ = \phi_\theta(v),
+\qquad
+z^- = \phi_\theta(\tilde v),
+\]
+and use dot-product similarity $s(z,z') = z^{\top}z'$.
+
+Assume, for illustration, that
+\[
+s(z,z^+) = 2.0,
+\qquad
+s(z,z^-) = 0.5,
+\qquad
+\tau = 1.
+\]
+With one negative, the contrastive loss for this anchor is
+\[
+-\log
+\frac{e^{2.0}}{e^{2.0}+e^{0.5}}
+\approx 0.20.
+\]
+If the positive similarity were smaller, say $0.8$, then the loss would be
+\[
+-\log
+\frac{e^{0.8}}{e^{0.8}+e^{0.5}}
+\approx 0.55,
+\]
+which is worse.
+Thus the training rule explicitly rewards making the two bicycle views more compatible than the bicycle--dog pair.
+
+The important conceptual point is that the representation is being shaped by invariance assumptions hidden in the augmentations.
+If cropping and color perturbation preserve object identity, then a good representation should not change radically under those transformations.
+But this is also where design enters.
+An augmentation that destroys semantic content teaches the wrong invariance.
+For example, an extreme crop that removes the bicycle entirely should not remain a positive view in any meaningful sense.
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.94\textwidth}
+\centering
+\textbf{Two common self-supervised pipelines}
+
+\vspace{0.5em}
+\begin{tabular}{p{0.43\textwidth}p{0.43\textwidth}}
+\textbf{Masked prediction} & \textbf{Contrastive learning} \\
+Raw example $x$ & Raw example $x$ \\
+$\downarrow$ apply mask $M$ & $\downarrow$ sample augmentations $a,a'$ \\
+Visible context $x_{\bar M}$ & Two views $u=a(x),\; v=a'(x)$ \\
+$\downarrow$ encoder $\phi_\theta$ & $\downarrow$ shared encoder $\phi_\theta$ \\
+Contextual states $h_t$ & Embeddings $z, z^+$ \\
+$\downarrow$ predict hidden content $x_M$ & $\downarrow$ compare with negatives $z_1^-,\dots,z_K^-$ \\
+Loss: reconstruction / conditional likelihood & Loss: align positives, separate negatives
+\end{tabular}
+\end{minipage}}
+\caption{A monochrome comparison of two major self-supervised pipelines.
+Masked methods learn by recovering omitted information from context.
+Contrastive methods learn by making compatible views more similar than incompatible ones.}
+\end{figure}
+
+\subsection*{Why self-supervision can support transfer}
+
+We can now state the chapter-level intuition more sharply.
+Self-supervised learning tends to help downstream tasks when solving the pretext objective requires the model to preserve regularities that many downstream tasks also need.
+The mechanism is not magical.
+A representation becomes reusable when the pretraining objective rewards internal coordinates that expose broadly useful structure.
+
+Masked prediction often encourages context-sensitive features.
+Autoregression encourages representations that summarize history and continuation constraints.
+Contrastive learning often encourages invariances to nuisance transformations while preserving semantic identity.
+These are not identical biases.
+Each objective selects a somewhat different notion of what information should be accessible in $Z$.
+That is why different self-supervised methods can lead to different probing behavior, adaptation behavior, and domain suitability.
+
+A good representation is therefore not simply one that minimizes a pretraining loss.
+It is one whose induced hypothesis class
+\[
+\{g \circ \phi : g \in \mathcal{G}\}
+\]
+supports many downstream tasks with simple readout or modest adaptation.
+This connects self-supervised learning back to the representation-learning picture of Section 4.1.
+The pretext task is not the final goal.
+It is an instrument for shaping a useful latent coordinate system.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item Self-supervised learning constructs predictive targets from the data itself rather than from externally supplied labels.
+    \item The three main objective families are masked prediction, autoregressive prediction, and contrastive learning.
+    \item Augmentations, positives, negatives, and contexts are not minor implementation details; they determine what invariances and dependencies the representation is encouraged to learn.
+    \item Contrastive learning has real theorem-level support through results such as the InfoNCE lower-bound interpretation, but many practical design choices remain heuristic.
+    \item The reason self-supervision matters is not only that it avoids labels, but that it can induce reusable internal coordinates for downstream tasks.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item \textbf{``Self-supervised'' does not mean unsupervised in the sense of having no target at all.} There is a target, but it is generated from the example itself.
+    \item \textbf{Low pretraining loss is not the same as good transfer.} A method can optimize its pretext objective well while learning the wrong invariances for downstream use.
+    \item \textbf{Contrastive learning is not only geometry and not only information theory.} In practice it has both interpretations, and neither fully replaces the other.
+    \item \textbf{Masked prediction and autoregression are related but not identical.} They expose different conditional structure and often produce different downstream behavior.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Write the masked-prediction loss for a sequence in which exactly one token position is chosen uniformly at random for masking.
+    \item Show that autoregressive next-token prediction is a maximum-likelihood objective for a factorized model of a sequence.
+    \item In the one-negative contrastive example above, recompute the loss when $s(z,z^+) = 1.5$, $s(z,z^-) = 1.5$, and explain the result geometrically.
+    \item Give one example of an augmentation that is likely valid for natural images and one that is likely invalid, and explain what invariance each would encourage.
+    \item Compare masked language modeling and contrastive image learning as representation-learning mechanisms. What information is each objective trying to preserve, and what information is each willing to discard?
+    \item Suppose a representation collapses so that $\phi(x)$ is the same vector for every $x$. Explain why this is bad for contrastive learning and for downstream linear probing.
+    \item Derive from first principles why the softmax cross-entropy in contrastive learning rewards larger positive similarity than negative similarity.
+    \item Consider a time series with latent periodic structure. Which of the three objective families in this section would you try first, and why?
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+Self-supervised learning has roots in several traditions rather than a single founding paper.
+Predictive coding, language modeling, denoising autoencoding, masked prediction, and contrastive estimation all contributed pieces of the modern picture.
+For denoising and representation learning, a classical reference is Vincent et al.
+For language-model pretraining, early neural language-model and contextual-representation work is foundational.
+For masked language modeling and bidirectional contextual pretraining, Devlin et al. is central.
+For contrastive objectives and their information-theoretic interpretation, the Noise-Contrastive Estimation and InfoNCE lines are especially important.
+For modern contrastive image learning, representative references include methods in the SimCLR and MoCo families.
+A useful reading strategy is to separate three questions while reading the literature: what predictive task is defined, what invariances are encoded through the data pipeline, and what evidence is provided that the learned representation transfers.

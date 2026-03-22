@@ -1,0 +1,297 @@
+\section{Lecture 7: Linear Regression and Geometry}
+
+\subsection{Motivation}
+
+Linear regression is one of the simplest yet most fundamental models in machine learning. Despite its apparent simplicity, it illustrates many core ideas:
+
+\begin{itemize}
+    \item function approximation,
+    \item optimization,
+    \item geometry of solutions,
+    \item regularization and generalization.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Linear regression provides a setting where learning can be understood exactly, both algebraically and geometrically.
+
+\subsection{Linear Models and Projections}
+
+We consider a linear model:
+\[
+f_w(x) = w^\top x, \quad w \in \mathbb{R}^d.
+\]
+
+\medskip
+
+\noindent
+Given data $(x_i, y_i)$, define the design matrix:
+\[
+X =
+\begin{bmatrix}
+x_1^\top \\
+x_2^\top \\
+\vdots \\
+x_n^\top
+\end{bmatrix}
+\in \mathbb{R}^{n \times d}, \quad
+y =
+\begin{bmatrix}
+y_1 \\
+y_2 \\
+\vdots \\
+y_n
+\end{bmatrix}.
+\]
+
+\medskip
+
+\noindent
+Predictions are given by:
+\[
+\hat{y} = Xw.
+\]
+
+\medskip
+
+\noindent
+\textbf{Geometric interpretation.}
+
+\begin{itemize}
+    \item The column space of $X$ is a subspace of $\mathbb{R}^n$
+    \item Predictions $Xw$ lie in this subspace
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Projection viewpoint.}  
+The optimal prediction is the projection of $y$ onto the column space of $X$.
+
+\medskip
+
+\noindent
+\textbf{Orthogonality condition.}
+\[
+X^\top (Xw - y) = 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning corresponds to projecting observed outputs onto the space of representable predictions.
+
+\subsection{Least Squares as Optimization}
+
+We minimize the squared loss:
+\[
+L(w) = \|Xw - y\|^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Normal equations.}
+\[
+X^\top X w = X^\top y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Solution (full rank case).}
+\[
+w^* = (X^\top X)^{-1} X^\top y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Closed-form solution exists
+    \item Equivalent to minimizing empirical risk with squared loss
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Overparameterized case ($d > n$).}
+\begin{itemize}
+    \item Infinitely many solutions
+    \item Minimum-norm solution:
+    \[
+    w^* = X^\top (XX^\top)^{-1} y
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to optimization.}  
+Gradient descent converges to this minimum-norm solution when initialized at $w=0$.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Even simple models reveal the role of implicit regularization.
+
+\subsection{Conditioning and Numerical Stability}
+
+The matrix $X^\top X$ plays a central role.
+
+\medskip
+
+\noindent
+\textbf{Condition number.}
+\[
+\kappa = \frac{\lambda_{\max}}{\lambda_{\min}},
+\]
+where $\lambda_i$ are eigenvalues of $X^\top X$.
+
+\medskip
+
+\noindent
+\textbf{Ill-conditioning.}
+\begin{itemize}
+    \item Small eigenvalues $\Rightarrow$ unstable inversion
+    \item Solutions sensitive to noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effects.}
+\begin{itemize}
+    \item Slow convergence of gradient descent
+    \item Large variance in estimated parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}
+\begin{itemize}
+    \item Level sets are elongated ellipsoids
+    \item Optimization proceeds slowly along narrow directions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Numerical properties of the data matrix strongly affect learning behavior.
+
+\subsection{Ridge Regression}
+
+To address instability and overfitting, we introduce $\ell_2$ regularization:
+\[
+\min_w \|Xw - y\|^2 + \lambda \|w\|^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\[
+w^* = (X^\top X + \lambda I)^{-1} X^\top y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Adds stability to inversion
+    \item Shrinks parameter values
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}
+\begin{itemize}
+    \item Solution lies in intersection of:
+    \begin{itemize}
+        \item loss level sets
+        \item $\ell_2$ ball
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect on eigenvalues.}
+\[
+\lambda_i \mapsto \lambda_i + \lambda,
+\]
+which improves conditioning.
+
+\medskip
+
+\noindent
+\textbf{Bias--variance tradeoff.}
+\begin{itemize}
+    \item Increased bias
+    \item Reduced variance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Ridge regression stabilizes learning and improves generalization.
+
+\subsection{A Unifying Perspective}
+
+Linear regression illustrates key principles of learning:
+
+\begin{itemize}
+    \item \textbf{Approximation:} linear hypothesis space
+    \item \textbf{Optimization:} least squares objective
+    \item \textbf{Geometry:} projection onto subspaces
+    \item \textbf{Regularization:} explicit and implicit
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning is the projection of data onto a structured space, shaped by both the model and the optimization process.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Even the simplest models reveal deep connections between geometry, optimization, and generalization.
+
+\subsection{Outlook}
+
+In this lecture, we developed a complete understanding of linear regression, including:
+
+\begin{itemize}
+    \item geometric interpretation via projections,
+    \item closed-form solutions,
+    \item numerical stability and conditioning,
+    \item regularization through ridge regression.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas extend naturally to classification problems.
+
+\medskip
+
+\noindent
+In the next lecture, we study logistic regression, where probabilistic modeling and optimization come together in classification tasks.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Simple models provide a foundation for understanding complex learning systems.

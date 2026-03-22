@@ -1,0 +1,203 @@
+\chapter{Sequence Models}
+
+\section{Introduction}
+
+Many learning problems involve sequential data: text, speech, time series, and control signals. In such settings, predictions depend not only on the current input but also on past inputs. Sequence models address this by maintaining a \emph{hidden state} that evolves over time.
+
+This chapter develops recurrent neural networks (RNNs) as dynamical systems with memory. We derive backpropagation through time (BPTT), analyze gradient behavior, and introduce gated architectures such as LSTM and GRU. We also discuss the limitations of recurrence.
+
+\section{Sequential Data and Hidden State}
+
+Given a sequence $(x_1, x_2, \dots, x_T)$, a sequence model produces outputs $(y_1, \dots, y_T)$, where each output may depend on the entire history.
+
+A common approach is to maintain a hidden state $h_t$:
+\[
+h_t = f(h_{t-1}, x_t), \qquad y_t = g(h_t).
+\]
+
+The hidden state serves as a summary of past information.
+
+\subsection{State-Space View}
+
+This can be interpreted as a state-space model:
+\[
+\text{state update: } h_t = f(h_{t-1}, x_t), \qquad
+\text{output: } y_t = g(h_t).
+\]
+
+Thus sequence models evolve over time, storing information in the state.
+
+\section{Recurrent Neural Networks as Dynamical Systems}
+
+A standard RNN has the form:
+\[
+h_t = \sigma(W_h h_{t-1} + W_x x_t + b),
+\]
+\[
+y_t = W_y h_t.
+\]
+
+\subsection{Dynamical Systems Interpretation}
+
+The recurrence defines a discrete-time dynamical system:
+\[
+h_t = F(h_{t-1}, x_t).
+\]
+
+\begin{itemize}
+    \item $h_t$ is the system state,
+    \item $x_t$ acts as an external input,
+    \item the network evolves over time.
+\end{itemize}
+
+This perspective emphasizes:
+\begin{itemize}
+    \item memory as persistence of state,
+    \item dynamics as repeated application of the same transformation.
+\end{itemize}
+
+\section{Backpropagation Through Time}
+
+Training RNNs requires computing gradients through the entire sequence.
+
+\subsection{Unrolling the Network}
+
+An RNN over $T$ steps can be viewed as a depth-$T$ network:
+\[
+h_1 \to h_2 \to \cdots \to h_T.
+\]
+
+This is called \emph{unrolling} in time.
+
+\subsection{Gradient Recursion}
+
+Let $L$ be the total loss. Then:
+\[
+\frac{\partial L}{\partial h_t}
+=
+\frac{\partial L}{\partial h_{t+1}} \frac{\partial h_{t+1}}{\partial h_t}
++ \frac{\partial \ell_t}{\partial h_t}.
+\]
+
+This recursion propagates gradients backward through time.
+
+\subsection{Jacobian Product}
+
+Gradients involve products of Jacobians:
+\[
+\prod_{k=t}^{T} \frac{\partial h_{k+1}}{\partial h_k}.
+\]
+
+As in deep feedforward networks, repeated multiplication leads to vanishing or exploding gradients.
+
+\section{Vanishing and Exploding Gradients in RNNs}
+
+If the Jacobian norms are less than 1, gradients decay exponentially:
+\[
+\left\| \frac{\partial h_T}{\partial h_t} \right\| \to 0.
+\]
+
+If greater than 1, they grow exponentially.
+
+\subsection{Implications}
+
+\begin{itemize}
+    \item long-range dependencies are hard to learn,
+    \item early inputs have little influence on gradients,
+    \item training becomes unstable.
+\end{itemize}
+
+This is a central limitation of basic RNNs.
+
+\section{Gated Architectures: LSTM and GRU}
+
+To address gradient issues, gated architectures introduce mechanisms for controlling information flow.
+
+\subsection{LSTM (Long Short-Term Memory)}
+
+An LSTM maintains a cell state $c_t$:
+\[
+c_t = f_t \odot c_{t-1} + i_t \odot \tilde{c}_t,
+\]
+where:
+\begin{itemize}
+    \item $f_t$ is the forget gate,
+    \item $i_t$ is the input gate,
+    \item $\tilde{c}_t$ is the candidate update.
+\end{itemize}
+
+The hidden state is:
+\[
+h_t = o_t \odot \tanh(c_t),
+\]
+with output gate $o_t$.
+
+\subsection{Key Idea}
+
+The cell state evolves additively rather than multiplicatively:
+\[
+c_t \approx c_{t-1} + \text{correction}.
+\]
+
+This helps preserve gradients over long time spans.
+
+\subsection{GRU (Gated Recurrent Unit)}
+
+GRU simplifies LSTM:
+\[
+h_t = (1 - z_t) \odot h_{t-1} + z_t \odot \tilde{h}_t,
+\]
+where $z_t$ is an update gate.
+
+This combines memory and update in a simpler form.
+
+\subsection{Interpretation}
+
+Gates control:
+\begin{itemize}
+    \item what to remember,
+    \item what to forget,
+    \item what to update.
+\end{itemize}
+
+They enable adaptive memory and improved gradient flow.
+
+\section{Limits of Recurrence}
+
+Despite improvements, recurrent models have limitations:
+
+\begin{itemize}
+    \item difficulty capturing very long-range dependencies,
+    \item sequential computation limits parallelization,
+    \item training can still be unstable,
+    \item memory capacity is constrained by state dimension.
+\end{itemize}
+
+These limitations motivate alternative architectures, such as attention-based models.
+
+\section{Worked Example: Gradient Through Time}
+
+For a simple RNN:
+\[
+h_t = \sigma(W h_{t-1}),
+\]
+we have:
+\[
+\frac{\partial h_T}{\partial h_t}
+=
+\prod_{k=t}^{T-1} W^\top \operatorname{diag}(\sigma'(z_k)).
+\]
+
+This illustrates how repeated multiplication governs gradient behavior.
+
+\section{A Unifying Perspective}
+
+Sequence models extend neural networks into time by introducing state. RNNs are dynamical systems, and training them requires propagating gradients through time.
+
+The main challenge is maintaining information across many steps. Gated architectures address this by introducing controlled memory updates, while the dynamical-systems view highlights the role of stability and long-term behavior.
+
+\section{Summary}
+
+In this chapter we studied sequence models from a dynamical perspective. We introduced recurrent neural networks, interpreted them as state-space systems, and derived backpropagation through time. We showed how gradient instability limits basic RNNs and motivates gated architectures such as LSTM and GRU.
+
+We also discussed the limitations of recurrence, setting the stage for attention-based models in the next chapter.

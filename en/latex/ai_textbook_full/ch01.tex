@@ -1,0 +1,526 @@
+\chapter{Learning as Function Approximation}
+
+\section{Introduction}
+
+Machine learning is often introduced through lists of tasks: predicting house prices, recognizing objects in images, translating between languages, recommending movies, or generating text. Although these applications look very different on the surface, they share a common mathematical core. In each case, we are given observations and asked to construct a rule that maps inputs to outputs in a useful way. This rule may predict a number, assign a category, estimate a probability distribution, or produce a structured object such as a sentence or image. From a sufficiently abstract viewpoint, learning is the problem of discovering an unknown function from data.
+
+This chapter develops that viewpoint carefully. The idea of \emph{learning as function approximation} is not the whole story of machine learning, but it is one of its most important organizing principles. It gives a common language for regression, classification, sequence prediction, density estimation, and representation learning. It also clarifies why machine learning is difficult. We never observe the unknown rule directly. Instead, we only see finitely many examples, often corrupted by noise, bias, missing information, or measurement error. The learner must infer a useful approximation from incomplete evidence.
+
+Thinking in terms of function approximation immediately raises fundamental questions. What is the input space? What is the output space? What class of functions are we allowed to search over? How do we decide whether one approximation is better than another? When do finitely many examples contain enough information to identify a useful rule? Why do some models generalize well beyond the training data while others fail? These questions will guide not only this chapter but the rest of the book.
+
+The aim of this chapter is threefold. First, we build a general mathematical formulation of learning problems. Second, we show how a wide range of machine learning tasks fit into that formulation. Third, we explain why approximation alone is not enough: learning also requires data, structure, inductive bias, and criteria for selecting among many possible approximations. Later chapters will develop these ideas more rigorously, but the conceptual framework begins here.
+
+\section{What Does It Mean to Learn?}
+
+At an intuitive level, learning means improving performance on a task through experience. In machine learning, the ``experience'' is data, and the ``performance'' is measured by some loss or utility. The learner observes examples and uses them to construct a model whose behavior is expected to be useful on future examples.
+
+A mathematical way to express this is to imagine an unknown target rule
+\[
+f^\star : \mathcal{X} \to \mathcal{Y},
+\]
+where $\mathcal{X}$ is an input space and $\mathcal{Y}$ is an output space. The goal of the learner is to construct a function
+\[
+f : \mathcal{X} \to \mathcal{Y}
+\]
+that approximates $f^\star$ well on inputs of interest.
+
+Here the word ``function'' should be interpreted broadly. In the simplest settings, $f$ maps a vector of numbers to a real number or a class label. In more advanced settings, $f$ may map an image to a sentence, a sequence of tokens to the next token distribution, or a noisy signal to a denoised one. The core idea is unchanged: the learner seeks a useful mapping between spaces.
+
+\begin{definition}[Learning Problem]
+A learning problem consists of
+\begin{itemize}
+    \item an input space $\mathcal{X}$,
+    \item an output space $\mathcal{Y}$,
+    \item a collection of observed examples,
+    \item a class $\mathcal{H}$ of candidate functions $f : \mathcal{X} \to \mathcal{Y}$,
+    \item and a criterion for judging the quality of a candidate function.
+\end{itemize}
+The goal is to choose a function $f \in \mathcal{H}$ that performs well on the task of interest.
+\end{definition}
+
+This definition is deliberately broad. It covers classical regression and classification, but it also includes many modern tasks in deep learning. What changes from one setting to another is the nature of $\mathcal{X}$, $\mathcal{Y}$, the hypothesis class $\mathcal{H}$, and the performance criterion.
+
+A useful first distinction is between the unknown target rule and the model we actually learn. The target rule $f^\star$ is an idealization. In many practical situations, no deterministic function perfectly describes the relationship between input and output. Real data may contain randomness, ambiguity, or multiple plausible answers. Even then, the function viewpoint remains valuable. One can interpret $f^\star$ as the best possible predictor under some loss, or more generally as a conditional distribution or decision rule. Later chapters will make this probabilistic refinement precise.
+
+\subsection{Experience as Data}
+
+The learner does not have direct access to $f^\star$. Instead, it sees a finite sample of input--output pairs,
+\[
+(x_1,y_1), (x_2,y_2), \dots, (x_n,y_n).
+\]
+These examples provide partial information about the unknown rule. From them, the learner must extrapolate to future inputs.
+
+This is the central difficulty of machine learning. Infinitely many functions can agree with finitely many observations. Without additional assumptions, the data alone do not determine a unique solution. Thus learning is never just approximation; it is approximation under uncertainty from finite information.
+
+\subsection{A First Approximation View}
+
+Suppose the target rule were known exactly. Then the problem would reduce to approximation theory: find a simpler or more computationally tractable function $f$ that stays close to $f^\star$ under an appropriate notion of error. Machine learning adds another layer: the target rule is hidden, and we only observe samples generated from it. So the learner must solve two problems simultaneously:
+\begin{enumerate}
+    \item infer a useful target relationship from limited data;
+    \item approximate that relationship within a chosen model class.
+\end{enumerate}
+
+This dual role explains why machine learning sits at an intersection of statistics, optimization, approximation theory, information theory, and computer science.
+
+\section{Inputs, Outputs, and Representations}
+
+A learning problem begins with a choice of input and output spaces. While this may appear straightforward, it is often one of the most consequential modeling decisions.
+
+\subsection{Input Space}
+
+The input space $\mathcal{X}$ is the set of objects on which the learner operates. Examples include:
+\begin{itemize}
+    \item vectors in $\mathbb{R}^d$ representing tabular features,
+    \item images represented as arrays in $\mathbb{R}^{H \times W \times C}$,
+    \item sequences of tokens,
+    \item graphs,
+    \item audio signals,
+    \item time series,
+    \item sets or point clouds.
+\end{itemize}
+
+In practice, the raw object of interest is often not immediately available in a numerical form suitable for learning. A real-world entity such as a person, document, or molecule must be represented in a way that the model can process. This transformation is called a \emph{representation}. Choosing a representation is itself a modeling step, and later chapters will show that much of modern deep learning can be interpreted as \emph{learning representations} automatically from data.
+
+\subsection{Output Space}
+
+The output space $\mathcal{Y}$ depends on the task. Common examples are:
+\begin{itemize}
+    \item $\mathbb{R}$ for scalar regression,
+    \item $\{1,\dots,K\}$ for multiclass classification,
+    \item $\mathbb{R}^m$ for vector-valued prediction,
+    \item a set of sequences for machine translation or text generation,
+    \item a space of probability distributions for probabilistic forecasting.
+\end{itemize}
+
+The structure of $\mathcal{Y}$ strongly influences the form of the model and the loss function. Predicting a continuous real value is different from choosing among discrete categories, and both differ from generating a structured object such as a sentence or image.
+
+\subsection{Representations Matter}
+
+Two learning problems may be equivalent in principle but dramatically different in difficulty depending on representation. For instance, classifying handwritten digits from raw pixels is harder than classifying them from well-chosen geometric features. A major theme in machine learning is that \emph{good representations make learning easier}.
+
+This observation leads to a useful decomposition:
+\[
+\text{raw object} \longrightarrow \text{representation} \longrightarrow \text{prediction}.
+\]
+Classical machine learning often relied heavily on human-designed representations. Deep learning shifted much of the burden to the model itself, allowing representations to be learned jointly with the predictor.
+
+\begin{example}[House Price Prediction]
+Suppose we want to predict the price of a house. The input might include area, number of bedrooms, age, location, and other features. Thus $\mathcal{X}$ could be a subset of $\mathbb{R}^d$, and $\mathcal{Y}=\mathbb{R}$. The learner seeks a function
+\[
+f : \mathbb{R}^d \to \mathbb{R}
+\]
+that maps features to a price estimate.
+\end{example}
+
+\begin{example}[Image Classification]
+Suppose we want to classify an image into one of $K$ categories. Then the input space may be
+\[
+\mathcal{X} \subseteq \mathbb{R}^{H \times W \times C},
+\]
+and the output space is $\mathcal{Y} = \{1,\dots,K\}$. The learner seeks a function that maps pixel arrays to labels.
+\end{example}
+
+\begin{example}[Language Modeling]
+In next-token prediction, the input is a sequence of previously observed tokens, and the output is a probability distribution over the next token. Here the model may be viewed as
+\[
+f : \mathcal{V}^\ast \to \Delta(\mathcal{V}),
+\]
+where $\mathcal{V}$ is a vocabulary, $\mathcal{V}^\ast$ denotes finite sequences over $\mathcal{V}$, and $\Delta(\mathcal{V})$ is the simplex of probability distributions on $\mathcal{V}$.
+\end{example}
+
+These examples differ greatly in data type and architecture, but they share a common mathematical skeleton: learning a map between spaces from observed examples.
+
+\section{Approximation, Error, and Loss}
+
+To say that one function approximates another requires a notion of closeness. In machine learning, this is usually encoded through a \emph{loss function}.
+
+\begin{definition}[Loss Function]
+A loss function is a map
+\[
+\ell : \mathcal{Y} \times \mathcal{Y} \to [0,\infty)
+\]
+where $\ell(\hat y, y)$ measures the penalty incurred when predicting $\hat y$ while the true target is $y$.
+\end{definition}
+
+The choice of loss depends on the task:
+\begin{itemize}
+    \item squared loss: $\ell(\hat y,y) = (\hat y-y)^2$,
+    \item absolute loss: $\ell(\hat y,y) = |\hat y-y|$,
+    \item zero-one loss for classification:
+    \[
+    \ell(\hat y,y)=
+    \begin{cases}
+        0, & \hat y = y,\\
+        1, & \hat y \neq y,
+    \end{cases}
+    \]
+    \item cross-entropy or log loss for probabilistic classification.
+\end{itemize}
+
+The loss quantifies the quality of a prediction at a single point. To evaluate a function over a dataset or distribution, one aggregates the loss.
+
+\subsection{Empirical Error}
+
+Given training data $(x_i,y_i)_{i=1}^n$, the empirical error of a predictor $f$ is
+\[
+\widehat{R}_n(f) = \frac{1}{n}\sum_{i=1}^n \ell(f(x_i),y_i).
+\]
+This is the average loss on the observed sample. It is computable from data and therefore central to training.
+
+\subsection{Population Error}
+
+What we ultimately care about, however, is not just performance on the training data but performance on future examples. If data are generated from some underlying distribution $P$ on $\mathcal{X}\times \mathcal{Y}$, then the population risk is
+\[
+R(f) = \mathbb{E}_{(X,Y)\sim P}\big[\ell(f(X),Y)\big].
+\]
+This quantity measures the expected loss on fresh draws from the data-generating process.
+
+The distinction between empirical and population error is fundamental. A model may fit the training sample perfectly while performing poorly on new data. This phenomenon is called \emph{overfitting}. Much of machine learning is about finding predictors whose empirical success transfers to population success.
+
+\subsection{Approximation Error and Estimation Error}
+
+The approximation viewpoint suggests an important decomposition. Suppose the true target rule lies outside the chosen model class $\mathcal{H}$. Then even the best possible function in $\mathcal{H}$ will not match it perfectly. This mismatch is called \emph{approximation error}. In addition, because we only observe finitely many examples, the learner may fail to identify even the best function within $\mathcal{H}$. This is \emph{estimation error}.
+
+A rough schematic decomposition is
+\[
+\text{total prediction error}
+=
+\text{approximation error}
++
+\text{estimation error}
++
+\text{optimization error}.
+\]
+The exact form depends on context, but the message is universal:
+\begin{itemize}
+    \item if the model class is too simple, approximation error dominates;
+    \item if the model class is too flexible relative to the data, estimation error may dominate;
+    \item if the training algorithm is poor, optimization error may dominate.
+\end{itemize}
+
+This decomposition helps explain why model selection is delicate. A larger hypothesis class can represent more functions, reducing approximation error, but it may be harder to train and more prone to overfitting.
+
+\section{Supervised Learning as Approximation from Examples}
+
+The most direct instance of the function-approximation viewpoint is supervised learning.
+
+\begin{definition}[Supervised Learning]
+In supervised learning, one observes labeled examples
+\[
+(x_1,y_1),\dots,(x_n,y_n)
+\]
+and seeks a function $f:\mathcal{X}\to\mathcal{Y}$ that predicts the output $y$ from the input $x$.
+\end{definition}
+
+The learner typically chooses $f$ from a hypothesis class $\mathcal{H}$ by minimizing or approximately minimizing empirical loss:
+\[
+\min_{f \in \mathcal{H}} \; \widehat{R}_n(f)
+=
+\min_{f \in \mathcal{H}} \; \frac{1}{n}\sum_{i=1}^n \ell(f(x_i),y_i).
+\]
+This is the basic form of \emph{empirical risk minimization}. It will appear repeatedly throughout the book.
+
+\subsection{Regression}
+
+In regression, the output space is continuous, often $\mathcal{Y}=\mathbb{R}$ or $\mathbb{R}^m$. The objective is to predict a numerical quantity. Typical examples include forecasting temperature, estimating demand, or predicting a physical parameter from sensor data.
+
+If squared loss is used, one seeks a function that makes predictions close to the target in Euclidean distance. Linear regression, polynomial regression, and neural network regression all fit within this framework.
+
+\subsection{Classification}
+
+In classification, the output space is discrete. The function assigns an input to one of finitely many categories. Examples include spam detection, disease diagnosis, sentiment analysis, and object recognition.
+
+Although classification is often introduced as label prediction, many successful models instead produce scores or probabilities from which labels are derived. Thus even in classification, it is often useful to think of the model as approximating a richer target such as a conditional probability distribution.
+
+\subsection{Structured Prediction}
+
+Some tasks require outputs with internal structure: sequences, trees, graphs, or segmentations. Machine translation, speech recognition, image captioning, and semantic segmentation fall into this category. Here the output space is more complicated, but the same conceptual picture applies: learn a function from inputs to structured outputs from examples.
+
+\begin{example}[Regression vs Classification]
+Suppose a hospital uses medical measurements to assist clinicians. Predicting a patient's blood glucose level is a regression problem because the output is numerical. Predicting whether a patient has a disease is a classification problem because the output is a category. In both cases, the learner maps feature vectors to outputs, but the output structure and loss functions differ.
+\end{example}
+
+\section{Unsupervised and Self-Supervised Learning}
+
+The function-approximation viewpoint extends beyond supervised learning, but it requires some care.
+
+In unsupervised learning, we are often given inputs without explicit labels:
+\[
+x_1,\dots,x_n.
+\]
+At first this seems to fall outside the input-to-output picture. However, many unsupervised tasks can still be formulated in terms of learning functions. The key is that the target or supervision is implicit rather than externally provided.
+
+\subsection{Representation Learning}
+
+A common unsupervised goal is to learn a representation map
+\[
+\phi : \mathcal{X} \to \mathcal{Z},
+\]
+where $\mathcal{Z}$ is a latent or feature space capturing useful structure in the data. The representation may then support downstream tasks such as clustering, retrieval, or prediction.
+
+Examples include principal component analysis, autoencoders, contrastive learning, and masked prediction methods. In each case, the learner constructs a function that transforms data into a more informative or compressed representation.
+
+\subsection{Density Modeling}
+
+Another unsupervised goal is to model the probability distribution of the data itself. A generative model may be viewed as learning a function that assigns likelihoods or produces samples. Later chapters will show that this often involves learning either a density
+\[
+p_\theta(x),
+\]
+a latent-variable decoder, a score function, or a conditional generator. Although the mathematical form is different from direct prediction, the central challenge remains the same: infer structure from data and represent it with a tractable model.
+
+\subsection{Self-Supervision}
+
+Modern deep learning frequently uses \emph{self-supervised} objectives, where labels are generated automatically from the data. For instance:
+\begin{itemize}
+    \item predict a masked word from its context,
+    \item predict the next token in a sequence,
+    \item predict one augmented view of an image from another.
+\end{itemize}
+In such cases, the model still learns a function from inputs to targets, but the targets are constructed from the data rather than provided by human annotation.
+
+This is a useful reminder that ``supervision'' need not mean ``human labels.'' What matters is that the learner has a training signal that defines what it means to approximate well.
+
+\section{Learning from Finite Data}
+
+Why is learning difficult? Because data are finite and functions are many.
+
+Suppose we observe $n$ examples. Unless the hypothesis class is extremely restricted, there will generally be many functions that fit the observed sample perfectly:
+\[
+f(x_i)=y_i, \qquad i=1,\dots,n.
+\]
+Some of these functions may behave sensibly on unseen inputs; others may be wildly unstable outside the training sample. The data alone do not tell us which one to choose.
+
+This simple observation is one of the deepest in machine learning. It implies that successful learning requires more than matching the data. It requires assumptions, preferences, or structural constraints that guide the choice among many data-consistent solutions.
+
+\subsection{Interpolation Is Not Enough}
+
+A polynomial of sufficiently high degree can interpolate finitely many points exactly. Yet exact interpolation does not guarantee meaningful prediction between or beyond those points. Similarly, a highly flexible machine learning model can fit training data perfectly while generalizing poorly.
+
+Thus the goal is not merely to \emph{memorize} the sample but to discover regularities that persist beyond it.
+
+\subsection{Generalization as Extrapolation from Evidence}
+
+The learner is asked to make predictions on future inputs, often drawn from the same environment as the training data. This requires \emph{generalization}: good performance on unseen examples. Generalization is possible only if the training data encode information about persistent structure and if the learner is biased toward hypotheses that capture that structure.
+
+The tension between fitting observed data and generalizing to unseen data will be one of the central themes of the book.
+
+\begin{proposition}[Finite Data Do Not Uniquely Determine a Predictor]
+Let $\{(x_i,y_i)\}_{i=1}^n$ be a finite dataset with distinct inputs $x_i \in \mathcal{X}$. If the hypothesis class $\mathcal{H}$ is sufficiently rich, then there may exist many distinct functions $f \in \mathcal{H}$ such that
+\[
+f(x_i)=y_i \quad \text{for all } i=1,\dots,n.
+\]
+Hence fitting the training data alone does not determine a unique predictor.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+A finite dataset imposes only finitely many constraints on a candidate function. If the function class has many degrees of freedom, then these constraints may leave infinitely many possibilities open away from the observed inputs. Such functions agree on the training sample but differ elsewhere. Therefore data fitting alone is insufficient for selecting a unique predictor.
+\end{proof}
+
+This proposition may look obvious, but its consequences are profound. It explains why notions such as simplicity, regularity, smoothness, margin, sparsity, and architecture matter. They are not cosmetic additions; they are what make learning possible.
+
+\section{Hypothesis Classes and the Need for Structure}
+
+Since finitely many examples do not determine a predictor uniquely, we must restrict attention to a set of plausible candidate functions.
+
+\begin{definition}[Hypothesis Class]
+A hypothesis class $\mathcal{H}$ is a set of candidate functions
+\[
+f : \mathcal{X}\to\mathcal{Y}
+\]
+from which the learner chooses.
+\end{definition}
+
+Examples include:
+\begin{itemize}
+    \item linear functions $f(x)=w^\top x + b$,
+    \item polynomial functions up to a fixed degree,
+    \item decision trees of bounded depth,
+    \item neural networks of a specified architecture,
+    \item kernel methods with a chosen feature map.
+\end{itemize}
+
+The choice of $\mathcal{H}$ expresses assumptions about the task. A linear class assumes that the relationship between input and output can be captured by a linear rule in the chosen features. A convolutional neural network assumes spatial locality and weight sharing are useful. A transformer assumes attention-based interactions among tokens are useful. In all cases, the hypothesis class encodes \emph{inductive bias}, the preferences that guide learning beyond the observed data.
+
+\subsection{Too Small and Too Large Classes}
+
+There is a delicate balance in choosing $\mathcal{H}$.
+\begin{itemize}
+    \item If $\mathcal{H}$ is too small, it may not contain any function close to the target rule. Then approximation error is large.
+    \item If $\mathcal{H}$ is too large, it may contain many functions that fit the sample but generalize poorly. Then estimation becomes difficult.
+\end{itemize}
+
+This tension is one of the foundational tradeoffs of machine learning. Much of model design is about choosing a hypothesis class expressive enough to capture important structure but constrained enough to learn reliably from available data.
+
+\subsection{Architecture as Structured Approximation}
+
+Modern deep learning can be seen as a sophisticated way of designing rich yet structured hypothesis classes. Different architectures correspond to different assumptions:
+\begin{itemize}
+    \item multilayer perceptrons favor generic composition,
+    \item convolutional networks favor locality and translation structure,
+    \item recurrent networks favor sequential state evolution,
+    \item transformers favor content-based interactions across positions.
+\end{itemize}
+
+These are not arbitrary engineering choices. They are forms of prior structure that shape what kinds of functions the model can represent efficiently and what patterns it can learn from finite data.
+
+\section{Worked Examples of the Approximation View}
+
+We now examine several tasks through the lens of function approximation.
+
+\subsection{Example 1: Polynomial Curve Fitting}
+
+Suppose we observe data points $(x_i,y_i)$ with $x_i \in \mathbb{R}$ and want to model the dependence of $y$ on $x$. One possible hypothesis class is the set of polynomials of degree at most $m$:
+\[
+\mathcal{H}_m = \left\{ f(x)=a_0+a_1x+\cdots+a_mx^m \right\}.
+\]
+If $m$ is small, the class may be too rigid and fail to capture the trend. If $m$ is very large, the fitted polynomial may oscillate sharply between observed points. Thus increasing expressive power helps approximation but may hurt generalization.
+
+This example illustrates several recurring themes:
+\begin{itemize}
+    \item choosing a function class,
+    \item fitting parameters to data,
+    \item trading flexibility against stability,
+    \item distinguishing interpolation from useful prediction.
+\end{itemize}
+
+\subsection{Example 2: Image Classification as a Function on High-Dimensional Space}
+
+An image with height $H$, width $W$, and $C$ channels may be represented as a vector in $\mathbb{R}^{HWC}$. A classifier is then a function
+\[
+f : \mathbb{R}^{HWC} \to \{1,\dots,K\}.
+\]
+At this level of abstraction, image classification is just another function approximation problem. However, the ambient dimension is huge, and naive function classes are hopelessly inefficient. The success of convolutional networks comes from imposing structure adapted to images: locality, translation equivariance, and hierarchical feature extraction.
+
+Thus the approximation viewpoint is not invalidated by modern deep learning; rather, it becomes richer. The main question is no longer only \emph{whether} we approximate functions, but \emph{which kinds of function classes make the approximation statistically and computationally feasible}.
+
+\subsection{Example 3: Sequence Prediction}
+
+Let $x=(x_1,\dots,x_t)$ be a token sequence. In next-token prediction, the model outputs a distribution over possible continuations:
+\[
+f(x_1,\dots,x_t) \approx P(X_{t+1}\mid X_1=x_1,\dots,X_t=x_t).
+\]
+This is still a function approximation problem, but the target is probabilistic and the domain contains variable-length sequences. The hypothesis class must respect this structure. Recurrent networks and transformers are different ways of constructing such classes.
+
+\section{Beyond Deterministic Functions}
+
+The function-approximation viewpoint is extremely useful, but it has limitations if interpreted too literally.
+
+\subsection{Noise and Ambiguity}
+
+In many real problems, the same input may correspond to multiple plausible outputs. A single deterministic function may not capture this well. For instance:
+\begin{itemize}
+    \item two patients with similar features may have different outcomes,
+    \item a sentence may admit multiple valid translations,
+    \item a text prompt may correspond to many plausible images.
+\end{itemize}
+
+In such cases, it is often better to model conditional distributions rather than point predictions. Later chapters will generalize the approximation perspective from deterministic functions $f(x)$ to probabilistic models such as $p(y\mid x)$ or generative models over $x$ itself.
+
+\subsection{Decision Making vs Prediction}
+
+Some applications require decisions rather than predictions. A medical system might recommend treatment, not just estimate disease probability. A recommendation engine may optimize engagement under constraints. A robot must choose actions. In these settings, the learned object may be a policy or decision rule rather than a pure predictor.
+
+Still, the basic mathematical spirit survives: construct a mapping from observations to outputs that performs well under a task-specific objective.
+
+\subsection{Why the Function View Still Matters}
+
+Even when machine learning extends beyond deterministic prediction, the function viewpoint remains foundational because it gives:
+\begin{itemize}
+    \item a common abstraction across tasks,
+    \item a language for approximation and error,
+    \item a bridge to optimization,
+    \item a way to formalize representation and architecture,
+    \item a basis for understanding generalization.
+\end{itemize}
+
+For this reason, it is one of the best conceptual entry points into the field.
+
+\section{A Unifying Perspective}
+
+Machine learning can be viewed as the art and science of constructing useful mappings from data. Whether we predict real values, classify images, translate sentences, generate text, or learn latent representations, we are searching for structured rules that transform inputs into outputs in a way that extends beyond the observed sample.
+
+The approximation view unifies these tasks, but it also reveals the fundamental challenges:
+\begin{itemize}
+    \item the target rule is unknown,
+    \item the data are finite,
+    \item many candidate functions fit the observations,
+    \item different choices of representation and hypothesis class lead to different behaviors,
+    \item success depends on both expressivity and structure.
+\end{itemize}
+
+Thus learning is not just approximation. It is approximation under uncertainty, guided by data and constrained by inductive bias.
+
+A helpful slogan is:
+\[
+\text{learning} = \text{approximation} + \text{data} + \text{structure}.
+\]
+Approximation alone explains how models represent relationships. Data explain how these relationships are inferred. Structure explains why good generalization is possible at all.
+
+\section{Summary}
+
+In this chapter we introduced one of the central organizing ideas of machine learning: learning as function approximation. We formulated a learning problem in terms of input space, output space, hypothesis class, data, and performance criterion. We saw how regression, classification, structured prediction, representation learning, and sequence modeling all fit into this perspective.
+
+We emphasized that the learner does not observe the target rule directly, but only finite samples. This makes learning fundamentally underdetermined unless one imposes structure through a hypothesis class and inductive bias. We distinguished empirical performance from population performance and introduced the rough decomposition of total error into approximation, estimation, and optimization components.
+
+This chapter sets the stage for the rest of the book. The next chapter will add a probabilistic view of data and prediction, making precise how uncertainty enters learning and how losses and expectations formalize the notion of a good predictor.
+
+\section{Exercises}
+
+\begin{enumerate}
+    \item For each of the following tasks, specify a plausible input space $\mathcal{X}$ and output space $\mathcal{Y}$:
+    \begin{enumerate}
+        \item predicting a student's exam score from study habits,
+        \item classifying an email as spam or not spam,
+        \item translating an English sentence into French,
+        \item predicting tomorrow's temperature from weather measurements.
+    \end{enumerate}
+
+    \item Explain in your own words the difference between a target rule $f^\star$ and a learned model $f$.
+
+    \item Give an example of two different functions that agree on a finite set of training points but differ elsewhere. What does this illustrate about learning from finite data?
+
+    \item Consider the hypothesis class of all linear functions $f(x)=w^\top x+b$ on $\mathbb{R}^d$. Describe one situation in which this class may be too restrictive and one in which it may be appropriate.
+
+    \item Why is interpolation of the training data not enough to guarantee good prediction on unseen examples?
+
+    \item Let $\ell(\hat y,y)=(\hat y-y)^2$. Write the empirical risk for a dataset $(x_i,y_i)_{i=1}^n$ and a predictor $f$.
+
+    \item Give an example of a machine learning task where the output should be viewed as a probability distribution rather than a single deterministic label.
+
+    \item In image classification, why might the choice of representation or architecture matter even if both models are universal approximators in principle?
+
+    \item Compare the following two goals:
+    \begin{enumerate}
+        \item learning a function from house features to price,
+        \item learning a representation of houses useful for later prediction tasks.
+    \end{enumerate}
+    How are they similar, and how are they different?
+
+    \item Suppose a model class is made larger and more expressive. What effect might this have on approximation error? What effect might it have on estimation error?
+
+    \item Explain the difference between supervised, unsupervised, and self-supervised learning using the function-approximation viewpoint.
+
+    \item Give a real-world example where the same input may correspond to multiple plausible outputs. Why does this suggest that a probabilistic model may be preferable to a deterministic one?
+
+    \item Consider polynomial fitting with degree $m$.
+    \begin{enumerate}
+        \item What may happen if $m$ is too small?
+        \item What may happen if $m$ is too large?
+    \end{enumerate}
+    Relate your answer to approximation and generalization.
+
+    \item Let $\mathcal{H}$ be a hypothesis class and suppose $f_1,f_2 \in \mathcal{H}$ both satisfy
+    \[
+    f_1(x_i)=f_2(x_i)=y_i \quad \text{for } i=1,\dots,n.
+    \]
+    Why might it still matter which of the two functions is chosen?
+
+    \item Write a short paragraph explaining the slogan
+    \[
+    \text{learning} = \text{approximation} + \text{data} + \text{structure}.
+    \]
+\end{enumerate}
+
+\section*{Historical Note}
+
+The idea that learning can be viewed as approximation has roots in several mathematical traditions: approximation theory, statistics, control, and pattern recognition. Classical regression already embodies the search for a function that fits observed data. Modern machine learning broadened this picture by considering richer function classes, large-scale optimization, learned representations, and highly structured architectures. Deep learning did not abandon the approximation viewpoint; rather, it made it far more expressive by learning complicated compositional maps from data at scale.

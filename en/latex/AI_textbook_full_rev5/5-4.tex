@@ -1,0 +1,393 @@
+
+\section{Adversarial Generative Modeling}
+
+Sections~5.1--5.3 developed generative modeling through explicit densities, latent-variable models, and variational inference.
+Adversarial methods take a different route.
+They define a sampler
+\[
+x = G_\theta(z), \qquad z\sim p(z),
+\]
+and train it not by maximizing a tractable likelihood, but by forcing its samples to become hard to distinguish from real data.
+This makes adversarial modeling conceptually important: it shows that one can pursue distribution matching even when likelihood evaluation is unavailable or inconvenient.
+
+\medskip
+
+\noindent
+\textbf{Section role.}
+This section develops the classical GAN objective in textbook form.
+It defines the minimax game, proves the formula for the optimal discriminator, derives the generator's induced divergence objective, explains the Jensen--Shannon interpretation, and then separates two important extensions: conditional GANs and the Wasserstein viewpoint.
+It closes with an explicit account of instability mechanisms, because the elegance of the theory should not obscure the practical difficulty of the method.
+
+\subsection*{The classical minimax objective}
+
+Let $p_{\mathrm{data}}$ denote the data distribution on $\mathcal X$.
+Let $p(z)$ be a simple latent prior, typically a standard Gaussian or a uniform distribution, and let $G_\theta: \mathcal Z\to \mathcal X$ be a generator network.
+The generator induces a model distribution $p_G$ on $\mathcal X$ through the sampling rule
+\[
+z\sim p(z), \qquad x = G_\theta(z).
+\]
+A discriminator $D_\phi: \mathcal X\to (0,1)$ is then trained to output the probability that an input came from real data rather than the generator.
+
+The classical GAN objective is
+\[
+\min_\theta \max_\phi V(D_\phi,G_\theta)
+=
+\min_\theta \max_\phi
+\left[
+\mathbb E_{x\sim p_{\mathrm{data}}}[\log D_\phi(x)]
++
+\mathbb E_{x\sim p_G}[\log(1-D_\phi(x))]
+\right].
+\]
+Equivalently, writing the generator expectation through the latent prior,
+\[
+V(D_\phi,G_\theta)
+=
+\mathbb E_{x\sim p_{\mathrm{data}}}[\log D_\phi(x)]
++
+\mathbb E_{z\sim p(z)}[\log(1-D_\phi(G_\theta(z)))].
+\]
+
+The discriminator tries to maximize classification accuracy between real and generated samples.
+The generator tries to minimize the same criterion, thereby pushing generated samples toward the real data manifold.
+This is a two-player zero-sum game rather than an ordinary loss minimization problem.
+
+\begin{figure}[ht]
+\centering
+\setlength{\fboxsep}{7pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{c}
+\fbox{\parbox{0.84\textwidth}{\centering
+Real data $x\sim p_{\mathrm{data}}$ and latent noise $z\sim p(z)$ feed two branches.
+}}\\[0.5em]
+$\Downarrow$\\[0.5em]
+\begin{tabular}{cc}
+\fbox{\parbox{0.37\textwidth}{\centering
+Generator branch\\[0.3em]
+$z\mapsto G_\theta(z)$ produces fake sample $\tilde x$
+}}
+&
+\fbox{\parbox{0.37\textwidth}{\centering
+Data branch\\[0.3em]
+real sample $x\sim p_{\mathrm{data}}$
+}}
+\end{tabular}\\[0.8em]
+$\Downarrow$ both are shown to the discriminator $D_\phi$\\[0.5em]
+\fbox{\parbox{0.84\textwidth}{\centering
+Discriminator outputs $D_\phi(x)$ or $D_\phi(\tilde x)$ and sends gradients back.
+The discriminator maximizes real/fake discrimination; the generator updates to make $\tilde x$ look real.
+}}
+\end{tabular}
+\caption{Generator--discriminator interaction in a classical GAN. The discriminator receives both real and generated samples, while the generator is updated only through the discriminator's feedback.}
+\label{fig:gan-interaction}
+\end{figure}
+
+\subsection*{Optimal discriminator for a fixed generator}
+
+For fixed generator distribution $p_G$, the discriminator optimization can be solved pointwise.
+This is the first key theoretical fact.
+
+\begin{proposition}[Optimal discriminator]
+Fix a generator distribution $p_G$.
+For each $x$ such that $p_{\mathrm{data}}(x)+p_G(x)>0$, the value function is maximized by
+\[
+D^*(x)=\frac{p_{\mathrm{data}}(x)}{p_{\mathrm{data}}(x)+p_G(x)}.
+\]
+At points where both densities vanish, the value is irrelevant to the objective.
+\end{proposition}
+
+\begin{proof}
+For fixed $p_G$, the objective can be written as
+\[
+V(D,G)
+=
+\int \left[p_{\mathrm{data}}(x)\log D(x)+p_G(x)\log(1-D(x))\right]dx.
+\]
+The integrand depends on $D(x)$ pointwise.
+For a fixed $x$, define
+\[
+f_x(d)=a\log d+b\log(1-d),
+\]
+where $a=p_{\mathrm{data}}(x)$ and $b=p_G(x)$.
+Then
+\[
+f_x'(d)=\frac{a}{d}-\frac{b}{1-d}.
+\]
+Setting the derivative to zero gives
+\[
+\frac{a}{d}=\frac{b}{1-d}
+\quad \Longrightarrow \quad
+ d = \frac{a}{a+b}.
+\]
+Since
+\[
+f_x''(d)=-\frac{a}{d^2}-\frac{b}{(1-d)^2}<0,
+\]
+this critical point is the maximizer.
+Substituting back yields the stated formula.
+\end{proof}
+
+This proposition makes the discriminator statistically interpretable.
+At optimum it returns the posterior probability that a point came from the data rather than the generator under a balanced mixture model.
+So the discriminator is not arbitrary: it estimates relative density evidence.
+
+\subsection*{The generator's induced divergence objective}
+
+Once the optimal discriminator is substituted back into the game, the minimax objective becomes a pure distribution-comparison criterion.
+
+\begin{proposition}[Value at the optimal discriminator]
+For fixed generator distribution $p_G$ and optimal discriminator $D^*$,
+\[
+V(D^*,G)
+=
+\int p_{\mathrm{data}}(x)
+\log \frac{p_{\mathrm{data}}(x)}{p_{\mathrm{data}}(x)+p_G(x)}\,dx
++
+\int p_G(x)
+\log \frac{p_G(x)}{p_{\mathrm{data}}(x)+p_G(x)}\,dx.
+\]
+Equivalently, if
+\[
+m(x)=\frac{1}{2}\bigl(p_{\mathrm{data}}(x)+p_G(x)\bigr),
+\]
+then
+\[
+V(D^*,G) = -\log 4 + 2\,\mathrm{JS}(p_{\mathrm{data}}\,\|\,p_G),
+\]
+where $\mathrm{JS}$ denotes the Jensen--Shannon divergence.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Insert the formula for $D^*$ into the value function:
+\[
+V(D^*,G)
+=
+\mathbb E_{p_{\mathrm{data}}}
+\left[\log \frac{p_{\mathrm{data}}}{p_{\mathrm{data}}+p_G}\right]
++
+\mathbb E_{p_G}
+\left[\log \frac{p_G}{p_{\mathrm{data}}+p_G}\right].
+\]
+Now use
+\[
+p_{\mathrm{data}}+p_G = 2m
+\]
+and split the logarithms:
+\[
+\log \frac{p_{\mathrm{data}}}{p_{\mathrm{data}}+p_G}
+=
+\log \frac{p_{\mathrm{data}}}{m} - \log 2,
+\]
+with the analogous identity for $p_G$.
+Therefore
+\[
+V(D^*,G)
+=
+-2\log 2
++
+\mathbb E_{p_{\mathrm{data}}}\left[\log \frac{p_{\mathrm{data}}}{m}\right]
++
+\mathbb E_{p_G}\left[\log \frac{p_G}{m}\right].
+\]
+The last two terms are precisely
+\[
+\mathrm{KL}(p_{\mathrm{data}}\,\|\,m) + \mathrm{KL}(p_G\,\|\,m)
+= 2\,\mathrm{JS}(p_{\mathrm{data}}\,\|\,p_G).
+\]
+Since $-2\log 2=-\log 4$, the identity follows.
+\end{proof}
+
+This is the classical divergence interpretation of GANs.
+Under idealized assumptions---infinite discriminator capacity, exact optimization, and well-defined densities---training the generator is equivalent to minimizing a Jensen--Shannon divergence between the generated distribution and the data distribution.
+
+\begin{corollary}
+The global minimum of the ideal GAN objective is achieved when $p_G=p_{\mathrm{data}}$.
+At that point,
+\[
+\mathrm{JS}(p_{\mathrm{data}}\,\|\,p_G)=0
+\quad \text{and} \quad
+V(D^*,G)=-\log 4.
+\]
+Moreover, the optimal discriminator becomes the constant function $D^*(x)=\tfrac12$.
+\end{corollary}
+
+\begin{proof}
+The Jensen--Shannon divergence is nonnegative and vanishes exactly when its two arguments agree almost everywhere.
+Therefore the smallest achievable value of $V(D^*,G)$ is $-\log 4$, attained when $p_G=p_{\mathrm{data}}$.
+Substituting this equality into the formula for $D^*$ gives $D^*(x)=\tfrac12$.
+\end{proof}
+
+\subsection*{What is elegant in theory, and what is limited in practice}
+
+The previous derivation is mathematically clean, but it rests on idealizations.
+In practical deep learning, neither player is optimized exactly, both are represented by finite networks, and gradients are computed from mini-batches rather than population expectations.
+So the Jensen--Shannon theorem is best read as a guiding idealization, not as a full theory of training dynamics.
+
+There is also a subtle geometric issue.
+If the supports of $p_{\mathrm{data}}$ and $p_G$ lie on thin and nearly disjoint manifolds, then a strong discriminator can separate them almost perfectly.
+In that regime, the objective may saturate and the generator can receive weak or unstable gradients.
+Thus the divergence interpretation is correct at the level of the classical objective, but it does not by itself guarantee smooth optimization.
+
+\subsection*{A worked one-dimensional example}
+
+Consider the toy setting in which
+\[
+p_{\mathrm{data}} = \tfrac12 \delta_{-1} + \tfrac12 \delta_{1},
+\qquad
+p_G = \delta_{\theta},
+\]
+so the true data has two modes at $-1$ and $1$, while the generator currently puts all mass at a single point $\theta$.
+If $\theta=1$, then the generator matches only one of the two modes.
+The optimal discriminator places high confidence on the unmatched real point $-1$ and reduced confidence on the shared point $1$.
+The generator therefore receives a signal that it is missing part of the data distribution.
+
+This toy example illustrates two lessons.
+First, the GAN objective compares whole distributions rather than individual reconstructions.
+Second, if the generator can improve its objective by concentrating on a few high-payoff regions, it may collapse onto only part of the target distribution.
+This is the beginning of mode collapse.
+
+\subsection*{Instability mechanisms}
+
+The promise of GANs is sample quality; the cost is training instability.
+Several distinct mechanisms contribute.
+
+\paragraph{1. Saturating gradients.}
+If the discriminator becomes nearly perfect, then $D_\phi(G_\theta(z))\approx 0$ for generated samples.
+In the original minimax form, the generator update uses
+\[
+\nabla_\theta \log(1-D_\phi(G_\theta(z))),
+\]
+which may become very small or poorly conditioned.
+A common practical modification is the non-saturating generator loss
+\[
+\min_\theta \; -\mathbb E_{z\sim p(z)}[\log D_\phi(G_\theta(z))],
+\]
+which has the same fixed point but usually stronger gradients early in training.
+
+\paragraph{2. Mode collapse.}
+The generator may map many latent values to similar outputs.
+This can locally fool the discriminator while ignoring substantial parts of the data distribution.
+Mode collapse is not fully explained by the ideal Jensen--Shannon derivation; it is a property of the finite, alternating optimization process.
+
+\paragraph{3. Non-stationary targets.}
+In supervised learning, the target is fixed.
+In GANs, each player's target changes as the other player updates.
+So optimization is inherently non-stationary.
+The generator does not descend a fixed loss surface; it responds to a moving critic.
+
+\paragraph{4. Game dynamics rather than plain minimization.}
+Even simple minimax systems can rotate or cycle rather than converge directly.
+This phenomenon is already visible in bilinear games such as
+\[
+\min_x \max_y \; xy.
+\]
+The point is not that GANs reduce to such a toy game, but that adversarial optimization has dynamical features absent from ordinary gradient descent.
+
+\paragraph{5. Finite-capacity discriminators.}
+The clean theorem assumes the discriminator reaches its population optimum for a fixed generator.
+In practice, the discriminator is only partially optimized and represented by a finite network.
+Thus the generator is updated with respect to an approximate and evolving divergence surrogate.
+
+\subsection*{Conditional adversarial modeling}
+
+Many applications require generation conditional on side information $c$, such as a class label, text description, segmentation map, or another image.
+A conditional GAN therefore uses
+\[
+G_\theta(z,c), \qquad D_\phi(x,c).
+\]
+The classical conditional objective is
+\[
+\min_\theta \max_\phi
+\mathbb E_{(x,c)\sim p_{\mathrm{data}}}[\log D_\phi(x,c)]
++
+\mathbb E_{z\sim p(z),\,c\sim p(c)}[\log(1-D_\phi(G_\theta(z,c),c))].
+\]
+More carefully, one can think of the generator as trying to match the conditional data distribution $p_{\mathrm{data}}(x\mid c)$ for each context $c$.
+So conditional adversarial learning is not merely adding labels; it changes the modeling target from one unconditional distribution to a family of conditional distributions.
+
+This is why conditional GANs became important in image-to-image translation and controllable generation.
+They separate two questions:
+what should be generated, and under what condition should it be generated?
+
+\subsection*{The Wasserstein viewpoint}
+
+A major critique of the classical GAN objective is that Jensen--Shannon geometry can become poorly behaved when the model and data distributions are far apart or lie on low-dimensional sets.
+The Wasserstein GAN (WGAN) addresses this by replacing the discriminator with a critic whose objective approximates an optimal-transport distance.
+At a high level, one writes
+\[
+\max_{f\in \mathcal F_{\mathrm{Lip}}}
+\left[
+\mathbb E_{x\sim p_{\mathrm{data}}}[f(x)] - \mathbb E_{x\sim p_G}[f(x)]
+\right],
+\]
+where $\mathcal F_{\mathrm{Lip}}$ denotes a class of 1-Lipschitz functions.
+The generator then tries to minimize this quantity.
+
+The significance of this reformulation is not merely technical.
+It changes the geometry of distribution comparison.
+The Wasserstein distance can vary continuously even when two distributions have disjoint supports, so the generator often receives more informative gradients.
+This does not remove all optimization difficulty, but it explains why Wasserstein ideas became influential in adversarial learning.
+
+\subsection*{Modeling viewpoint: explicit, implicit, and adversarial}
+
+GANs should be understood as a special case of implicit generative modeling.
+They provide a learned sampler
+\[
+z\sim p(z), \qquad x=G_\theta(z),
+\]
+without necessarily providing a tractable formula for $p_G(x)$.
+Their strength is therefore sample generation rather than likelihood evaluation.
+Compared with VAEs, GANs often produce sharper perceptual samples but offer less direct probabilistic structure.
+Compared with explicit density models, they may avoid awkward likelihood assumptions but inherit an adversarial optimization problem.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item A GAN trains a generator and discriminator through a minimax game.
+    \item For a fixed generator, the optimal discriminator is
+    \[
+    D^*(x)=\frac{p_{\mathrm{data}}(x)}{p_{\mathrm{data}}(x)+p_G(x)}.
+    \]
+    \item Under ideal assumptions, substituting $D^*$ turns the generator objective into Jensen--Shannon divergence minimization.
+    \item Conditional GANs target conditional distributions, while Wasserstein GANs change the geometry of distribution comparison.
+    \item Practical GAN training is unstable because of saturating gradients, mode collapse, non-stationarity, and game dynamics.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item GANs do not generally provide a tractable likelihood, even though they define a model distribution implicitly.
+    \item The Jensen--Shannon theorem is an idealized population statement; it is not a guarantee of easy optimization.
+    \item Mode collapse is not the same as overfitting, though both can reduce diversity.
+    \item Conditional GANs are not a different family of models in principle; they are adversarial models for conditional distributions.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Derive the optimal discriminator formula by maximizing the integrand pointwise for fixed $p_{\mathrm{data}}$ and $p_G$.
+\end{exercise}
+
+\begin{exercise}
+Show that if $p_G=p_{\mathrm{data}}$, then $D^*(x)=\tfrac12$ and the optimal value is $-\log 4$.
+\end{exercise}
+
+\begin{exercise}
+Why can the original minimax generator loss produce weak gradients when the discriminator is very strong? Explain without computation and then verify by differentiating the loss formally.
+\end{exercise}
+
+\begin{exercise}
+Compare a VAE and a GAN in terms of: (i) tractable likelihood, (ii) sampling path, (iii) training stability, and (iv) latent-space interpretation.
+\end{exercise}
+
+\begin{exercise}
+In a conditional GAN, explain carefully what distribution is being matched when the condition variable $c$ is fixed.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+The original GAN framework was introduced by Goodfellow et al.
+The optimal-discriminator and Jensen--Shannon derivation come from that classical paper and remain the standard theoretical entry point.
+Conditional GAN ideas were developed rapidly in the years that followed and became important for controllable generation and image-to-image translation.
+The Wasserstein viewpoint was introduced to address shortcomings of the Jensen--Shannon geometry in practical optimization.
+For a modern textbook treatment, GANs are best read alongside latent-variable and diffusion models, because their strengths and weaknesses become clearer in comparison.

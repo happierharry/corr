@@ -1,0 +1,413 @@
+\section{Why Architecture Matters}
+
+Chapter 2 developed one of the central ideas of modern machine learning:
+useful internal representations should often be \emph{learned} rather than fixed in advance.
+Neural networks made this possible by turning representation itself into part of the optimization problem.
+But once that step is taken, a deeper question immediately appears:
+\emph{how should a model be organized so that it can learn the right kind of representation for a given domain?}
+
+\medskip
+
+This is the question of \emph{architecture}.
+Architecture is not a cosmetic detail.
+It is not merely a matter of implementation style, engineering taste, or historical fashion.
+It is the mechanism by which assumptions about the structure of data are built into a learning system.
+The thesis of this section, and of the chapter as a whole, is therefore the following:
+
+\begin{quote}
+\textbf{Architecture is the deep-learning analogue of hand-crafted structural assumptions, but expressed in a learnable rather than fixed form.}
+\end{quote}
+
+\medskip
+
+In classical machine learning, structural assumptions often entered through feature design, basis choice, or kernel selection.
+In deep learning, these assumptions are increasingly expressed through the computational organization of the model itself:
+which variables are allowed to interact directly, which parameters are reused across positions or times, which symmetries are preserved, and which forms of dependence are easy or hard to represent.
+The named architectures that follow --- convolutional networks, recurrent networks, attention-based models, and transformers --- should therefore not be understood as isolated inventions.
+They are different answers to a common question:
+
+\begin{quote}
+What structural bias should the model embody in order to learn effectively from a particular kind of data?
+\end{quote}
+
+\subsection*{From Chapter 2 to Chapter 3}
+
+The logic connecting this chapter to Chapter 2 is simple.
+Chapter 2 argued that the success of deep learning comes largely from learning useful representations rather than relying only on fixed ones.
+Chapter 3 asks what kind of \emph{computational structure} makes those representations learnable in practice.
+The answer is architectural design.
+
+\medskip
+
+A generic multilayer perceptron is an expressive function approximator, but it treats its input mainly as coordinates in a vector space.
+That can be appropriate in some settings, but it is often a poor match to the true organization of images, sequences, sets, graphs, or interacting objects.
+Real data usually has structure:
+locality in space,
+order in time,
+symmetry under transformation,
+and relational interaction among entities.
+Architecture matters because these regularities can be encoded directly into the model.
+
+\subsection*{Generic multilayer networks versus structured models}
+
+A fully connected network is attractive because it is general.
+In principle, after vectorization, one may feed images, text, sensor data, or relational summaries into the same multilayer template.
+But this generality comes with a cost.
+The model is then forced to discover from data not only the task but also much of the domain structure that was already known to the practitioner.
+
+\medskip
+
+A \emph{structured model} changes this situation.
+It modifies the generic template so that the architecture itself reflects prior assumptions about the data.
+Such assumptions may concern locality, translation reuse, temporal dependence, sparsity of interaction, graph connectivity, or permutation symmetry.
+The central contrast is not merely that generic networks are flexible while structured networks are specialized.
+The deeper contrast is this:
+
+\begin{itemize}
+    \item a generic network leaves most structural assumptions implicit;
+    \item a structured network encodes useful assumptions directly into the architecture.
+\end{itemize}
+
+\medskip
+
+This often leads to models that are easier to train, more parameter-efficient, more data-efficient, and better aligned with the geometry of the task.
+Architecture is therefore best understood as \emph{inductive bias made structural}.
+
+\subsection*{Core definitions}
+
+We now make this language more precise.
+
+\begin{definition}[Hypothesis class]
+Let $\mathcal{X}$ be an input space and $\mathcal{Y}$ an output space.
+A \emph{hypothesis class} is a set
+\[
+\mathcal{H} \subseteq \{f : \mathcal{X} \to \mathcal{Y}\}
+\]
+of candidate input--output maps among which the learning algorithm searches.
+In parametric models one often writes
+\[
+\mathcal{H} = \{f_{\theta} : \theta \in \Theta\}
+\]
+for some parameter space $\Theta$.
+\end{definition}
+
+\begin{definition}[Inductive bias]
+An \emph{inductive bias} is any restriction or preference that makes some hypotheses in $\mathcal{H}$ easier to select than others when only finite data are available.
+This bias may enter through the choice of $\mathcal{H}$, through regularization, through the optimization procedure, or through the architecture itself.
+\end{definition}
+
+\begin{definition}[Equivariance]
+Let a group $G$ act on the input space $\mathcal{X}$ by maps $T_g^{\mathcal{X}}$ and on the output space $\mathcal{Y}$ by maps $T_g^{\mathcal{Y}}$.
+A function $f : \mathcal{X} \to \mathcal{Y}$ is \emph{equivariant} with respect to these actions if
+\[
+ f\bigl(T_g^{\mathcal{X}} x\bigr) = T_g^{\mathcal{Y}} f(x)
+ \qquad \text{for all } g \in G,\; x \in \mathcal{X}.
+\]
+Equivariance means that transforming the input transforms the output in a compatible way.
+\end{definition}
+
+\begin{definition}[Invariance]
+Let $G$ act on the input space $\mathcal{X}$.
+A function $f : \mathcal{X} \to \mathcal{Y}$ is \emph{invariant} under that action if
+\[
+ f\bigl(T_g^{\mathcal{X}} x\bigr) = f(x)
+ \qquad \text{for all } g \in G,\; x \in \mathcal{X}.
+\]
+Invariance means that certain transformations of the input do not change the prediction.
+\end{definition}
+
+\begin{definition}[Architectural prior]
+An \emph{architectural prior} is an inductive bias induced by the computational graph of a model:
+its allowed connections, local receptive fields, parameter sharing pattern, state-update rule, attention pattern, or symmetry constraints.
+It specifies which interactions are easy to represent, which transformations are naturally reusable, and which forms of structure are built into the model before training begins.
+\end{definition}
+
+\medskip
+
+These definitions clarify an important point.
+The architecture does not replace learning.
+Rather, it shapes the \emph{space within which learning takes place}.
+Training still determines the numerical values of parameters, but the architecture determines the form of dependence that those parameters can express efficiently.
+
+\subsection*{Why structural constraints change the function class}
+
+We now formalize the claim that architecture restricts the admissible set of functions.
+The cleanest way to see this is to compare a dense layer with a constrained one.
+
+\begin{proposition}[Architectural constraints restrict admissible function classes]
+Let $\mathcal{H}_{\mathrm{dense}}$ be a class of functions realized by a dense affine map followed by a fixed nonlinearity:
+\[
+\mathcal{H}_{\mathrm{dense}}
+=
+\bigl\{x \mapsto \sigma(Ax+b) : A \in \mathbb{R}^{m \times n},\; b \in \mathbb{R}^{m}\bigr\}.
+\]
+Now impose two kinds of architectural constraints:
+\begin{enumerate}
+    \item a \emph{connectivity mask} $M \in \{0,1\}^{m \times n}$, requiring $A_{ij}=0$ whenever $M_{ij}=0$;
+    \item a \emph{weight-sharing relation} $\sim$ on the admissible indices, requiring $A_{ij}=A_{i'j'}$ whenever $(i,j) \sim (i',j')$.
+\end{enumerate}
+Let $\mathcal{H}_{\mathrm{struct}}$ be the subclass obtained under these constraints.
+Then
+\[
+\mathcal{H}_{\mathrm{struct}} \subseteq \mathcal{H}_{\mathrm{dense}},
+\]
+and the number of free linear parameters in $\mathcal{H}_{\mathrm{struct}}$ is the number of equivalence classes of allowed connections, which is at most $mn$ and is strictly smaller whenever any connection is forbidden or any two distinct weights are tied.
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Every structured layer is a special case of a dense layer: one may begin with an arbitrary dense matrix $A$, then set forbidden entries to zero and identify tied entries so that they share a common value.
+Thus every map in $\mathcal{H}_{\mathrm{struct}}$ also lies in $\mathcal{H}_{\mathrm{dense}}$, proving the inclusion.
+
+\medskip
+
+To count degrees of freedom, observe that in a dense $m \times n$ matrix each entry may vary independently, giving $mn$ free linear parameters.
+Under masking, only entries with $M_{ij}=1$ remain eligible to vary.
+Under weight sharing, several admissible entries are forced to have identical values.
+Hence the independent parameters are indexed not by all matrix entries, but by the equivalence classes of admissible connections.
+If at least one connection is removed or at least one nontrivial tying relation is imposed, the number of free parameters drops strictly below $mn$.
+\end{proof}
+
+\medskip
+
+This proposition is elementary, but its interpretation is important.
+Architectural design narrows the effective hypothesis class by declaring some patterns of interaction impossible and others reusable.
+Convolutional layers do this through locality and weight sharing.
+Recurrent models do it through repeated state updates across time.
+Attention layers do it through structured interaction rules among tokens or entities.
+In each case, the model is not merely made smaller; it is made \emph{structurally biased}.
+
+\subsection*{Locality, symmetry, order, and interaction}
+
+Several recurring structural principles guide modern architecture design.
+They should be thought of as recurring answers to the question, ``what regularities should the model be built to exploit?''
+
+\paragraph{Locality.}
+Nearby elements often interact more strongly than distant ones.
+In images, adjacent pixels are more strongly related than far-separated ones.
+In speech and time series, nearby moments often carry especially strong local dependence.
+Architectures that respect locality make it easy to detect local patterns and reuse them across positions.
+
+\paragraph{Symmetry.}
+Sometimes the meaning of a pattern is preserved under a class of transformations.
+An edge remains an edge even when it appears at a different spatial location.
+A set-valued prediction should not depend on arbitrary ordering of the elements.
+Architectures that respect symmetry exploit such repeated structure rather than relearning the same detector independently at every coordinate.
+
+\paragraph{Order.}
+In sequences, arrangement matters.
+A sentence is not a bag of words, and a waveform is not a bag of amplitudes.
+Architectures for sequential data must represent not only which elements are present but how earlier ones influence later ones.
+
+\paragraph{Interaction structure.}
+In many domains the key information lies in relations among entities:
+which nodes are connected,
+which objects interact,
+which tokens should communicate,
+or which constraints couple variables.
+Architectures for such data should model patterns of interaction directly rather than flattening them into unrelated coordinates.
+
+\medskip
+
+These themes --- locality, symmetry, order, and interaction --- recur throughout the chapter.
+Different architectural families emphasize them differently, but all can be viewed as design responses to structure in data.
+
+\subsection*{A worked comparative example}
+
+The point of architecture becomes clearer when the same task is viewed through several model classes.
+Consider the following prediction problem.
+We observe a short sentence $w_1,\dots,w_T$ and wish to predict whether the final token refers back to an earlier entity in the sentence.
+For instance, in a sentence like
+\begin{quote}
+\emph{The scientist thanked the assistant because she had finished the analysis,}
+\end{quote}
+we would like the model to decide which earlier noun phrase the pronoun ``she'' most naturally links to.
+This is a single supervised prediction problem, but different architectures embody very different assumptions about how such a problem should be solved.
+
+\begin{example}[One task, four architectural viewpoints]
+Let $x=(w_1,\dots,w_T)$ be the input sequence and let $y \in \{0,1\}$ indicate whether the final token refers to a designated earlier entity.
+The prediction target is the same in every case, but the architecture changes the natural form of representation learning.
+\begin{enumerate}
+    \item \textbf{MLP viewpoint.}
+    Embed each token, concatenate the embeddings into one long vector, and apply a multilayer perceptron.
+    This is the most generic treatment.
+    The model may succeed, but it must infer order, locality, and long-range interaction from the flattened representation itself.
+    Little structural guidance is built in.
+
+    \item \textbf{CNN viewpoint.}
+    Apply one-dimensional convolutions along the token axis.
+    The model now assumes that local patterns such as short phrases or nearby syntactic configurations are reusable across positions.
+    It becomes easy to detect motifs like ``because she'' or ``the assistant'' wherever they appear, but long-range dependencies may still require deep stacks or larger receptive fields.
+
+    \item \textbf{RNN viewpoint.}
+    Process the sentence left to right with a recurrent hidden state.
+    The model now assumes that meaning can be accumulated sequentially.
+    Earlier information is compressed into a state that is updated as tokens arrive.
+    This naturally respects order, but it can make long-range interaction difficult if relevant information must survive through many update steps.
+
+    \item \textbf{Attention viewpoint.}
+    Compute context-dependent interactions among tokens.
+    The final token may directly compare itself with earlier noun phrases, verbs, or clauses without passing only through a single hidden-state bottleneck.
+    This architecture assumes that relevant dependencies are best modeled by flexible content-based interaction rather than by fixed locality or a single evolving state.
+\end{enumerate}
+\end{example}
+
+\medskip
+
+The task has not changed.
+What changed is the architectural prior:
+what kinds of regularities are easy to express,
+which dependencies are short or long,
+and whether order, locality, or flexible interaction are emphasized.
+This is exactly why architecture matters.
+The same input--output map may be representable in many ways, but some representations are far more natural, efficient, and learnable than others.
+
+\subsection*{A map from data structure to architectural bias}
+
+It is helpful to summarize the relationship between common data structures and the biases that architectures typically encode.
+Figure~\ref{fig:architecture-bias-map} is not a theorem, but a design map.
+It shows how domain structure suggests architectural choices.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    box/.style={draw, rounded corners, align=left, minimum width=4.0cm, minimum height=1.15cm, inner sep=6pt},
+    arrow/.style={-{Latex[length=2mm]}, thick}
+]
+
+\node[box] (spatial) at (0,3) {\textbf{Spatial data}\\images, video, fields};
+\node[box] (temporal) at (0,1) {\textbf{Temporal data}\\text, speech, time series};
+\node[box] (relational) at (0,-1) {\textbf{Relational data}\\graphs, molecules, interacting objects};
+\node[box] (sets) at (0,-3) {\textbf{Set-structured data}\\unordered collections, bags of entities};
+
+\node[box] (cnn) at (8,3) {\textbf{Typical bias}\\locality + translation reuse\\convolution / local pooling};
+\node[box] (rnn) at (8,1) {\textbf{Typical bias}\\order + evolving state\\recurrence / sequence modeling};
+\node[box] (attn) at (8,-1) {\textbf{Typical bias}\\flexible interaction structure\\attention / message passing};
+\node[box] (perm) at (8,-3) {\textbf{Typical bias}\\permutation symmetry\\set encoders / invariant pooling};
+
+\draw[arrow] (spatial) -- (cnn);
+\draw[arrow] (temporal) -- (rnn);
+\draw[arrow] (relational) -- (attn);
+\draw[arrow] (sets) -- (perm);
+
+\end{tikzpicture}
+\caption{A conceptual map from common data structures to architectural biases.
+The purpose of the figure is not to prescribe a unique model for each domain, but to show how structure in data suggests structure in the hypothesis class.}
+\label{fig:architecture-bias-map}
+\end{figure}
+
+\medskip
+
+The figure should not be read dogmatically.
+Transformers are now used in vision.
+Convolutions can be used on sequences.
+Attention appears inside graph models.
+Set encoders may be combined with recurrent or convolutional components.
+The lesson is not that each domain has exactly one correct architecture.
+The lesson is that successful architectures usually reflect identifiable structural assumptions about the data.
+
+\subsection*{Why the same neural-network template is not ideal for every domain}
+
+A generic multilayer perceptron can often approximate the target mapping after sufficient vectorization, depth, and data.
+That is not the main issue.
+The real issue is whether the chosen architecture aligns well enough with the problem for learning to be efficient and stable.
+Several considerations matter.
+
+\paragraph{Parameter efficiency.}
+If the model ignores known structure, it may need many more parameters to express patterns that could otherwise be represented compactly.
+Convolutional weight sharing is the clearest example.
+A detector that should work at every spatial position need not be relearned independently at every coordinate.
+
+\paragraph{Data efficiency.}
+A poorly matched architecture may require much more data because it must infer regularities that could have been built into the model from the start.
+In finite-data regimes this matters greatly.
+The architectural prior can guide the learner toward plausible solutions before the sample size becomes enormous.
+
+\paragraph{Optimization difficulty.}
+When the architecture reflects domain structure, gradient-based learning often becomes easier.
+The model no longer has to discover every useful interaction from a flat representation.
+Instead, it can search within a hypothesis class already shaped toward the right kinds of dependencies.
+
+\paragraph{Generalization quality.}
+A well-matched bias can steer learning toward solutions that reflect stable regularities in the world rather than accidental patterns in the sample.
+This is one reason architectural design belongs conceptually to learning theory rather than merely to software engineering.
+
+\medskip
+
+Thus the question is not simply whether a generic network is expressive enough.
+It often is.
+The real question is whether its structure matches the geometry of the task well enough that learning becomes practical.
+
+\subsection*{Architecture as the successor to hand-crafted structural assumptions}
+
+The modern role of architecture becomes especially clear when compared with classical feature engineering.
+In earlier machine-learning practice, one often injected domain knowledge through hand-crafted features or kernel choice.
+For images one might design edge histograms or texture descriptors.
+For text one might build $n$-gram counts or syntactic indicators.
+For time series one might create lag features or Fourier summaries.
+These strategies encoded structure, but they did so in a relatively shallow and externally specified way.
+
+\medskip
+
+Deep learning changes this arrangement.
+The structural assumption is no longer expressed only through a fixed feature map placed before learning.
+Instead, it is embedded into the architecture of the model, which then learns internal representations consistent with that structural bias.
+The assumption is still present, but it is now expressed as \emph{learnable computational structure} rather than as a fully specified handcrafted representation.
+That is why architecture should be regarded as the deep-learning successor to classical structural design.
+
+\medskip
+
+This perspective also clarifies the unity of the chapter.
+Convolutional networks are not simply ``vision models.''
+Recurrent networks are not simply ``sequence models.''
+Attention is not merely a newer mechanism that replaced older ones.
+Each is a design answer to the same underlying question:
+what regularities should the model be built to exploit?
+
+\subsection*{The broader lesson}
+
+The deepest lesson of this section is that architecture is part of learning theory, not merely part of implementation.
+To choose an architecture is to decide which regularities should be easy for the model to express and which ones should be hard.
+That is a choice about inductive bias.
+Because learning from finite data is impossible without inductive bias, architecture is one of the central mechanisms by which deep learning becomes effective.
+
+\medskip
+
+A generic multilayer network says:
+\begin{quote}
+learn representations, but assume relatively little about how the world is organized.
+\end{quote}
+A structured architecture says:
+\begin{quote}
+learn representations, but do so in a way that reflects known forms of spatial, temporal, or relational organization.
+\end{quote}
+
+\medskip
+
+That difference is the conceptual doorway into the rest of the chapter.
+The sections that follow should therefore be read as a study of architectural bias in action:
+convolutional models exploit locality and translation reuse;
+recurrent models exploit temporal order and evolving state;
+attention-based models exploit flexible interaction patterns;
+and transformers scale these ideas into powerful general-purpose sequence architectures.
+
+\subsection*{Notes and references}
+
+The language of inductive bias comes from classical learning theory and appears in many forms across the statistical-learning literature.
+Useful background includes Mitchell's discussions of bias in machine learning,
+Vapnik's treatment of hypothesis classes and statistical learning,
+and standard modern texts such as Bishop or Hastie, Tibshirani, and Friedman.
+
+\medskip
+
+The modern deep-learning perspective in which representation learning replaces fixed feature engineering is surveyed clearly by Goodfellow, Bengio, and Courville and by LeCun, Bengio, and Hinton.
+For the especially important idea that architectural design encodes domain structure, a particularly relevant reference is Battaglia et al.
+under the heading of \emph{relational inductive biases}.
+Group-equivariant and symmetry-based viewpoints are developed further by Cohen and Welling and by Bronstein et al.
+The later sections of this chapter will connect these ideas to convolutional networks, recurrent networks, attention mechanisms, and transformers in the settings made famous by LeCun et al., Bahdanau et al., and Vaswani et al.
+
+\medskip
+
+Historically, the crucial shift is this:
+classical methods often expressed structural assumptions through hand-designed representations,
+whereas deep learning increasingly expresses them through architectures whose internal representations are learned.
+That shift is one of the defining conceptual moves of modern machine learning.

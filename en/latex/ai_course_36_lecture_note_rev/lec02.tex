@@ -1,0 +1,310 @@
+\section{Lecture 2: A Probabilistic View of Learning}
+
+\subsection{Motivation}
+
+In the previous lecture, we formulated learning as the problem of approximating an unknown function from data. However, this formulation leaves open a fundamental question:
+
+\medskip
+
+\noindent
+\textit{Where does the data come from?}
+
+\medskip
+
+\noindent
+In practice, data is not deterministic but arises from a stochastic process. Even if there exists an underlying functional relationship, observations are typically corrupted by noise or variability.
+
+\medskip
+
+\noindent
+To capture this, we adopt a probabilistic framework in which both inputs and outputs are modeled as random variables.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Learning is the problem of estimating relationships between random variables based on finite samples.
+
+\subsection{Data as Random Variables}
+
+We assume that data points are drawn independently from an unknown joint distribution:
+\[
+(x, y) \sim P,
+\]
+where $P$ is a probability distribution on $\mathcal{X} \times \mathcal{Y}$.
+
+\medskip
+
+\noindent
+The dataset $\{(x_i, y_i)\}_{i=1}^n$ is thus viewed as an i.i.d.\ sample from $P$.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The true relationship between $x$ and $y$ is encoded in $P$
+    \item The function $f$ from the previous lecture is now understood as a conditional expectation or decision rule derived from $P$
+\end{itemize}
+
+\subsection{Risk and Expected Loss}
+
+Given a model $f : \mathcal{X} \to \mathcal{Y}$, we define its \emph{risk} as the expected loss:
+\[
+R(f) = \mathbb{E}_{(x,y) \sim P} \left[ \ell(f(x), y) \right].
+\]
+
+\medskip
+
+\noindent
+\textbf{Goal.}  
+Find a function $f$ that minimizes the risk:
+\[
+f^* = \arg\min_f R(f).
+\]
+
+\medskip
+
+\noindent
+\textbf{Bayes optimal predictor.}  
+The function $f^*$ is called the \emph{Bayes predictor}.
+
+\medskip
+
+\noindent
+\textbf{Example (squared loss).}  
+If $\ell(f(x), y) = (f(x) - y)^2$, then:
+\[
+f^*(x) = \mathbb{E}[y \mid x].
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The optimal prediction is the conditional expectation
+    \item Learning seeks to approximate this conditional structure
+\end{itemize}
+
+\subsection{Empirical Risk Minimization}
+
+Since the true distribution $P$ is unknown, we cannot compute $R(f)$ directly.
+
+\medskip
+
+\noindent
+Instead, we approximate it using the empirical risk:
+\[
+\hat{R}_n(f) = \frac{1}{n} \sum_{i=1}^n \ell(f(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Empirical Risk Minimization (ERM).}
+\[
+\hat{f} = \arg\min_{f \in \mathcal{H}} \hat{R}_n(f),
+\]
+where $\mathcal{H}$ is the hypothesis space.
+
+\medskip
+
+\noindent
+\textbf{Justification.}
+\begin{itemize}
+    \item By the law of large numbers, $\hat{R}_n(f)$ approximates $R(f)$
+    \item Minimizing empirical risk approximates minimizing true risk
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key challenge.}  
+The empirical minimizer may not generalize well to unseen data.
+
+\subsection{Conditional Distributions and Prediction}
+
+The probabilistic framework emphasizes modeling the conditional distribution:
+\[
+p(y \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Prediction strategies.}
+\begin{itemize}
+    \item Regression: predict $\mathbb{E}[y \mid x]$
+    \item Classification: predict $\arg\max_y p(y \mid x)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example (classification).}  
+For $y \in \{1, \dots, K\}$:
+\[
+f^*(x) = \arg\max_k p(y = k \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning can be viewed as estimating conditional distributions or functions derived from them.
+
+\subsection{Bayes’ Theorem}
+
+Bayes’ theorem provides a fundamental relationship between conditional and marginal probabilities:
+\[
+p(y \mid x) = \frac{p(x \mid y)\, p(y)}{p(x)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Components.}
+\begin{itemize}
+    \item $p(y)$: prior distribution
+    \item $p(x \mid y)$: likelihood
+    \item $p(y \mid x)$: posterior
+    \item $p(x)$: evidence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Prior encodes initial beliefs
+    \item Likelihood captures how data is generated
+    \item Posterior updates beliefs given observations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Bayesian viewpoint.}  
+Learning is the process of updating beliefs about unknown quantities using observed data.
+
+\subsection{Loss Functions and Probabilistic Modeling}
+
+Loss functions often arise naturally from probabilistic assumptions.
+
+\medskip
+
+\noindent
+\textbf{Negative log-likelihood.}  
+If we model $p_\theta(y \mid x)$, we may define:
+\[
+\ell(f_\theta(x), y) = -\log p_\theta(y \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Result.}
+\[
+\min_\theta \sum_i -\log p_\theta(y_i \mid x_i)
+\]
+corresponds to maximum likelihood estimation.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Gaussian noise $\rightarrow$ squared loss
+    \item Bernoulli model $\rightarrow$ cross-entropy loss
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Loss functions encode assumptions about the data-generating process.
+
+\subsection{Uncertainty and Noise}
+
+The probabilistic framework explicitly accounts for uncertainty.
+
+\medskip
+
+\noindent
+\textbf{Sources of uncertainty.}
+\begin{itemize}
+    \item Noise in observations
+    \item Incomplete information
+    \item Model limitations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Prediction with uncertainty.}
+\begin{itemize}
+    \item Instead of predicting a single value, we may predict a distribution
+    \item Confidence can be quantified
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Probability provides a natural language for reasoning under uncertainty.
+
+\subsection{A Unifying Perspective}
+
+The probabilistic view reframes learning as statistical estimation:
+
+\begin{itemize}
+    \item \textbf{Data:} samples from an unknown distribution
+    \item \textbf{Model:} approximation of conditional structure
+    \item \textbf{Objective:} minimize expected loss
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core abstraction.}  
+Learning is the estimation of functions or distributions from random data.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The deterministic function approximation view is a special case of a broader probabilistic framework.
+
+\subsection{Outlook}
+
+In this lecture, we introduced a probabilistic formulation of learning, including:
+
+\begin{itemize}
+    \item data as random variables,
+    \item risk and empirical risk minimization,
+    \item conditional distributions,
+    \item Bayes’ theorem.
+\end{itemize}
+
+\medskip
+
+\noindent
+This perspective raises further questions:
+
+\begin{itemize}
+    \item How should we choose the hypothesis space?
+    \item What assumptions guide learning?
+    \item How do we balance flexibility and generalization?
+\end{itemize}
+
+\medskip
+
+\noindent
+In the next lecture, we study hypothesis spaces and inductive bias, which determine the structure of the functions we learn.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Learning is fundamentally a statistical problem: we infer structure from randomness using limited data.

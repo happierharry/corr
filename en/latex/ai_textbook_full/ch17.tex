@@ -1,0 +1,185 @@
+\chapter{Training Deep Networks}
+
+\section{Introduction}
+
+Deep neural networks are expressive, but they are also difficult to train. Unlike convex models such as logistic regression, deep networks involve highly nonconvex objectives, long chains of transformations, and delicate interactions between initialization, optimization, and architecture.
+
+This chapter examines why training deep networks is challenging and how these challenges are addressed in practice. We focus on signal propagation, gradient behavior, and initialization, and develop intuition through simple mathematical arguments.
+
+\section{Why Deep Networks Are Hard to Train}
+
+A deep network is a composition of many layers:
+\[
+x \;\mapsto\; h^{(1)} \;\mapsto\; h^{(2)} \;\mapsto\; \cdots \;\mapsto\; h^{(L)}.
+\]
+
+This creates several difficulties:
+\begin{itemize}
+    \item gradients must propagate through many transformations,
+    \item small numerical effects can accumulate,
+    \item optimization landscapes are complex and high-dimensional,
+    \item different layers may learn at very different rates.
+\end{itemize}
+
+Even if a good solution exists, it may be difficult to reach with standard optimization methods.
+
+\section{Initialization and Signal Propagation}
+
+Initialization determines the starting point of optimization and strongly affects whether signals propagate stably through the network.
+
+\subsection{Forward Signal Propagation}
+
+Consider a simplified model:
+\[
+h^{(\ell)} = \sigma(W^{(\ell)} h^{(\ell-1)}),
+\]
+with random initialization of weights.
+
+We ask: how does the variance of activations evolve with depth?
+
+\subsection{Variance Propagation Intuition}
+
+Assume:
+\begin{itemize}
+    \item entries of $W^{(\ell)}$ are i.i.d.\ with variance $\sigma_w^2$,
+    \item inputs have zero mean and variance $q^{(\ell-1)}$.
+\end{itemize}
+
+Then approximately:
+\[
+q^{(\ell)} \approx \sigma_w^2 \, \mathbb{E}[\sigma(z)^2],
+\]
+where $z$ is a random variable with variance $q^{(\ell-1)}$.
+
+If $\sigma_w^2$ is too large, activations explode.  
+If $\sigma_w^2$ is too small, activations shrink toward zero.
+
+Thus stable propagation requires careful scaling of weights.
+
+\subsection{Initialization Schemes}
+
+This leads to practical initialization rules:
+\begin{itemize}
+    \item \textbf{Xavier initialization:} variance scaled by input dimension,
+    \item \textbf{He initialization:} adjusted for ReLU activations.
+\end{itemize}
+
+These aim to keep activations at a consistent scale across layers.
+
+\section{Vanishing and Exploding Gradients}
+
+The backward pass involves repeated multiplication by Jacobians:
+\[
+\delta^{(\ell)} = (W^{(\ell+1)})^\top \delta^{(\ell+1)} \odot \sigma'(z^{(\ell)}).
+\]
+
+\subsection{Jacobian Product Intuition}
+
+Gradients involve products of many terms:
+\[
+\prod_{\ell} W^{(\ell)} \quad \text{and} \quad \prod_{\ell} \sigma'(z^{(\ell)}).
+\]
+
+If these factors have norms less than 1, gradients shrink exponentially with depth (vanishing gradients).  
+If greater than 1, gradients grow exponentially (exploding gradients).
+
+\subsection{Consequences}
+
+\begin{itemize}
+    \item \textbf{Vanishing gradients:} early layers learn very slowly.
+    \item \textbf{Exploding gradients:} updates become unstable.
+\end{itemize}
+
+Both phenomena make deep networks difficult to train.
+
+\section{Gradient Flow Through Depth}
+
+Training requires gradients to flow from the loss back to early layers.
+
+\subsection{Deep Linear Case}
+
+Even in a linear network
+\[
+f(x)=W^{(L)}\cdots W^{(1)}x,
+\]
+gradients involve products of matrices. If these matrices are poorly conditioned, gradient flow deteriorates.
+
+\subsection{Nonlinear Case}
+
+Nonlinearities such as sigmoid can saturate:
+\[
+\sigma'(z)\approx 0 \quad \text{for large } |z|.
+\]
+This further amplifies vanishing gradients.
+
+ReLU mitigates this partially, since
+\[
+\sigma'(z)=1 \text{ for } z>0,
+\]
+but introduces other issues such as inactive units.
+
+\section{Loss Landscapes}
+
+The objective function for deep networks is highly nonconvex.
+
+\subsection{Key Features}
+
+\begin{itemize}
+    \item many local minima and saddle points,
+    \item flat regions and sharp regions,
+    \item symmetries due to parameterization.
+\end{itemize}
+
+Despite this complexity, gradient-based methods often find good solutions in practice.
+
+\subsection{Practical Observation}
+
+Many local minima are comparable in value, and saddle points appear to be more problematic than local minima. Noise in stochastic optimization can help escape saddle regions.
+
+\section{Practical Training Recipe}
+
+Successful training of deep networks relies on a combination of techniques:
+
+\begin{itemize}
+    \item \textbf{Initialization:} use variance-preserving schemes,
+    \item \textbf{Activation choice:} prefer non-saturating functions (e.g., ReLU),
+    \item \textbf{Normalization:} stabilize intermediate activations,
+    \item \textbf{Optimization:} use SGD with momentum or adaptive methods,
+    \item \textbf{Learning rate tuning:} adjust schedules carefully.
+\end{itemize}
+
+These techniques work together to maintain stable signal and gradient propagation.
+
+\section{Worked Example: Deep Linear Network}
+
+Consider a deep linear network:
+\[
+f(x)=W^{(L)}\cdots W^{(1)}x.
+\]
+
+If each matrix has singular values slightly less than 1, then
+\[
+\|W^{(L)}\cdots W^{(1)}\| \approx \prod_{\ell=1}^L \|W^{(\ell)}\|,
+\]
+which decays exponentially with $L$. Thus gradients vanish.
+
+If singular values exceed 1, the product grows exponentially, leading to exploding gradients.
+
+This simple example illustrates why depth alone creates instability.
+
+\section{A Unifying Perspective}
+
+Training deep networks requires maintaining stable signal propagation both forward and backward. Initialization controls the starting scale, nonlinearities affect gradient flow, and optimization interacts with the landscape.
+
+The central challenge is:
+\[
+\text{propagate information across many layers without distortion.}
+\]
+
+Modern techniques can be understood as ways of controlling variance, conditioning, and gradient flow across depth.
+
+\section{Summary}
+
+In this chapter we examined why deep networks are difficult to train. We analyzed signal propagation, showing how poor initialization leads to exploding or vanishing activations. We explained the role of Jacobian products in gradient instability and discussed how nonlinearities influence gradient flow.
+
+We also described the structure of loss landscapes and outlined practical strategies for stable training. These insights form the foundation for understanding architectural improvements such as normalization and residual connections.

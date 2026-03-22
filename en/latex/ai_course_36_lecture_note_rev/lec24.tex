@@ -1,0 +1,310 @@
+\section{Lecture 24: Transformers}
+
+\subsection{Motivation}
+
+In the previous lecture, we introduced attention as a mechanism for modeling interactions across sequences.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Can we build an entire architecture based solely on attention?
+
+\medskip
+
+\noindent
+\textbf{Answer.}  
+Transformers replace recurrence and convolution with attention, enabling scalable and highly expressive models.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Representations are computed through repeated layers of attention and simple transformations.
+
+\subsection{Transformer Architecture}
+
+A transformer is composed of stacked layers, each containing:
+
+\begin{itemize}
+    \item multi-head self-attention
+    \item feedforward network
+    \item residual connections
+    \item normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Layer structure.}
+
+Given input $x$:
+
+\[
+z = \text{SelfAttention}(x),
+\quad
+x' = x + z
+\]
+
+\[
+\tilde{x} = \text{LayerNorm}(x')
+\]
+
+\[
+u = \text{FFN}(\tilde{x}),
+\quad
+y = \tilde{x} + u
+\]
+
+\[
+\text{output} = \text{LayerNorm}(y)
+\]
+
+\medskip
+
+\noindent
+\textbf{Feedforward network.}
+
+\[
+\text{FFN}(x) = \sigma(xW_1 + b_1) W_2 + b_2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers alternate between global interaction (attention) and local transformation (FFN).
+
+\subsection{Positional Encoding}
+
+Attention is permutation-invariant, so positional information must be added.
+
+\medskip
+
+\noindent
+\textbf{Sinusoidal encoding.}
+
+\[
+\text{PE}(t, 2k) = \sin\left(\frac{t}{10000^{2k/d}}\right), \quad
+\text{PE}(t, 2k+1) = \cos\left(\frac{t}{10000^{2k/d}}\right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Purpose.}
+
+\begin{itemize}
+    \item encode order information
+    \item allow model to distinguish positions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers separate content (tokens) from position (encoding).
+
+\subsection{Residual Connections and Normalization}
+
+Transformers rely heavily on:
+
+\begin{itemize}
+    \item residual connections
+    \item layer normalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role.}
+
+\begin{itemize}
+    \item stabilize deep architectures
+    \item ensure gradient flow
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to earlier lectures.}
+
+\begin{itemize}
+    \item residuals $\rightarrow$ enable depth (Lecture 20)
+    \item normalization $\rightarrow$ stabilize training (Lecture 18)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers integrate multiple stabilization techniques.
+
+\subsection{Computational Characteristics}
+
+\textbf{Advantages.}
+
+\begin{itemize}
+    \item full parallelism across sequence
+    \item direct modeling of long-range dependencies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Cost.}
+
+\begin{itemize}
+    \item attention requires $O(T^2)$ computation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+
+\begin{itemize}
+    \item higher expressivity vs computational cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers trade efficiency for expressive global interaction.
+
+\subsection{Scaling Laws}
+
+Modern transformer-based models exhibit predictable scaling behavior.
+
+\medskip
+
+\noindent
+\textbf{Empirical observation.}
+
+\begin{itemize}
+    \item performance improves with:
+    \begin{itemize}
+        \item model size (parameters)
+        \item dataset size
+        \item compute
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Scaling law (informal).}
+
+\[
+\text{Loss} \propto N^{-\alpha},
+\]
+
+where $N$ represents scale (data, parameters, compute).
+
+\medskip
+
+\noindent
+\textbf{Implication.}
+
+\begin{itemize}
+    \item larger models trained on more data perform better
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Performance follows smooth scaling trends rather than abrupt improvements.
+
+\subsection{Transformers in Practice}
+
+Transformers are the foundation of modern AI systems:
+
+\begin{itemize}
+    \item large language models (LLMs)
+    \item vision transformers
+    \item multimodal models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key property.}
+
+\begin{itemize}
+    \item flexible across domains
+    \item unified architecture for different data types
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers provide a general-purpose architecture for learning representations.
+
+\subsection{Connection to Previous Concepts}
+
+Transformers unify ideas developed throughout the course:
+
+\begin{itemize}
+    \item kernel methods $\rightarrow$ attention as learned similarity
+    \item deep networks $\rightarrow$ compositional structure
+    \item residual connections $\rightarrow$ stable depth
+    \item normalization $\rightarrow$ controlled training dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Transformers synthesize multiple strands of machine learning into a single framework.
+
+\subsection{A Unifying Perspective}
+
+Transformers can be viewed as:
+
+\begin{itemize}
+    \item \textbf{Interaction networks:} modeling pairwise relationships
+    \item \textbf{Adaptive operators:} data-dependent transformations
+    \item \textbf{Scalable architectures:} benefiting from scale
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning is achieved by iteratively refining representations through global interactions.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The success of modern AI arises from combining expressive architectures with large-scale optimization.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item transformer architecture,
+    \item positional encoding,
+    \item residual and normalization mechanisms,
+    \item scaling laws and modern applications.
+\end{itemize}
+
+\medskip
+
+\noindent
+Transformers represent a major milestone in machine learning.
+
+\medskip
+
+\noindent
+In the following part of the course, we connect these ideas to generative modeling, large-scale systems, and theoretical perspectives.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Modern machine learning systems are shaped by both architectural design and scale.

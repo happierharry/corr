@@ -1,0 +1,267 @@
+\section{Tutorial 3: Regularization and Overfitting}
+
+\subsection{Objectives}
+
+This tutorial develops intuition for generalization and regularization:
+\begin{itemize}
+    \item Understand overfitting and underfitting through examples
+    \item Analyze the effect of model complexity
+    \item Study the role of regularization
+    \item Interpret learning dynamics (early stopping, implicit bias)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Bridge theory and practice through concrete scenarios and reasoning.
+
+\subsection{Exercise 1: Overfitting in Polynomial Regression}
+
+Suppose we fit a polynomial of degree $d$ to noisy data:
+\[
+y = f(x) + \varepsilon.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe what happens when $d$ is very small.
+    \item Describe what happens when $d$ is very large.
+    \item Sketch (qualitatively) training and test error as a function of $d$.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item \textbf{Small $d$:}
+\begin{itemize}
+    \item Model too simple
+    \item Cannot capture structure
+    \item High bias
+\end{itemize}
+
+\item \textbf{Large $d$:}
+\begin{itemize}
+    \item Model highly flexible
+    \item Fits noise
+    \item High variance
+\end{itemize}
+
+\item \textbf{Behavior:}
+\begin{itemize}
+    \item Training error decreases monotonically
+    \item Test error decreases then increases (U-shape)
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Model complexity must be matched to data.
+
+\subsection{Exercise 2: Ridge Regression Effect}
+
+Consider ridge regression:
+\[
+\min_w \|Xw - y\|^2 + \lambda \|w\|^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens when $\lambda = 0$?
+    \item What happens when $\lambda \to \infty$?
+    \item Explain how $\lambda$ affects bias and variance.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item $\lambda = 0$:
+\begin{itemize}
+    \item Standard least squares
+    \item Potential overfitting
+\end{itemize}
+
+\item $\lambda \to \infty$:
+\begin{itemize}
+    \item $w \to 0$
+    \item Model predicts near-constant output
+    \item High bias
+\end{itemize}
+
+\item Effect:
+\begin{itemize}
+    \item Increasing $\lambda$ increases bias
+    \item Increasing $\lambda$ reduces variance
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Regularization controls the bias–variance tradeoff.
+
+\subsection{Exercise 3: Geometry of Regularization}
+
+Consider:
+\[
+\min_w \|Xw - y\|^2 \quad \text{subject to} \quad \|w\|_2 \leq C.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe the feasible set.
+    \item Explain where the solution lies geometrically.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item The feasible set is a ball in $\mathbb{R}^d$.
+
+\item The solution lies where:
+\begin{itemize}
+    \item level sets of the loss intersect the constraint boundary
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Regularization restricts the search space to structured regions.
+
+\subsection{Exercise 4: Implicit Regularization}
+
+Consider overparameterized linear regression:
+\[
+\min_w \|Xw - y\|^2,
+\]
+where infinitely many solutions exist.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Explain why multiple solutions exist.
+    \item Which solution does gradient descent find (starting from $w=0$)?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item If $X$ has more parameters than constraints:
+\[
+Xw = y
+\]
+has infinitely many solutions.
+
+\item Gradient descent finds the minimum-norm solution:
+\[
+w^* = \arg\min \|w\| \quad \text{subject to } Xw = y.
+\]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Optimization induces implicit regularization.
+
+\subsection{Exercise 5: Early Stopping}
+
+Suppose we train a model using gradient descent.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens if we train for too long?
+    \item Why can stopping early improve generalization?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Training too long:
+\begin{itemize}
+    \item Model may fit noise
+    \item Overfitting occurs
+\end{itemize}
+
+\item Early stopping:
+\begin{itemize}
+    \item Limits effective complexity
+    \item Prevents fitting fine-scale noise
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Training time acts as a form of regularization.
+
+\subsection{Exercise 6 (Discussion): Double Descent (Preview)}
+
+\textbf{Question.}  
+Classically, test error is U-shaped. Modern deep learning sometimes shows a second descent after interpolation.
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+\begin{itemize}
+    \item Overparameterization
+    \item Implicit bias of optimization
+    \item Role of noise and structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Generalization behavior in modern models differs from classical intuition.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Overfitting arises from excessive model flexibility
+    \item Regularization controls complexity explicitly and implicitly
+    \item Geometry provides insight into constrained optimization
+    \item Optimization dynamics influence generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lectures.}  
+We now turn to linear regression, where these ideas can be analyzed exactly and explicitly.

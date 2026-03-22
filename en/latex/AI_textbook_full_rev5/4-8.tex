@@ -1,0 +1,255 @@
+\section{Case Studies in Modern Representation Learning}
+
+The preceding sections developed the formal language of representations, self-supervised objectives, transfer, foundation models, and reinforcement learning.
+This section studies four concrete cases through a common analytic template.
+For each case we ask five questions:
+\begin{enumerate}
+    \item What is the training objective?
+    \item What representation is learned?
+    \item How is that representation transferred or adapted?
+    \item What structure does the representation appear to capture?
+    \item Where does the representation fail?
+\end{enumerate}
+
+\medskip
+
+\noindent
+The purpose is not to celebrate successful models in general terms.
+It is to compare, in a controlled way, how different learning signals shape different kinds of reusable internal structure.
+
+\subsection*{Case study I: BERT and masked language modeling}
+
+A masked language model is trained by hiding selected tokens in a sequence and predicting them from context.
+If a sentence is written as $x=(x_1,\dots,x_T)$ and $M\subseteq\{1,\dots,T\}$ is the set of masked positions, then a simplified masked-language-model objective is
+\[
+\mathcal{L}_{\mathrm{MLM}}(\theta)
+=
+-\sum_{i\in M} \log p_\theta(x_i\mid x_{\setminus M}).
+\]
+Thus the model is trained to use surrounding context to infer missing content.
+
+\paragraph{Objective.}
+The objective is predictive but not task-specific.
+It does not directly optimize sentiment classification, translation, or question answering.
+It instead encourages the model to estimate local and global linguistic regularities from partially observed text.
+
+\paragraph{Learned representation.}
+The learned representation is a family of contextual token embeddings
+\[
+h_i = \phi_\theta(x)_i,
+\]
+one for each token position $i$.
+Unlike static word embeddings, these vectors depend on the entire sentence.
+The representation of the word ``bank,'' for example, can differ substantially between a financial and a river context.
+Many downstream systems also use a pooled sequence representation derived from the token states.
+
+\paragraph{Transfer mechanism.}
+Transfer usually occurs in one of two ways:
+\begin{itemize}
+    \item a linear probe or shallow classifier is trained on top of frozen contextual embeddings,
+    \item or the full network is fine-tuned on a supervised downstream task.
+\end{itemize}
+The first tests how linearly accessible the task information already is; the second allows the representation itself to deform toward the new task.
+
+\paragraph{What the representation captures.}
+Empirically, masked language models learn strong syntactic and semantic structure.
+Their hidden states often encode agreement, phrase boundaries, lexical disambiguation, and broad semantic similarity.
+This should not be interpreted as a theorem about language understanding, but it is well supported by probing and downstream performance studies.
+The important point is that contextual prediction induces a representation in which many linguistic tasks become substantially easier than in raw token space.
+
+\paragraph{Where it fails.}
+The representation also has limits.
+Masked prediction does not by itself guarantee strong discourse planning, grounded reference, or robust long-horizon reasoning.
+It may rely on superficial distributional cues, and it can degrade under domain shift, rare vocabulary, or tokenization mismatch.
+Thus the case supports a careful conclusion:
+masked prediction yields powerful reusable linguistic structure, but not a complete or theory-certified model of meaning.
+
+\subsection*{Case study II: CLIP and contrastive image--text learning}
+
+Contrastive image--text learning starts from paired data $(x^{\mathrm{img}},x^{\mathrm{text}})$.
+An image encoder and a text encoder produce vectors
+\[
+z^{\mathrm{img}} = \phi_{\theta}(x^{\mathrm{img}}),
+\qquad
+z^{\mathrm{text}} = \psi_{\eta}(x^{\mathrm{text}}).
+\]
+A contrastive objective then raises the similarity of matched pairs and lowers the similarity of mismatched pairs in the same batch.
+A simplified symmetric objective has the form
+\[
+\mathcal{L}_{\mathrm{con}}
+=
+-\sum_{i=1}^B
+\log
+\frac{\exp(\langle z^{\mathrm{img}}_i,z^{\mathrm{text}}_i\rangle/\tau)}
+{\sum_{j=1}^B \exp(\langle z^{\mathrm{img}}_i,z^{\mathrm{text}}_j\rangle/\tau)}
+\;+
+\text{(text-to-image term)}.
+\]
+
+\paragraph{Objective.}
+The objective is not to assign a fixed class label.
+It is to align two modalities in a shared embedding geometry.
+Learning therefore depends on correspondence across views rather than explicit task annotations.
+
+\paragraph{Learned representation.}
+The representation is a pair of embedding spaces that are trained to be mutually comparable.
+Images and texts that describe the same semantic content are placed nearby.
+This geometry is the central learned object.
+
+\paragraph{Transfer mechanism.}
+Transfer often occurs through prompting rather than ordinary fine-tuning.
+A downstream class label such as ``cat'' is turned into a short text description, embedded by the text encoder, and compared against the image embedding.
+Thus zero-shot classification becomes a nearest-neighbor or similarity-ranking problem in the shared representation space.
+The same geometry also supports cross-modal retrieval.
+
+\paragraph{What the representation captures.}
+Empirically, CLIP-style models capture high-level semantic correspondences that ordinary supervised classifiers do not naturally expose.
+They can connect images to flexible textual descriptions and often generalize better across open-vocabulary settings than closed-set classifiers.
+This is strong evidence that contrastive cross-modal objectives can produce transferable semantic structure.
+
+\paragraph{Where it fails.}
+The learned geometry is imperfect.
+CLIP-style systems can struggle with fine spatial relations, counting, OCR-heavy inputs, subtle compositional distinctions, and dataset-specific language biases.
+They may also inherit social or stylistic biases from web-scale data.
+Thus the case shows both the power and the fragility of alignment-based representations: they are broad, but not uniformly precise.
+
+\subsection*{Case study III: supervised pretraining and transfer in vision}
+
+A classical transfer-learning case begins with supervised pretraining on a large dataset such as ImageNet.
+A convolutional or transformer-based vision backbone learns a representation
+\[
+z = \phi_\theta(x)
+\]
+by minimizing a labeled classification objective on the source domain.
+The backbone is then reused on a smaller target dataset.
+
+\paragraph{Objective.}
+The source objective is ordinary supervised prediction.
+For source examples $(x,y)$, one minimizes a loss such as
+\[
+\mathcal{L}_{\mathrm{sup}}(\theta,w)
+=
+-\log p_{\theta,w}(y\mid x).
+\]
+This is task-specific at training time, but the resulting representation often contains features that survive the original task boundary.
+
+\paragraph{Learned representation.}
+The learned visual representation tends to organize edges, textures, parts, object fragments, and increasingly abstract category-level information across depth.
+Early layers often transfer broadly, whereas later layers may be more specialized to the source label taxonomy.
+
+\paragraph{Transfer mechanism.}
+Three standard transfer mechanisms are common:
+\begin{itemize}
+    \item \textbf{feature extraction:} freeze the backbone and train a new head,
+    \item \textbf{linear probing:} test whether the target task is already linearly recoverable,
+    \item \textbf{full fine-tuning:} update all layers on the target data.
+\end{itemize}
+A typical evidence-driven comparison is to evaluate these three settings on a small target dataset.
+If linear probing performs well, the source representation already exposes the relevant structure.
+If full fine-tuning yields a large improvement, the features are useful but not fully aligned with the target domain.
+
+\paragraph{What the representation captures.}
+This case shows that even a source objective designed for one label set can learn visual primitives useful for many other tasks.
+In practice, pretrained backbones often reduce sample complexity and improve optimization on small target datasets.
+This is among the clearest empirical demonstrations of representation reuse in modern machine learning.
+
+\paragraph{Where it fails.}
+Transfer is not automatic.
+When the source and target domains differ sharply, for example from natural images to specialized medical images or industrial imagery, later-layer features may be poorly aligned.
+A frozen backbone may miss fine texture, measurement, or domain-specific cues.
+This case therefore illustrates an important general lesson:
+transfer depends not only on source accuracy, but on compatibility between the source-induced representation and the target task.
+
+\subsection*{Case study IV: deep reinforcement learning from raw observations}
+
+In deep reinforcement learning, the system receives observations sequentially, acts, and collects rewards.
+A value-based example uses a representation network together with an action-value head:
+\[
+z_t = \phi_\theta(x_t),
+\qquad
+Q_{\theta,w}(x_t,a) = g_w(z_t,a).
+\]
+Training then minimizes a temporal-difference loss based on bootstrapped targets such as
+\[
+\mathcal{L}_{\mathrm{TD}}(\theta,w)
+=
+\Bigl(Q_{\theta,w}(x_t,a_t) - \bigl[r_t + \gamma \max_{a'} Q_{\bar\theta,\bar w}(x_{t+1},a')\bigr]\Bigr)^2.
+\]
+
+\paragraph{Objective.}
+The objective is neither supervised labeling nor ordinary self-supervised prediction.
+It is control: the representation is shaped by its contribution to long-term return through value estimation or policy optimization.
+
+\paragraph{Learned representation.}
+The learned representation is a latent state useful for decision making.
+From raw pixels, for example, the encoder may emphasize controllable objects, positions, velocities, or imminent hazards while suppressing irrelevant background variation.
+In that sense, deep RL learns task-oriented state abstractions.
+
+\paragraph{Transfer mechanism.}
+Transfer can occur by reusing the encoder across related control tasks, initializing a new agent from a pretrained visual backbone, or combining auxiliary self-supervised objectives with policy learning.
+Compared with standard transfer learning, however, reuse in RL is often less stable because the target policy changes the data distribution itself.
+
+\paragraph{What the representation captures.}
+When successful, the representation captures control-relevant geometry: which states are similar for planning, which features predict reward, and which transitions are dynamically important.
+This is a distinct notion of usefulness from classification or language modeling.
+A good RL representation need not be human-interpretable; it must support effective action.
+
+\paragraph{Where it fails.}
+Deep RL representations are often brittle.
+They may overfit to one reward specification, fail under visual distractors or small environment changes, and learn shortcuts tied to exploration history.
+Because data is generated by interaction, not passively given, representation learning is coupled to nonstationary sampling.
+This makes transfer and reliability substantially harder than in standard supervised settings.
+
+\subsection*{Comparative analysis}
+
+These four cases support a disciplined comparison.
+The choice of objective determines which invariances and distinctions are encouraged:
+\begin{itemize}
+    \item masked prediction emphasizes contextual reconstruction,
+    \item contrastive alignment emphasizes agreement across views or modalities,
+    \item supervised pretraining emphasizes source-label discrimination,
+    \item reinforcement learning emphasizes control-relevant state abstraction.
+\end{itemize}
+The representations are therefore not interchangeable.
+Each case learns a useful internal coordinate system, but the geometry of that coordinate system is shaped by the learning signal.
+
+\begin{center}
+\small
+\begin{tabular}{|p{2.4cm}|p{2.8cm}|p{2.7cm}|p{2.8cm}|p{2.4cm}|}
+\hline
+\textbf{Case} & \textbf{Objective} & \textbf{Learned representation} & \textbf{Transfer mechanism} & \textbf{Typical failure modes} \\
+\hline
+BERT / MLM & Predict masked tokens from context & Contextual token and sequence embeddings & Linear probe or fine-tuning & Weak grounding, long-context limits, domain shift \\
+\hline
+CLIP / image--text contrast & Align matched image--text pairs, separate mismatches & Shared cross-modal embedding geometry & Prompting, zero-shot classification, retrieval & Counting, fine relations, OCR, data bias \\
+\hline
+Supervised vision transfer & Source-domain label prediction & Hierarchical visual features from edges to semantics & Frozen backbone, linear probe, full fine-tuning & Domain mismatch, over-specialized late features \\
+\hline
+Deep RL control & Maximize long-run return through bootstrapped or policy losses & Task-oriented latent state for control & Encoder reuse, auxiliary pretraining, related-task initialization & Sample inefficiency, brittleness under shift, reward dependence \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection*{What these cases show}
+
+The evidence across the cases supports three chapter-level conclusions.
+
+\paragraph{First, representation quality is objective-dependent.}
+There is no single universally best representation.
+The usefulness of a learned feature space depends on what information the training objective rewards the model for preserving and organizing.
+
+\paragraph{Second, transfer is strongest when source and target structure overlap.}
+A representation transfers well when the invariances and distinctions learned in pretraining remain appropriate for the downstream task.
+This is why image classifiers can transfer to related visual tasks, why BERT-like encoders transfer broadly across NLP tasks, and why RL transfer is harder when rewards or transition structure change.
+
+\paragraph{Third, failure analysis matters as much as success analysis.}
+A representation should be judged not only by benchmark gains but by the structure of its errors.
+Failure modes reveal what the model has and has not organized well in its internal coordinates.
+This is especially important in multimodal systems and control, where apparent success can conceal brittle abstractions.
+
+\subsection*{Notes and references}
+
+Canonical examples include BERT for masked language modeling, CLIP for contrastive image--text learning, the large literature on ImageNet pretraining and downstream visual transfer, and deep Q-learning or actor--critic systems for learned control from high-dimensional observations.
+The case-study literature is primarily empirical.
+Its main contribution is comparative evidence about which objectives produce which kinds of reusable structure.
+The theoretical language introduced earlier in the chapter---invariance, sufficiency, transferability, and state abstraction---provides a way to interpret that evidence more systematically.

@@ -1,0 +1,232 @@
+\section{State Representation in Sequential Decision-Making}
+
+\subsection{Overview}
+
+In supervised and self-supervised learning, data is typically assumed to be static.  
+In contrast, reinforcement learning (RL) models \emph{sequential interaction} between an agent and an environment.
+
+\medskip
+
+\noindent
+\textbf{Key shift.}  
+Data is no longer given; it is generated through actions.  
+Learning must therefore account for feedback loops between decisions and future observations.
+
+\subsection{Markov Decision Processes}
+
+\begin{definition}[Markov Decision Process (MDP)]
+A Markov Decision Process is a tuple
+\[
+(\mathcal{S}, \mathcal{A}, P, R, \gamma),
+\]
+where:
+\begin{itemize}
+\item $\mathcal{S}$ is a state space
+\item $\mathcal{A}$ is an action space
+\item $P(s' \mid s,a)$ is the transition probability
+\item $R(s,a)$ is the reward function
+\item $\gamma \in [0,1)$ is the discount factor
+\end{itemize}
+\end{definition}
+
+\begin{definition}[Markov Property]
+An environment satisfies the Markov property if
+\[
+P(s_{t+1} \mid s_t, a_t, s_{t-1}, a_{t-1}, \dots)
+= P(s_{t+1} \mid s_t, a_t).
+\]
+\end{definition}
+
+\subsection{Policies and Returns}
+
+\begin{definition}[Policy]
+A policy is a mapping
+\[
+\pi(a \mid s),
+\]
+giving the probability of taking action $a$ in state $s$.
+\end{definition}
+
+\begin{definition}[Return]
+The return from time $t$ is
+\[
+G_t = \sum_{k=0}^{\infty} \gamma^k R(s_{t+k}, a_{t+k}).
+\]
+\end{definition}
+
+\begin{definition}[Value Function]
+The state-value function of a policy $\pi$ is
+\[
+V^\pi(s) = \mathbb{E}_\pi[G_t \mid s_t = s].
+\]
+\end{definition}
+
+\begin{definition}[Action-Value Function]
+The action-value function is
+\[
+Q^\pi(s,a) = \mathbb{E}_\pi[G_t \mid s_t = s, a_t = a].
+\]
+\end{definition}
+
+\subsection{Bellman Equations}
+
+\begin{proposition}[Bellman Expectation Equation]
+For any policy $\pi$,
+\[
+V^\pi(s) = \sum_a \pi(a \mid s)
+\left[
+R(s,a) + \gamma \sum_{s'} P(s' \mid s,a) V^\pi(s')
+\right].
+\]
+\end{proposition}
+
+\begin{proposition}[Bellman Optimality Equation]
+The optimal value function satisfies
+\[
+V^*(s) = \max_a
+\left[
+R(s,a) + \gamma \sum_{s'} P(s' \mid s,a) V^*(s')
+\right].
+\]
+\end{proposition}
+
+\begin{remark}
+The Bellman equations express value functions as fixed points of nonlinear operators.
+\end{remark}
+
+\subsection{Bellman Fixed-Point Theorem}
+
+\begin{theorem}[Contraction of the Bellman Operator]
+Let $\mathcal{T}$ be the Bellman optimality operator:
+\[
+(\mathcal{T}V)(s)
+= \max_a \left[ R(s,a) + \gamma \sum_{s'} P(s' \mid s,a) V(s') \right].
+\]
+Then for $\gamma \in [0,1)$, $\mathcal{T}$ is a contraction in the sup norm:
+\[
+\|\mathcal{T}V - \mathcal{T}W\|_\infty
+\le \gamma \|V - W\|_\infty.
+\]
+\end{theorem}
+
+\begin{proof}
+For any $s$,
+\[
+|(\mathcal{T}V)(s) - (\mathcal{T}W)(s)|
+\le \max_a \gamma \sum_{s'} P(s' \mid s,a) |V(s') - W(s')|.
+\]
+Using $\sum_{s'} P(s' \mid s,a)=1$,
+\[
+\le \gamma \|V - W\|_\infty.
+\]
+Taking supremum over $s$ yields the result.
+\end{proof}
+
+\begin{corollary}
+The Bellman operator has a unique fixed point $V^*$, and iterative updates
+\[
+V_{k+1} = \mathcal{T}V_k
+\]
+converge to $V^*$.
+\end{corollary}
+
+\subsection{Worked Example: A Finite MDP}
+
+Consider an MDP with two states $\{s_1, s_2\}$ and one action per state:
+
+\begin{itemize}
+\item $R(s_1) = 1$, $R(s_2) = 0$
+\item $P(s_2 \mid s_1) = 1$
+\item $P(s_2 \mid s_2) = 1$
+\end{itemize}
+
+Then:
+\[
+V(s_2) = 0 + \gamma V(s_2) \Rightarrow V(s_2)=0,
+\]
+\[
+V(s_1) = 1 + \gamma V(s_2) = 1.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+The value reflects immediate reward plus discounted future reward.
+
+\subsection{State-Transition View}
+
+An MDP can be visualized as a directed graph:
+\begin{itemize}
+\item nodes: states
+\item edges: actions and transitions
+\item edge weights: rewards and probabilities
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+Reinforcement learning is path optimization over this graph under uncertainty.
+
+\subsection{Connection to Representation Learning}
+
+In high-dimensional settings, raw observations $x$ may not satisfy the Markov property.  
+A representation $\phi(x)$ is often learned such that
+\[
+P(s_{t+1} \mid s_t, a_t)
+\approx
+P(s_{t+1} \mid x_t, a_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Representation learning in RL aims to construct state variables that make the environment approximately Markov.
+
+\subsection{What to Remember}
+
+\begin{itemize}
+\item RL models sequential decision making under uncertainty
+\item Value functions satisfy fixed-point equations
+\item The Bellman operator is a contraction
+\item Representations in RL aim to recover Markov structure
+\end{itemize}
+
+\subsection{Common Confusion}
+
+\begin{itemize}
+\item The Markov property is a modeling assumption, not always satisfied
+\item Value functions depend on policies
+\item Optimality equations are nonlinear due to the max operator
+\end{itemize}
+
+\subsection{Exercises}
+
+\begin{exercise}
+Compute the value function for a three-state chain with deterministic transitions.
+\end{exercise}
+
+\begin{exercise}
+Show that policy evaluation defines a linear system in $V^\pi$.
+\end{exercise}
+
+\begin{exercise}
+Prove that the Bellman expectation operator is also a contraction.
+\end{exercise}
+
+\begin{exercise}
+Construct an example where a poor representation violates the Markov property.
+\end{exercise}
+
+\subsection{Notes and References}
+
+Key sources include:
+\begin{itemize}
+\item classical dynamic programming and optimal control
+\item foundational RL texts (e.g., Sutton and Barto)
+\item modern deep RL and representation learning work
+\end{itemize}
+
+This area is comparatively well understood in finite settings, but becomes substantially more complex in large-scale or partially observed environments.

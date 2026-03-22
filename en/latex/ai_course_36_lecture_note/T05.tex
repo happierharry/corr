@@ -1,0 +1,245 @@
+\section{Tutorial 5: Kernel Tricks}
+
+\subsection{Objectives}
+
+This tutorial develops intuition and technical understanding of kernel methods:
+
+\begin{itemize}
+    \item Understand feature maps and implicit representations
+    \item Compute and interpret kernel functions
+    \item Connect kernels to inner products in feature space
+    \item Analyze how kernels induce nonlinear decision boundaries
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Understand kernels as a computational and conceptual tool, not just a formula.
+
+\subsection{Exercise 1: Explicit Feature Map}
+
+Consider the polynomial kernel:
+\[
+k(x, x') = (x^\top x' + 1)^2, \quad x, x' \in \mathbb{R}^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Expand $k(x,x')$ explicitly.
+    \item Find a feature map $\phi(x)$ such that:
+    \[
+    k(x,x') = \phi(x)^\top \phi(x').
+    \]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+Let $x = (x_1, x_2)$, $x' = (x_1', x_2')$.
+
+\begin{enumerate}
+\item Expand:
+\[
+(x^\top x' + 1)^2 =
+(x_1 x_1' + x_2 x_2' + 1)^2.
+\]
+
+\[
+= x_1^2 x_1'^2 + x_2^2 x_2'^2 + 1
++ 2 x_1 x_1' x_2 x_2'
++ 2 x_1 x_1' + 2 x_2 x_2'.
+\]
+
+\item One valid feature map:
+\[
+\phi(x) =
+\begin{pmatrix}
+x_1^2 \\
+x_2^2 \\
+\sqrt{2} x_1 x_2 \\
+\sqrt{2} x_1 \\
+\sqrt{2} x_2 \\
+1
+\end{pmatrix}.
+\]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Kernels correspond to inner products in higher-dimensional spaces.
+
+\subsection{Exercise 2: Kernel Without Explicit Mapping}
+
+Consider the Gaussian kernel:
+\[
+k(x,x') = \exp(-\gamma \|x - x'\|^2).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Explain why computing $\phi(x)$ explicitly is difficult.
+    \item Why is the kernel trick useful here?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item The feature map $\phi(x)$ is infinite-dimensional.
+
+\item The kernel allows us to compute inner products directly without constructing $\phi(x)$.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+The kernel trick enables computation in high-dimensional (even infinite) spaces efficiently.
+
+\subsection{Exercise 3: Linear vs Kernel Classifier}
+
+Consider two classifiers:
+
+\begin{itemize}
+    \item Linear: $f(x) = w^\top x$
+    \item Kernel: $f(x) = \sum_i \alpha_i y_i k(x_i, x)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What is the key difference between these models?
+    \item Why can the kernel classifier represent more complex boundaries?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item The kernel classifier depends on training points and pairwise similarities.
+
+\item Because kernels implicitly map data into higher-dimensional spaces, allowing nonlinear separation.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Kernel methods extend linear models to nonlinear settings.
+
+\subsection{Exercise 4: Decision Boundary Interpretation}
+
+Consider a kernel SVM with Gaussian kernel.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe qualitatively the decision boundary.
+    \item How do support vectors influence the boundary?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item The boundary can be highly nonlinear and adapt to local structure.
+
+\item Each support vector contributes a localized influence via the kernel function.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Kernel methods produce flexible, data-adaptive decision boundaries.
+
+\subsection{Exercise 5: Valid Kernels (Conceptual)}
+
+\textbf{Question.}  
+What properties must a function $k(x,x')$ satisfy to be a valid kernel?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Symmetry:
+    \[
+    k(x,x') = k(x',x)
+    \]
+    \item Positive semi-definiteness:
+    \[
+    \sum_{i,j} c_i c_j k(x_i, x_j) \geq 0
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Valid kernels correspond to inner products in some feature space.
+
+\subsection{Exercise 6: Kernel Choice and Inductive Bias}
+
+\textbf{Question.}  
+How does the choice of kernel affect learning?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Polynomial kernel:
+    \begin{itemize}
+        \item Captures global interactions
+    \end{itemize}
+
+    \item Gaussian kernel:
+    \begin{itemize}
+        \item Captures local similarity
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Kernels encode inductive bias through similarity structure.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Kernels represent inner products in feature space
+    \item The kernel trick avoids explicit high-dimensional computation
+    \item Kernel methods extend linear models to nonlinear problems
+    \item Choice of kernel determines inductive bias and model behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now study how to evaluate and compare models, selecting the best one for a given task.

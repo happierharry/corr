@@ -1,0 +1,247 @@
+\chapter{Feature Maps and Nonlinear Models}
+
+\section{Introduction}
+
+Linear models are attractive because they are simple, interpretable, and mathematically tractable. But many real prediction tasks are not linear in the raw input variables. A straight line cannot separate XOR-type patterns, a single affine function cannot represent curved decision boundaries, and many regression problems involve nonlinear dependence on the input.
+
+A standard solution is not to abandon linear models entirely, but to change the representation. Instead of applying a linear model directly to $x\in\mathbb R^d$, we first map $x$ into a new feature space and then apply a linear model there. This idea turns linear prediction into a flexible framework for nonlinear learning.
+
+This chapter develops that viewpoint. We introduce feature maps, basis expansions, and dictionary representations; study polynomial and radial features; and explain how similarity-based methods lead naturally to kernels. The goal is to make kernels feel like a continuation of feature engineering rather than an abrupt new topic.
+
+\section{Why Linear Models Become Powerful After Feature Engineering}
+
+Suppose we replace the raw input $x$ by a feature map
+\[
+\phi:\mathcal X \to \mathbb R^m.
+\]
+Then a linear predictor in feature space has the form
+\[
+f(x)=w^\top \phi(x).
+\]
+This is linear in the features $\phi(x)$, but it may be highly nonlinear as a function of the original input $x$.
+
+\begin{definition}[Feature Map]
+A feature map is a function
+\[
+\phi:\mathcal X\to\mathbb R^m
+\]
+that transforms an input into a feature vector.
+\end{definition}
+
+This simple idea is extremely powerful. If the representation $\phi(x)$ captures the right nonlinear structure, then linear models become much more expressive. In this sense, much of machine learning can be viewed as the search for a representation in which the task becomes approximately linear.
+
+\subsection{Representation Lifting}
+
+The map $\phi$ is often called a \emph{lifting} of the input into a higher-dimensional space. The purpose is not merely to increase dimension, but to make patterns easier to separate or approximate.
+
+For example, data that are not linearly separable in $\mathbb R^2$ may become linearly separable after lifting into $\mathbb R^3$ or higher.
+
+\section{Basis Expansions and Dictionary Views}
+
+A common way to build feature maps is through basis functions. Choose functions
+\[
+\phi_1,\phi_2,\dots,\phi_m
+\]
+on the input space and define
+\[
+\phi(x)=\big(\phi_1(x),\dots,\phi_m(x)\big)^\top.
+\]
+Then the model becomes
+\[
+f(x)=\sum_{j=1}^m w_j \phi_j(x).
+\]
+
+This can be interpreted in two equivalent ways:
+\begin{itemize}
+    \item as a linear model in transformed coordinates;
+    \item as a linear combination of basis functions.
+\end{itemize}
+
+The functions $\phi_j$ form a \emph{dictionary} of building blocks. Learning then amounts to choosing coefficients $w_j$.
+
+\subsection{Examples of Basis Functions}
+
+Typical choices include:
+\begin{itemize}
+    \item monomials $1,x,x^2,\dots$,
+    \item trigonometric features,
+    \item radial basis functions centered at selected points,
+    \item indicator or histogram features.
+\end{itemize}
+
+Thus feature engineering means selecting functions that express useful structure of the task.
+
+\section{Polynomial and Radial Features}
+
+\subsection{Polynomial Features}
+
+For input $x=(x_1,\dots,x_d)$, a polynomial feature map of degree up to $r$ includes monomials such as
+\[
+x_i,\qquad x_i x_j,\qquad x_i^2,\qquad x_i x_j x_k,
+\]
+up to total degree $r$.
+
+For example, in two dimensions a degree-2 map may be
+\[
+\phi(x_1,x_2)=
+\big(1,x_1,x_2,x_1^2,x_1x_2,x_2^2\big).
+\]
+Then a linear classifier in feature space corresponds to a quadratic decision boundary in the original coordinates.
+
+\begin{example}[Polynomial Decision Boundary]
+If
+\[
+f(x_1,x_2)=w^\top \phi(x_1,x_2)
+\]
+with the degree-2 map above, then the decision boundary
+\[
+f(x_1,x_2)=0
+\]
+is a quadratic curve. Thus linear classification in feature space becomes nonlinear classification in the original space.
+\end{example}
+
+\subsection{Radial Basis Features}
+
+Another important family is radial basis features:
+\[
+\phi_j(x)=\exp\!\left(-\frac{\|x-c_j\|^2}{2\sigma^2}\right),
+\]
+where $c_j$ is a center and $\sigma>0$ is a scale parameter.
+
+These features respond strongly when $x$ is near the center $c_j$ and decay with distance. A linear model built from such features can approximate complex smooth functions by combining local bumps.
+
+\begin{example}[RBF Features]
+If we choose centers $c_1,\dots,c_m$, then
+\[
+f(x)=\sum_{j=1}^m w_j \exp\!\left(-\frac{\|x-c_j\|^2}{2\sigma^2}\right)
+\]
+is a weighted sum of localized responses. This gives a flexible nonlinear model while remaining linear in the parameters $w_j$.
+\end{example}
+
+\section{Curse and Blessing of Higher Dimensions}
+
+Lifting data into higher-dimensional feature spaces can help, but it also creates new challenges.
+
+\subsection{Blessing of Higher Dimensions}
+
+Higher-dimensional representations can make nonlinear patterns easier to separate. A problem that looks tangled in raw coordinates may become simple after a suitable transformation. This is the main advantage of feature lifting.
+
+\subsection{Curse of Higher Dimensions}
+
+At the same time, higher-dimensional spaces can be statistically and computationally difficult:
+\begin{itemize}
+    \item the number of features may grow very quickly,
+    \item data may become sparse,
+    \item overfitting becomes easier,
+    \item optimization and storage can become expensive.
+\end{itemize}
+
+For polynomial features, the number of monomials grows rapidly with degree and ambient dimension. Thus higher dimension is both a blessing and a curse: it increases expressive power but also increases complexity.
+
+\section{Similarity-Based Learning and the Kernel Idea}
+
+Explicit feature construction can become expensive or unwieldy. This motivates a different viewpoint based on similarity.
+
+Suppose we have a feature map $\phi:\mathcal X\to\mathbb R^m$. Then the inner product between two lifted points is
+\[
+\phi(x)^\top \phi(x').
+\]
+This quantity measures similarity in feature space.
+
+\begin{definition}[Kernel]
+A kernel is a function
+\[
+K:\mathcal X\times\mathcal X\to\mathbb R
+\]
+such that
+\[
+K(x,x')=\langle \phi(x),\phi(x')\rangle
+\]
+for some feature map $\phi$.
+\end{definition}
+
+So a kernel is simply an inner product in a feature space, possibly without writing the feature map explicitly.
+
+\subsection{Why This Matters}
+
+If a learning algorithm depends only on inner products between feature vectors, then one may replace
+\[
+\phi(x)^\top \phi(x')
+\]
+by
+\[
+K(x,x')
+\]
+directly. This allows one to work implicitly in a high-dimensional, or even infinite-dimensional, feature space without ever constructing coordinates explicitly.
+
+This is the core idea behind kernel methods.
+
+\subsection{Examples}
+
+\paragraph{Polynomial kernel.}
+\[
+K(x,x')=(x^\top x' + c)^r.
+\]
+This corresponds to inner products among polynomial features.
+
+\paragraph{Gaussian RBF kernel.}
+\[
+K(x,x')=\exp\!\left(-\frac{\|x-x'\|^2}{2\sigma^2}\right).
+\]
+This corresponds to a very rich feature space and captures similarity through distance.
+
+Thus kernels arise naturally from the feature-map viewpoint: they are similarity functions induced by nonlinear representations.
+
+\section{Explicit and Implicit Representations}
+
+There are two main ways to use nonlinear features.
+
+\subsection{Explicit Representation}
+
+Choose a feature map $\phi(x)$ and build a linear model directly in that space:
+\[
+f(x)=w^\top \phi(x).
+\]
+This is transparent and often computationally convenient when the feature dimension is moderate.
+
+\subsection{Implicit Representation}
+
+Instead of constructing $\phi(x)$ explicitly, define a kernel
+\[
+K(x,x')=\langle \phi(x),\phi(x')\rangle
+\]
+and let the algorithm operate through pairwise similarities. This is useful when the feature space is very large or infinite-dimensional.
+
+The two viewpoints are mathematically connected. The difference is computational and conceptual: explicit features describe coordinates, while kernels describe pairwise similarity.
+
+\section{Feature Learning vs Hand-Crafted Features}
+
+Classical machine learning relied heavily on hand-crafted feature maps. One would design basis functions, similarity measures, or domain-specific representations and then apply a relatively simple model on top.
+
+Modern deep learning shifts much of this burden to the model itself. Instead of manually specifying $\phi$, the network learns intermediate representations from data. In this sense, deep learning can be seen as automated feature learning.
+
+The contrast is:
+\begin{itemize}
+    \item \textbf{hand-crafted features:} human-designed basis expansions or kernels;
+    \item \textbf{learned features:} representations optimized jointly with the task.
+\end{itemize}
+
+This does not make the older viewpoint obsolete. On the contrary, feature maps and kernels provide the conceptual bridge to understanding why learned representations matter so much.
+
+\section{A Unifying Perspective}
+
+Nonlinear learning often begins by making linear models act in richer spaces. A feature map lifts the data, a basis expansion provides building blocks, radial and polynomial features produce nonlinear decision rules, and kernels replace explicit coordinates by similarity in feature space.
+
+The central idea is simple:
+\[
+\text{nonlinearity in input space}
+\quad = \quad
+\text{linearity in a transformed space}.
+\]
+This idea motivates kernel methods and also foreshadows deep learning, where the transformation itself becomes learned rather than fixed in advance.
+
+\section{Summary}
+
+In this chapter we introduced feature maps as a way to turn linear models into nonlinear predictors. We studied basis expansions, polynomial features, and radial basis features, and explained how lifting into higher-dimensional spaces can both help and complicate learning. We then introduced kernels as inner products in feature space, showing how similarity-based learning arises naturally from the feature-map viewpoint.
+
+Finally, we contrasted explicit hand-crafted features with learned representations. This sets the stage for kernel methods and, more broadly, for the idea that the right representation can be as important as the predictive model itself.

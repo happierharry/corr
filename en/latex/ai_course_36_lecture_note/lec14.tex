@@ -1,0 +1,242 @@
+\section{Lecture 14: Neural Networks as Compositional Models}
+
+\subsection{Motivation}
+
+In the previous lecture, we argued that many real-world functions exhibit compositional structure and that learning representations is essential.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How can we construct models that explicitly capture compositional structure?
+
+\medskip
+
+\noindent
+\textbf{Answer.}  
+Neural networks implement function composition through layered architectures.
+
+\subsection{Layered Architectures}
+
+A neural network is defined as a composition of layers:
+\[
+f(x) = f_L \circ f_{L-1} \circ \cdots \circ f_1(x).
+\]
+
+\medskip
+
+\noindent
+Each layer has the form:
+\[
+f_\ell(h) = \sigma(W_\ell h + b_\ell),
+\]
+where:
+\begin{itemize}
+    \item $W_\ell$ is a weight matrix,
+    \item $b_\ell$ is a bias vector,
+    \item $\sigma$ is a nonlinear activation function.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Forward pass.}
+
+\[
+h_1 = \sigma(W_1 x + b_1),
+\]
+\[
+h_2 = \sigma(W_2 h_1 + b_2),
+\]
+\[
+\vdots
+\]
+\[
+f(x) = W_L h_{L-1} + b_L.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Each layer transforms its input into a new representation
+    \item Representations become progressively more abstract
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Neural networks are structured compositions of simple functions.
+
+\subsection{Expressivity and Depth}
+
+\textbf{Key question.}  
+Why use multiple layers instead of a single large layer?
+
+\medskip
+
+\noindent
+\textbf{Observation.}
+\begin{itemize}
+    \item Shallow networks can approximate many functions
+    \item But may require exponentially many units
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Depth advantage.}
+\begin{itemize}
+    \item Deep networks can represent certain functions more efficiently
+    \item Composition allows reuse of intermediate computations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example intuition.}
+\begin{itemize}
+    \item Repeated composition builds hierarchical features
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Depth increases expressivity
+    \item Also increases optimization complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth enables efficient representation of complex functions.
+
+\subsection{Universal Approximation (Insight)}
+
+\textbf{Statement (informal).}  
+A neural network with a single hidden layer and sufficient width can approximate any continuous function on a compact domain.
+
+\medskip
+
+\noindent
+\textbf{Implications.}
+\begin{itemize}
+    \item Neural networks are highly expressive
+    \item Depth is not required for expressivity in principle
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitation.}
+\begin{itemize}
+    \item Approximation may require very large width
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}
+\begin{itemize}
+    \item Depth is about \emph{efficiency}, not just expressivity
+\end{itemize}
+
+\subsection{Representation Learning}
+
+Neural networks learn feature maps automatically:
+\[
+\phi_\theta(x) = h_{L-1}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Model.}
+\[
+f(x) = w^\top \phi_\theta(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Early layers learn low-level features
+    \item Later layers learn high-level abstractions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Contrast with classical methods.}
+\begin{itemize}
+    \item Classical ML:
+    \begin{itemize}
+        \item Fixed features
+    \end{itemize}
+    \item Neural networks:
+    \begin{itemize}
+        \item Learned features
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Representation learning is a central advantage of deep learning.
+
+\subsection{A Unifying Perspective}
+
+Neural networks unify key ideas from earlier lectures:
+
+\begin{itemize}
+    \item \textbf{Function approximation:} large hypothesis spaces
+    \item \textbf{Optimization:} gradient-based training
+    \item \textbf{Representation:} learned feature maps
+    \item \textbf{Composition:} hierarchical structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+A neural network is a parameterized composition of functions trained end-to-end.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The power of neural networks lies in combining representation learning with compositional structure.
+
+\subsection{Outlook}
+
+In this lecture, we introduced:
+
+\begin{itemize}
+    \item layered neural network architectures,
+    \item expressivity and the role of depth,
+    \item the universal approximation principle,
+    \item representation learning.
+\end{itemize}
+
+\medskip
+
+\noindent
+To train neural networks, we need efficient methods to compute gradients.
+
+\medskip
+
+\noindent
+In the next lecture, we study backpropagation and automatic differentiation, which enable scalable training of deep models.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Deep models learn powerful representations through composition and optimization.

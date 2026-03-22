@@ -1,0 +1,268 @@
+\section{Lecture 13: Why Deep Learning?}
+
+\subsection{Motivation}
+
+So far, we have studied:
+
+\begin{itemize}
+    \item linear and logistic regression,
+    \item kernel methods and support vector machines,
+    \item optimization and generalization principles.
+\end{itemize}
+
+\medskip
+
+\noindent
+These methods are powerful, but they rely heavily on \emph{manually designed features}.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Can we automatically learn representations from data?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Deep learning combines representation learning with function approximation.
+
+\subsection{Limitations of Shallow Models}
+
+Classical models typically take the form:
+\[
+f(x) = w^\top \phi(x),
+\]
+where $\phi(x)$ is a fixed feature map.
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+
+\begin{itemize}
+    \item \textbf{Feature engineering:}
+    \begin{itemize}
+        \item Requires domain expertise
+        \item Difficult to scale
+    \end{itemize}
+
+    \item \textbf{Expressivity constraints:}
+    \begin{itemize}
+        \item May require very high-dimensional feature spaces
+    \end{itemize}
+
+    \item \textbf{Lack of hierarchy:}
+    \begin{itemize}
+        \item Cannot naturally capture compositional structure
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Shallow models separate representation from learning.
+
+\subsection{Compositional Structure of Functions}
+
+Many real-world functions exhibit hierarchical structure.
+
+\medskip
+
+\noindent
+\textbf{Example.}
+
+\begin{itemize}
+    \item Images:
+    \begin{itemize}
+        \item edges $\rightarrow$ shapes $\rightarrow$ objects
+    \end{itemize}
+
+    \item Language:
+    \begin{itemize}
+        \item characters $\rightarrow$ words $\rightarrow$ sentences
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Mathematical structure.}
+\[
+f(x) = f_L(f_{L-1}(\cdots f_1(x)\cdots)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+\begin{itemize}
+    \item Complex functions can be expressed as compositions of simpler functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Hierarchical structure suggests using layered models.
+
+\subsection{Motivation for Deep Learning}
+
+Deep learning models take the form:
+\[
+f(x) = f_L \circ f_{L-1} \circ \cdots \circ f_1(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+
+\begin{itemize}
+    \item \textbf{Representation learning:}
+    \begin{itemize}
+        \item Features are learned automatically
+    \end{itemize}
+
+    \item \textbf{Expressivity:}
+    \begin{itemize}
+        \item Deep models can represent complex functions efficiently
+    \end{itemize}
+
+    \item \textbf{Parameter sharing:}
+    \begin{itemize}
+        \item Reduces complexity in structured problems
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Comparison with kernel methods.}
+
+\begin{itemize}
+    \item Kernels:
+    \begin{itemize}
+        \item Fixed feature space
+    \end{itemize}
+
+    \item Deep learning:
+    \begin{itemize}
+        \item Learned feature space
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Deep learning replaces manual feature design with learned representations.
+
+\subsection{Transition to Learned Representations}
+
+We reinterpret learning as:
+
+\[
+f(x) = w^\top \phi(x)
+\quad \longrightarrow \quad
+f(x) = w^\top \phi_\theta(x),
+\]
+where $\phi_\theta$ is learned from data.
+
+\medskip
+
+\noindent
+\textbf{Key shift.}
+
+\begin{itemize}
+    \item Classical ML:
+    \begin{itemize}
+        \item Fixed $\phi(x)$
+    \end{itemize}
+
+    \item Deep learning:
+    \begin{itemize}
+        \item Learn $\phi_\theta(x)$ jointly with $w$
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Optimization problem.}
+\[
+\min_{\theta, w} \; \sum_{i=1}^n \ell(w^\top \phi_\theta(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Challenge.}
+\begin{itemize}
+    \item Highly non-convex optimization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Opportunity.}
+\begin{itemize}
+    \item Rich, task-specific representations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning representations and predictors jointly increases modeling power.
+
+\subsection{A Unifying Perspective}
+
+Deep learning builds on earlier ideas:
+
+\begin{itemize}
+    \item \textbf{Function approximation:} complex hypothesis spaces
+    \item \textbf{Optimization:} gradient-based training
+    \item \textbf{Generalization:} controlled through implicit and explicit regularization
+    \item \textbf{Representation:} learned feature maps
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Deep learning integrates representation and prediction into a single optimization problem.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The power of deep learning comes from composing simple transformations into complex structures.
+
+\subsection{Outlook}
+
+In this lecture, we examined:
+
+\begin{itemize}
+    \item limitations of shallow models,
+    \item compositional structure of real-world functions,
+    \item motivation for deep learning,
+    \item transition to learned representations.
+\end{itemize}
+
+\medskip
+
+\noindent
+We now begin the study of neural networks.
+
+\medskip
+
+\noindent
+In the next lecture, we introduce neural networks as compositional models and study their expressive power.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Learning good representations is as important as learning the final predictor.

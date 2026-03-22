@@ -1,0 +1,144 @@
+\section{What We Understand and What We Still Do Not}
+\markright{2.10.\ What We Understand and What We Still Do Not}
+\thispagestyle{plain}
+
+The chapter has now developed the core mechanics of deep learning:
+layered representation,
+backpropagation,
+optimization difficulty,
+stabilization techniques,
+and residual architecture.
+A good ending should not treat these achievements as if they automatically resolve every scientific question.
+It should separate clearly what is established,
+what is empirically stable,
+and what remains open.
+
+\medskip
+
+That separation is part of scientific maturity.
+In successful fields, one must resist two opposite mistakes.
+One mistake is triumphalism: success in practice is treated as if it implied full understanding.
+The other is excessive skepticism: because open problems remain, everything is treated as mysterious.
+A more disciplined view is better.
+Some mechanisms are mathematically clear.
+Some empirical regularities are robust even though their deepest explanation remains incomplete.
+And some central questions are genuinely open.
+
+\begin{statement}[Epistemic summary for this chapter]
+The following are well established:
+backpropagation computes gradients by repeated application of the chain rule on layered computation graphs;
+depth can enlarge expressive and representational possibilities;
+initialization, activation choice, normalization, and residual pathways strongly affect trainability;
+and modern deep learning works in practice at scales far beyond what early intuition suggested.
+What is \emph{not} equally settled is a complete theory explaining why all of these ingredients interact as successfully as they do in large modern models, especially with respect to optimization dynamics and generalization.
+\end{statement}
+
+This statement is deliberately modest.
+It says neither ``we understand everything'' nor ``we understand nothing.''
+It states instead that the field contains a stable core together with unresolved explanatory edges.
+
+\subsection*{Theory: what is established}
+
+Several central ingredients of the chapter are on firm mathematical ground.
+
+\paragraph{Backpropagation.}
+Backpropagation is not a mysterious deep-learning trick.
+It is reverse-mode differentiation applied to a computation graph.
+A scalar loss composed with layered maps can be differentiated efficiently because local derivatives combine through the chain rule.
+This part is conceptually and mathematically clear.
+
+\paragraph{Expressive value of depth.}
+The exact frontier of expressivity is subtle, but the basic lesson is stable:
+compositional depth can represent certain functions more efficiently than shallow parameterizations,
+and hidden layers can create intermediate coordinates in which prediction becomes easier.
+The XOR example is the smallest pedagogical version of this fact.
+
+\paragraph{Trainability depends on signal propagation and parameterization.}
+It is also well established that trainability is not determined only by nominal expressive power.
+Initialization, activation derivatives, normalization, and residual pathways all affect how signals and gradients move through depth.
+This is why optimization in deep learning must be studied structurally rather than only abstractly.
+
+\subsection*{Empirical regularities: what is stable in practice}
+
+There are also practical facts that are not in serious doubt as observations, even if their most general explanation is incomplete.
+
+\paragraph{Stochastic gradient methods work remarkably well.}
+Minibatch stochastic optimization scales to very large nonconvex models and often finds low training loss efficiently.
+This is one of the most stable practical facts in the field.
+Its exact explanation is still debated, but the observation itself is not fragile.
+
+\paragraph{Normalization and residual design reliably help.}
+Normalization methods and residual pathways improve optimization across many model families.
+The details vary by architecture, but the practical pattern is robust.
+These are not isolated tricks that happened to work once.
+They are recurring design principles.
+
+\paragraph{Large models often remain trainable.}
+A striking regularity of modern practice is that overparameterized neural networks are often easier to fit than earlier intuition would suggest.
+This fact has motivated much of the recent theory literature.
+Again, the phenomenon is stable even though the complete explanatory picture remains unfinished.
+
+\subsection*{Open problems: what we still do not fully understand}
+
+The deepest unresolved questions lie mainly at the level of explanation rather than raw observation.
+
+\paragraph{Why optimization succeeds so broadly in overparameterized regimes.}
+We know that large networks can often be trained effectively with gradient-based methods.
+We do not yet possess a single general theory explaining why the optimization landscape and the training dynamics cooperate so favorably across modern architectures and data regimes.
+
+\paragraph{Why generalization can remain strong despite massive capacity.}
+Modern networks can fit training data extremely well and yet often generalize surprisingly well.
+There are partial stories involving inductive bias, optimization dynamics, margins, implicit regularization, and data structure.
+But no single account yet serves as a universally satisfactory theory of modern deep-learning generalization.
+
+\paragraph{How architecture, data, and optimization interact at scale.}
+The chapter has treated activation choice, normalization, residual structure, and optimization as distinguishable ingredients.
+In reality they interact.
+One of the major open tasks of theory is to explain these interactions at the scale and complexity of contemporary models rather than only in simplified asymptotic regimes.
+
+\begin{remark}[Optimization stabilization is not the same as statistical regularization]
+Some methods improve optimization by stabilizing scale, gradient flow, or conditioning.
+Other methods improve generalization by constraining effective complexity or injecting noise.
+In practice, the same technique may influence both.
+But conceptually these roles should not be collapsed.
+A method can make training easier without being, in its primary mechanism, a regularizer in the statistical sense.
+\end{remark}
+
+\commonconfusion{Open problems do not imply that the subject lacks foundations. Deep learning contains both well-understood mechanisms and unresolved explanatory questions. The right response is neither overconfidence nor dismissal, but careful separation of levels of certainty. In particular, a stable empirical regularity is not the same thing as a theorem, and an effective training technique is not automatically a complete explanation.}
+
+\whattoremember{Backpropagation, hidden representations, and the structural role of initialization, normalization, and residual pathways are established parts of the subject. Robust practical regularities such as the success of minibatch optimization are real even when theory is incomplete. The major unresolved questions concern the deepest explanations of optimization and generalization in large modern models. Scientific discipline means keeping these categories separate: theorem, empirical regularity, and open problem are not the same thing.}
+
+\subsection*{Reflective questions and end-of-chapter exercises}
+
+\begin{exercise}
+Give one example from this chapter of each of the following:
+\begin{enumerate}
+    \item a mathematically established mechanism,
+    \item a practically stable empirical regularity,
+    \item an open explanatory problem.
+\end{enumerate}
+For each example, explain in two or three sentences why it belongs in that category rather than one of the others.
+\end{exercise}
+
+\begin{exercise}
+Why is it misleading to say simply that ``deep learning works because it is nonconvex''?
+Your answer should compare nonconvexity, expressive capacity, trainability, and optimization stabilization.
+\end{exercise}
+
+\begin{exercise}
+Explain why the following two statements are different:
+\begin{enumerate}
+    \item ``batch normalization often improves training,''
+    \item ``batch normalization regularizes the model.''
+\end{enumerate}
+Why does the first statement concern optimization more directly, while the second concerns a different question?
+\end{exercise}
+
+\begin{exercise}
+Suppose a student says, ``Because we can train very large neural networks successfully, we must already understand why they generalize.''
+Write a short reply correcting this statement using the chapter's distinction among theory, empirical regularity, and open problem.
+\end{exercise}
+
+\notesandreferences
+
+Backpropagation is classically presented as reverse-mode differentiation on computation graphs and is treated in modern deep-learning texts such as Goodfellow, Bengio, and Courville \cite{goodfellow2016deep} and in standard treatments of matrix and automatic differentiation. The early importance of multilayer networks for escaping linear limitations such as XOR is historically tied to the revival of connectionism and the backpropagation era \cite{rumelhart1986learning}. Residual learning as a trainability breakthrough is associated with He, Zhang, Ren, and Sun \cite{he2016deep}. Batch normalization was introduced by Ioffe and Szegedy \cite{ioffe2015batch}, while layer normalization was introduced by Ba, Kiros, and Hinton \cite{ba2016layer}. For a broad view of optimization and generalization questions in deep learning, see also contemporary textbook and survey discussions such as \cite{goodfellow2016deep,zhang2021understanding}.

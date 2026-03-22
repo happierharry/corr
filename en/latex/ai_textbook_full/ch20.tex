@@ -1,0 +1,215 @@
+\chapter{Regularization in Deep Learning}
+
+\section{Introduction}
+
+Deep neural networks are highly expressive and can easily overfit finite datasets. Regularization is therefore essential for achieving good generalization. Unlike classical models, where regularization is often explicit and well-defined, deep learning combines both \emph{explicit} and \emph{implicit} forms of regularization.
+
+This chapter surveys modern regularization techniques, including dropout, weight decay, data augmentation, label smoothing, and early stopping. We also discuss implicit bias from optimization and heuristic ideas such as flatness and sharpness of minima.
+
+\section{Explicit vs Implicit Regularization}
+
+\subsection{Explicit Regularization}
+
+Explicit regularization modifies the objective or training procedure directly:
+\begin{itemize}
+    \item adding penalty terms (e.g., weight decay),
+    \item injecting noise (e.g., dropout),
+    \item augmenting data,
+    \item smoothing targets.
+\end{itemize}
+
+These are designed interventions to control model complexity.
+
+\subsection{Implicit Regularization}
+
+Implicit regularization arises from the interaction of:
+\begin{itemize}
+    \item optimization algorithms (e.g., SGD),
+    \item initialization,
+    \item architecture.
+\end{itemize}
+
+Even without explicit penalties, these factors bias the learned solution toward certain structures.
+
+\section{Dropout and Stochastic Subnetworks}
+
+Dropout randomly sets a subset of activations to zero during training.
+
+\subsection{Mechanism}
+
+For each unit, independently:
+\[
+h_j \leftarrow m_j h_j,\quad m_j \sim \mathrm{Bernoulli}(p).
+\]
+
+At test time, activations are scaled to account for this randomness.
+
+\subsection{Interpretation}
+
+Dropout can be viewed as:
+\begin{itemize}
+    \item training an ensemble of subnetworks,
+    \item averaging their predictions at test time,
+    \item preventing co-adaptation of features.
+\end{itemize}
+
+\subsection{Effect}
+
+\begin{itemize}
+    \item reduces overfitting,
+    \item encourages redundancy and robustness,
+    \item introduces noise during training.
+\end{itemize}
+
+\section{Weight Decay and Norm Control}
+
+Weight decay adds an $\ell_2$ penalty to the objective:
+\[
+J(\theta) + \lambda \|\theta\|^2.
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item encourages small parameter norms,
+    \item reduces model complexity,
+    \item improves conditioning of optimization.
+\end{itemize}
+
+\subsection{Connection to Optimization}
+
+In gradient descent, weight decay corresponds to shrinking parameters at each step:
+\[
+\theta \leftarrow (1-\eta\lambda)\theta - \eta \nabla J(\theta).
+\]
+
+Thus it acts both as a regularizer and as a stabilizing force.
+
+\section{Data Augmentation and Invariance}
+
+Data augmentation expands the training set by applying transformations to inputs:
+\[
+x \mapsto T(x),
+\]
+where $T$ preserves the label.
+
+\subsection{Examples}
+
+\begin{itemize}
+    \item image flips, rotations, crops,
+    \item noise injection,
+    \item time shifts in sequences.
+\end{itemize}
+
+\subsection{Interpretation}
+
+Data augmentation encodes prior knowledge:
+\begin{itemize}
+    \item invariance to transformations,
+    \item robustness to perturbations.
+\end{itemize}
+
+Thus it regularizes by constraining the hypothesis space.
+
+\section{Label Smoothing}
+
+Label smoothing replaces hard targets with softened distributions.
+
+\subsection{Definition}
+
+Instead of a one-hot target $y$, use:
+\[
+\tilde{y} = (1-\alpha)y + \alpha u,
+\]
+where $u$ is a uniform distribution.
+
+\subsection{Effect}
+
+\begin{itemize}
+    \item discourages overconfident predictions,
+    \item improves calibration,
+    \item acts as a form of regularization.
+\end{itemize}
+
+\section{Early Stopping}
+
+Early stopping halts training before full convergence.
+
+\subsection{Mechanism}
+
+Monitor validation error and stop when it begins to increase.
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item prevents overfitting to training data,
+    \item limits effective model complexity,
+    \item acts as implicit regularization.
+\end{itemize}
+
+\section{Implicit Bias of Optimization}
+
+Optimization algorithms introduce biases even without explicit penalties.
+
+\subsection{Example: Gradient Descent}
+
+In linear models, gradient descent often converges to minimum-norm solutions among all interpolating solutions.
+
+\subsection{In Deep Networks}
+
+The implicit bias is more complex but may favor:
+\begin{itemize}
+    \item smoother functions,
+    \item lower-complexity representations,
+    \item structured solutions aligned with the architecture.
+\end{itemize}
+
+Understanding implicit bias remains an active area of research.
+
+\section{Sharpness, Flatness, and Generalization Heuristics}
+
+A common heuristic relates generalization to the geometry of minima.
+
+\subsection{Sharp vs Flat Minima}
+
+\begin{itemize}
+    \item \textbf{sharp minimum:} loss increases rapidly near the solution,
+    \item \textbf{flat minimum:} loss remains stable under perturbations.
+\end{itemize}
+
+Flat minima are often associated with better generalization.
+
+\subsection{Interpretation}
+
+Flatness can be viewed as robustness to parameter perturbations. This connects to stability and regularization.
+
+However, this is a heuristic rather than a complete theory.
+
+\section{Combining Regularization Techniques}
+
+In practice, multiple regularization methods are used together:
+\begin{itemize}
+    \item weight decay + data augmentation,
+    \item dropout + early stopping,
+    \item label smoothing + normalization.
+\end{itemize}
+
+These methods interact and should be tuned jointly.
+
+\section{A Unifying Perspective}
+
+Regularization in deep learning controls complexity through multiple mechanisms:
+\begin{itemize}
+    \item explicit penalties constrain parameters,
+    \item stochastic methods introduce noise,
+    \item data augmentation encodes invariances,
+    \item optimization induces implicit biases.
+\end{itemize}
+
+Together, these shape the learned model and its generalization behavior.
+
+\section{Summary}
+
+In this chapter we surveyed modern regularization techniques in deep learning. We distinguished explicit and implicit regularization, and studied dropout, weight decay, data augmentation, label smoothing, and early stopping.
+
+We also discussed implicit bias from optimization and heuristic connections between flatness and generalization. These ideas highlight that generalization in deep learning is controlled by a combination of architectural, algorithmic, and data-driven factors.

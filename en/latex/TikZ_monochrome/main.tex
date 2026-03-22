@@ -1,0 +1,393 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{microtype}
+\usepackage{caption}
+\usepackage{tikz}
+\usetikzlibrary{
+    positioning,
+    calc,
+    fit,
+    backgrounds,
+    arrows.meta,
+    decorations.pathreplacing,
+    patterns,
+    matrix,
+    shapes.geometric,
+    shapes.misc
+}
+
+\title{Monochrome TikZ Figure Sheet for Machine Learning and Deep Learning}
+\author{}
+\date{}
+
+% =========================================================
+% Monochrome TikZ Style Library
+% =========================================================
+\tikzset{
+    >=Stealth,
+    every node/.style={font=\small},
+
+    % ---------- Semantic node styles ----------
+    bwmodule/.style={
+        draw=black,
+        thick,
+        rounded corners=2pt,
+        fill=white,
+        minimum width=28mm,
+        minimum height=9mm,
+        align=center
+    },
+    bwprocess/.style={
+        draw=black,
+        thick,
+        rectangle,
+        fill=white,
+        minimum width=22mm,
+        minimum height=8mm,
+        align=center
+    },
+    bwdata/.style={
+        draw=black,
+        thin,
+        rectangle,
+        fill=gray!12,
+        minimum width=22mm,
+        minimum height=8mm,
+        align=center
+    },
+    bwlatent/.style={
+        draw=black,
+        thick,
+        dashed,
+        rectangle,
+        fill=white,
+        minimum width=22mm,
+        minimum height=8mm,
+        align=center
+    },
+    bwnoise/.style={
+        draw=black,
+        thick,
+        rectangle,
+        pattern=dots,
+        pattern color=black,
+        minimum width=22mm,
+        minimum height=8mm,
+        align=center
+    },
+    bwop/.style={
+        draw=black,
+        thick,
+        circle,
+        fill=white,
+        minimum size=6mm,
+        inner sep=0pt
+    },
+    bwnote/.style={
+        draw=black,
+        thin,
+        dashed,
+        rounded corners=2pt,
+        fill=white,
+        minimum width=24mm,
+        minimum height=8mm,
+        align=center
+    },
+
+    % ---------- Arrows ----------
+    bwmain/.style={->, thick, black},
+    bwaux/.style={->, thin, black},
+    bwskip/.style={->, dashed, thick, black},
+    bwconcept/.style={->, dotted, thick, black},
+    bwinverse/.style={->, very thick, black},
+
+    % ---------- Group / repetition ----------
+    bwgroup/.style={
+        draw=black,
+        thick,
+        dashed,
+        rounded corners=3pt,
+        inner sep=6pt
+    },
+    bwbrace/.style={
+        decorate,
+        decoration={brace, amplitude=4pt},
+        thick
+    },
+
+    % ---------- Annotation ----------
+    bwannot/.style={
+        font=\scriptsize,
+        align=center
+    }
+}
+
+% ---------- Convenience macros ----------
+\newcommand{\bwmodule}[4][]{\node[bwmodule,#1] (#2) at #3 {#4};}
+\newcommand{\bwprocess}[4][]{\node[bwprocess,#1] (#2) at #3 {#4};}
+\newcommand{\bwdata}[4][]{\node[bwdata,#1] (#2) at #3 {#4};}
+\newcommand{\bwlatent}[4][]{\node[bwlatent,#1] (#2) at #3 {#4};}
+\newcommand{\bwnoise}[4][]{\node[bwnoise,#1] (#2) at #3 {#4};}
+\newcommand{\bwnote}[4][]{\node[bwnote,#1] (#2) at #3 {#4};}
+
+\newcommand{\bwconnect}[2]{\draw[bwmain] (#1) -- (#2);}
+\newcommand{\bwauxconnect}[2]{\draw[bwaux] (#1) -- (#2);}
+\newcommand{\bwskipconnect}[2]{\draw[bwskip] (#1) -- (#2);}
+\newcommand{\bwconceptconnect}[2]{\draw[bwconcept] (#1) -- (#2);}
+
+\begin{document}
+
+\maketitle
+
+\section*{Figure 1: Transformer Architecture}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+% ---------- Encoder input ----------
+\bwdata{xin}{(0,0)}{Input Tokens\\$x_1,\dots,x_n$}
+\bwprocess{embin}{(0,1.5)}{Token\\Embedding}
+\bwprocess{posin}{(0,3.0)}{+ Positional\\Encoding}
+
+\bwconnect{xin}{embin}
+\bwconnect{embin}{posin}
+
+% ---------- Encoder stack ----------
+\bwmodule{encattn}{(0,5.0)}{Multi-Head\\Self-Attention}
+\bwprocess{encnorm1}{(0,6.6)}{Add \& Norm}
+\bwmodule{encffn}{(0,8.2)}{Feed Forward}
+\bwprocess{encnorm2}{(0,9.8)}{Add \& Norm}
+
+\bwconnect{posin}{encattn}
+\bwconnect{encattn}{encnorm1}
+\bwconnect{encnorm1}{encffn}
+\bwconnect{encffn}{encnorm2}
+
+\draw[bwskip] ($(posin.east)+(0.2,0)$) -- ++(0.9,0) |- (encnorm1.east);
+\draw[bwskip] ($(encnorm1.east)+(0.2,0)$) -- ++(0.9,0) |- (encnorm2.east);
+
+\begin{scope}[on background layer]
+\node[bwgroup, fit=(encattn)(encnorm1)(encffn)(encnorm2), inner sep=7pt] (encbox) {};
+\end{scope}
+
+\draw[bwbrace] (1.8,4.3) -- (1.8,10.5);
+\node[bwannot, right=4pt] at (1.8,7.4) {Encoder block\\repeated $N$ times};
+
+% ---------- Decoder input ----------
+\bwdata{yshift}{(7,0)}{Shifted Output\\Tokens}
+\bwprocess{embout}{(7,1.5)}{Token\\Embedding}
+\bwprocess{posout}{(7,3.0)}{+ Positional\\Encoding}
+
+\bwconnect{yshift}{embout}
+\bwconnect{embout}{posout}
+
+% ---------- Decoder stack ----------
+\bwmodule{decself}{(7,5.0)}{Masked Multi-Head\\Self-Attention}
+\bwprocess{decnorm1}{(7,6.6)}{Add \& Norm}
+\bwmodule{crossattn}{(7,8.2)}{Encoder--Decoder\\Attention}
+\bwprocess{decnorm2}{(7,9.8)}{Add \& Norm}
+\bwmodule{decffn}{(7,11.4)}{Feed Forward}
+\bwprocess{decnorm3}{(7,13.0)}{Add \& Norm}
+
+\bwconnect{posout}{decself}
+\bwconnect{decself}{decnorm1}
+\bwconnect{decnorm1}{crossattn}
+\bwconnect{crossattn}{decnorm2}
+\bwconnect{decnorm2}{decffn}
+\bwconnect{decffn}{decnorm3}
+
+\draw[bwskip] ($(posout.east)+(0.2,0)$) -- ++(0.9,0) |- (decnorm1.east);
+\draw[bwskip] ($(decnorm1.east)+(0.2,0)$) -- ++(0.9,0) |- (decnorm2.east);
+\draw[bwskip] ($(decnorm2.east)+(0.2,0)$) -- ++(0.9,0) |- (decnorm3.east);
+
+\begin{scope}[on background layer]
+\node[bwgroup, fit=(decself)(decnorm1)(crossattn)(decnorm2)(decffn)(decnorm3), inner sep=7pt] (decbox) {};
+\end{scope}
+
+\draw[bwbrace] (8.9,4.3) -- (8.9,13.7);
+\node[bwannot, right=4pt] at (8.9,9.0) {Decoder block\\repeated $N$ times};
+
+% ---------- Cross attention memory ----------
+\draw[bwmain] (encnorm2.east) -- ++(1.2,0) |- (crossattn.west);
+\node[bwannot] at (4.0,9.1) {encoder memory};
+
+% ---------- Output head ----------
+\bwprocess{lin}{(7,14.8)}{Linear}
+\bwprocess{softmax}{(7,16.3)}{Softmax}
+\bwdata{probs}{(7,17.8)}{Next-token\\distribution}
+
+\bwconnect{decnorm3}{lin}
+\bwconnect{lin}{softmax}
+\bwconnect{softmax}{probs}
+
+% ---------- Side labels ----------
+\node[bwannot] at (-2.0,5.0) {self-attention over\\input sequence};
+\node[bwannot] at (10.8,5.0) {causal masking};
+\node[bwannot] at (10.9,8.2) {attention to encoder\\representations};
+
+\end{tikzpicture}
+\caption{Monochrome Transformer architecture. Rounded rectangles denote learned modules, sharp rectangles denote deterministic operations, gray boxes denote token/data objects, and dashed arrows denote residual connections.}
+\end{figure}
+
+\clearpage
+
+\section*{Figure 2: Diffusion Model Pipeline}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+% ---------- Forward noising ----------
+\bwdata{x0}{(0,0)}{$x_0$\\clean data}
+\bwdata{x1}{(3,0)}{$x_1$}
+\bwdata{xt}{(6,0)}{$x_t$}
+\bwnoise{xT}{(9,0)}{$x_T$\\pure noise}
+
+\draw[bwmain] (x0) -- node[above, bwannot] {add noise} (x1);
+\draw[bwmain] (x1) -- node[above, bwannot] {$\cdots$} (xt);
+\draw[bwmain] (xt) -- node[above, bwannot] {repeat} (xT);
+
+\node[bwannot] at (4.5,1.2) {Forward diffusion\\$q(x_t\mid x_{t-1})$};
+
+% ---------- Reverse denoising ----------
+\bwnoise{zT}{(9,-4)}{$x_T$}
+\bwdata{zt}{(6,-4)}{$x_t$}
+\bwdata{ztm}{(3,-4)}{$x_{t-1}$}
+\bwdata{xhat}{(0,-4)}{$x_0$\\generated sample}
+
+\draw[bwinverse] (zT) -- node[below, bwannot] {denoise} (zt);
+\draw[bwinverse] (zt) -- node[below, bwannot] {$\cdots$} (ztm);
+\draw[bwinverse] (ztm) -- node[below, bwannot] {repeat} (xhat);
+
+\node[bwannot] at (4.5,-5.2) {Reverse process\\$p_\theta(x_{t-1}\mid x_t)$};
+
+% ---------- Denoiser network ----------
+\bwmodule{denoiser}{(6,-1.9)}{Noise predictor\\$\epsilon_\theta(x_t,t)$}
+\draw[bwaux] (xt) -- (denoiser);
+\draw[bwconcept] (denoiser) -- (zt);
+
+% ---------- Time embedding ----------
+\bwprocess{time}{(10.7,-1.9)}{time\\embedding $t$}
+\draw[bwaux] (time.west) -- (denoiser.east);
+
+% ---------- Closed-form forward note ----------
+\bwnote{cf}{(2.7,2.8)}{Closed-form marginal\\
+$x_t=\sqrt{\bar\alpha_t}\,x_0+\sqrt{1-\bar\alpha_t}\,\epsilon$}
+\draw[bwconcept] (cf.south) -- (xt.north);
+
+% ---------- Training objective ----------
+\bwnote{loss}{(2.8,-6.8)}{Training objective\\
+$\mathcal L=\mathbb E\|\epsilon-\epsilon_\theta(x_t,t)\|^2$}
+\draw[bwconcept] (denoiser.south west) to[out=-130,in=20] (loss.north east);
+
+% ---------- Labels ----------
+\node[bwannot] at (10.5,0.9) {increasing noise level};
+\node[bwannot] at (10.7,-4.9) {iterative refinement};
+
+\end{tikzpicture}
+\caption{Monochrome diffusion pipeline. Gray boxes denote data states, the dotted-pattern box denotes pure noise, and the lower chain represents iterative denoising.}
+\end{figure}
+
+\clearpage
+
+\section*{Figure 3: Normalizing Flow}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+% ---------- Endpoints ----------
+\bwlatent{z}{(0,0)}{Latent variable\\$z\sim p_Z(z)$}
+\bwdata{x}{(12,0)}{Data sample\\$x\sim p_X(x)$}
+
+% ---------- Flow blocks ----------
+\bwmodule{f1}{(2.5,0)}{$f_1$}
+\bwmodule{f2}{(5.0,0)}{$f_2$}
+\bwmodule{f3}{(7.5,0)}{$\cdots$}
+\bwmodule{f4}{(10.0,0)}{$f_K$}
+
+\draw[bwmain] (z) -- (f1);
+\draw[bwmain] (f1) -- (f2);
+\draw[bwmain] (f2) -- (f3);
+\draw[bwmain] (f3) -- (f4);
+\draw[bwmain] (f4) -- (x);
+
+\node[bwannot] at (6,1.1) {Forward map: $x=f(z)$};
+
+% ---------- Intermediate states ----------
+\node[bwannot] at (2.5,-1.0) {$h_1$};
+\node[bwannot] at (5.0,-1.0) {$h_2$};
+\node[bwannot] at (7.5,-1.0) {$\cdots$};
+\node[bwannot] at (10.0,-1.0) {$h_K$};
+
+% ---------- Inverse direction ----------
+\draw[bwinverse] (x.south) to[out=-90,in=-90] node[below, bwannot] {inverse map $z=f^{-1}(x)$} (z.south);
+
+% ---------- Notes ----------
+\bwnote{simple}{(0,2.8)}{Simple base\\distribution}
+\bwnote{complex}{(12,2.8)}{Complex target\\distribution}
+\bwnote{invnote}{(6,2.8)}{Each block is invertible\\with tractable Jacobian determinant}
+
+\draw[bwconcept] (simple.south) -- (z.north);
+\draw[bwconcept] (complex.south) -- (x.north);
+\draw[bwconcept] (invnote.south) -- (f2.north);
+\draw[bwconcept] (invnote.south) -- (f4.north);
+
+% ---------- Change-of-variables ----------
+\bwnote[minimum width=60mm, minimum height=14mm]{cov}{(6,-3.3)}{Change of variables:
+\[
+p_X(x)=p_Z(z)\left|\det\frac{\partial f^{-1}(x)}{\partial x}\right|
+\]
+Layerwise:
+\[
+\log p_X(x)=\log p_Z(z)+\sum_{k=1}^K
+\log\left|\det\frac{\partial h_{k-1}}{\partial h_k}\right|
+\]
+};
+
+\end{tikzpicture}
+\caption{Monochrome normalizing flow diagram. Dashed boxes denote conceptual latent objects, gray boxes denote observed data, and rounded rectangles denote invertible learned transformations.}
+\end{figure}
+
+\clearpage
+
+\section*{Figure 4: Affine Coupling Layer}
+
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+\bwdata{xA}{(0,1.2)}{$x_A$}
+\bwdata{xB}{(0,-1.2)}{$x_B$}
+
+\bwmodule{snet}{(3,1.2)}{$s(x_A)$}
+\bwmodule{tnet}{(3,-1.2)}{$t(x_A)$}
+
+\bwprocess{idA}{(6,1.2)}{identity}
+\bwprocess{affB}{(6,-1.2)}{$x_B' = x_B\odot e^{s(x_A)} + t(x_A)$}
+
+\bwdata{yA}{(9,1.2)}{$y_A$}
+\bwdata{yB}{(9,-1.2)}{$y_B$}
+
+\draw[bwmain] (xA) -- (snet);
+\draw[bwmain] (xA) -- (tnet);
+\draw[bwmain] (xA) -- (idA);
+\draw[bwmain] (idA) -- (yA);
+
+\draw[bwmain] (xB) -- (affB);
+\draw[bwaux] (snet) -- (affB);
+\draw[bwaux] (tnet) -- (affB);
+\draw[bwmain] (affB) -- (yB);
+
+\node[bwannot] at (4.6,-2.5) {One part remains unchanged; the other is transformed conditionally.};
+
+\end{tikzpicture}
+\caption{Monochrome affine coupling layer used in normalizing flows such as RealNVP.}
+\end{figure}
+
+\end{document}

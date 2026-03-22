@@ -1,0 +1,277 @@
+\section{Lecture 19: Regularization in Deep Learning}
+
+\subsection{Motivation}
+
+Deep neural networks are highly expressive and often overparameterized.
+
+\medskip
+
+\noindent
+As a result:
+\begin{itemize}
+    \item they can fit training data extremely well,
+    \item but may overfit and generalize poorly.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How can we control model complexity and improve generalization in deep learning?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Regularization techniques constrain or perturb learning to favor simpler and more robust solutions.
+
+\subsection{Dropout and Noise Injection}
+
+\textbf{Dropout.}
+
+During training, randomly set activations to zero:
+
+\[
+h_i \mapsto h_i \cdot \xi_i, \quad \xi_i \sim \text{Bernoulli}(p).
+\]
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Prevents co-adaptation of neurons
+    \item Encourages redundancy and robustness
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Inference.}
+\begin{itemize}
+    \item Use full network with scaled activations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Approximate model averaging over subnetworks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Noise injection.}
+
+More generally, we can inject noise into:
+
+\begin{itemize}
+    \item inputs,
+    \item activations,
+    \item gradients.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Noise prevents over-reliance on specific features and improves robustness.
+
+\subsection{Weight Decay}
+
+Weight decay adds an $\ell_2$ penalty:
+
+\[
+\min_\theta \; L(\theta) + \lambda \|\theta\|^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Penalizes large weights
+    \item Encourages simpler models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to optimization.}
+\begin{itemize}
+    \item Equivalent to shrinking parameters during updates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric view.}
+\begin{itemize}
+    \item Constrains solution to lie in a bounded region
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Weight decay controls model capacity through parameter magnitude.
+
+\subsection{Data Augmentation}
+
+\textbf{Idea.}  
+Generate additional training data by applying transformations.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Image transformations:
+    \begin{itemize}
+        \item rotation, cropping, flipping
+    \end{itemize}
+
+    \item Text transformations:
+    \begin{itemize}
+        \item synonym replacement, paraphrasing
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Encodes invariances in the data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Expands effective dataset
+    \item Improves generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Data augmentation injects prior knowledge into learning.
+
+\subsection{Implicit Bias of Optimization}
+
+Even without explicit regularization, optimization itself induces bias.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item Gradient descent in linear models:
+    \begin{itemize}
+        \item finds minimum-norm solution
+    \end{itemize}
+
+    \item SGD in deep networks:
+    \begin{itemize}
+        \item prefers flatter minima
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Flat vs sharp minima.}
+
+\begin{itemize}
+    \item Flat minima:
+    \begin{itemize}
+        \item robust to perturbations
+        \item better generalization
+    \end{itemize}
+
+    \item Sharp minima:
+    \begin{itemize}
+        \item sensitive to noise
+        \item poorer generalization
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role of SGD.}
+\begin{itemize}
+    \item Noise in updates biases toward flat regions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization dynamics act as an implicit regularizer.
+
+\subsection{A Unifying Perspective}
+
+Regularization in deep learning arises from multiple sources:
+
+\begin{itemize}
+    \item \textbf{Explicit:}
+    \begin{itemize}
+        \item weight decay, dropout
+    \end{itemize}
+
+    \item \textbf{Data-driven:}
+    \begin{itemize}
+        \item augmentation
+    \end{itemize}
+
+    \item \textbf{Implicit:}
+    \begin{itemize}
+        \item optimization dynamics
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Generalization is controlled not only by model size, but by how the model is trained.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Modern deep learning relies heavily on implicit and data-driven regularization.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item dropout and noise injection,
+    \item weight decay,
+    \item data augmentation,
+    \item implicit bias of optimization.
+\end{itemize}
+
+\medskip
+
+\noindent
+These techniques improve generalization in deep networks.
+
+\medskip
+
+\noindent
+In the next lecture, we study residual networks and skip connections, which enable training of very deep architectures.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective deep learning balances expressivity, stability, and generalization.

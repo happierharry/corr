@@ -1,0 +1,209 @@
+\chapter{Residual Networks and Skip Connections}
+
+\section{Introduction}
+
+Increasing depth improves expressivity, but early attempts at very deep networks encountered a surprising phenomenon: adding more layers sometimes \emph{degraded} performance. This was not merely overfitting, but an optimization difficulty.
+
+Residual networks (ResNets) address this issue by introducing skip connections that allow information and gradients to flow more directly through the network. This chapter develops both the intuition and mathematical framing of residual connections, including their interpretation as perturbations of the identity and as discrete dynamical systems.
+
+\section{Why Deeper Networks Once Failed}
+
+Empirically, deeper plain networks (without skip connections) often exhibit:
+\begin{itemize}
+    \item higher training error than shallower networks,
+    \item difficulty in optimization,
+    \item unstable gradient propagation.
+\end{itemize}
+
+This is known as the \emph{degradation problem}. Even though a deeper network can represent the same function as a shallower one (by setting additional layers to identity), standard optimization struggles to find such solutions.
+
+\section{Skip Connections as Identity Highways}
+
+The key idea of residual networks is to reformulate layers as deviations from the identity.
+
+\subsection{Residual Update Form}
+
+Instead of learning
+\[
+h^{(\ell+1)} = F^{(\ell)}(h^{(\ell)}),
+\]
+we learn
+\[
+h^{(\ell+1)} = h^{(\ell)} + F^{(\ell)}(h^{(\ell)}).
+\]
+
+\begin{itemize}
+    \item the term $h^{(\ell)}$ is a \emph{skip connection},
+    \item $F^{(\ell)}$ is a residual function.
+\end{itemize}
+
+\subsection{Interpretation}
+
+Each layer modifies its input slightly rather than replacing it entirely. If $F^{(\ell)} \approx 0$, the layer behaves like the identity.
+
+Thus skip connections create \emph{identity highways} that allow signals to propagate across many layers without degradation.
+
+\section{Residual Blocks and Feature Refinement}
+
+A residual block typically consists of a few layers (e.g., linear + activation) forming $F^{(\ell)}$, combined with a skip connection.
+
+\subsection{Feature Refinement View}
+
+Residual networks can be interpreted as performing iterative refinement:
+\[
+h^{(\ell+1)} = h^{(\ell)} + \text{correction}.
+\]
+
+Each block refines the representation slightly rather than reconstructing it from scratch.
+
+This leads to:
+\begin{itemize}
+    \item smoother optimization,
+    \item more stable representations,
+    \item easier training of very deep networks.
+\end{itemize}
+
+\section{Gradient Transport Through Skip Connections}
+
+Consider the backward pass:
+\[
+\frac{\partial L}{\partial h^{(\ell)}}
+=
+\frac{\partial L}{\partial h^{(\ell+1)}}
+\left(I + \frac{\partial F^{(\ell)}}{\partial h^{(\ell)}}\right).
+\]
+
+The identity term ensures that gradients can flow directly:
+\[
+\frac{\partial L}{\partial h^{(\ell)}} \approx \frac{\partial L}{\partial h^{(\ell+1)}}
+\]
+when $F^{(\ell)}$ is small.
+
+\subsection{Implication}
+
+\begin{itemize}
+    \item gradients are less likely to vanish,
+    \item optimization becomes more stable,
+    \item deep networks become trainable.
+\end{itemize}
+
+Thus skip connections improve gradient transport across depth.
+
+\section{Stability as Perturbation of Identity}
+
+Residual networks can be viewed as small perturbations of the identity map.
+
+\subsection{Stability Intuition}
+
+If each block satisfies
+\[
+\|F^{(\ell)}(h)\| \ll \|h\|,
+\]
+then the overall transformation remains close to identity.
+
+This prevents:
+\begin{itemize}
+    \item explosive growth of activations,
+    \item collapse of representations,
+    \item instability across layers.
+\end{itemize}
+
+Thus residual connections stabilize both forward and backward propagation.
+
+\section{Optimization and Dynamical Systems Perspective}
+
+Residual networks admit a natural interpretation as discretized dynamical systems.
+
+\subsection{Discrete Dynamics}
+
+The update
+\[
+h^{(\ell+1)} = h^{(\ell)} + F^{(\ell)}(h^{(\ell)})
+\]
+resembles a forward Euler step for an ordinary differential equation:
+\[
+\frac{dh}{dt} = F(h).
+\]
+
+\subsection{ODE Perspective}
+
+In the limit of many small layers, the network approximates a continuous-time system:
+\[
+h(t+\Delta t) \approx h(t) + \Delta t \, F(h(t)).
+\]
+
+This perspective suggests:
+\begin{itemize}
+    \item depth corresponds to time,
+    \item layers correspond to discrete evolution steps,
+    \item stability depends on step size and dynamics.
+\end{itemize}
+
+This viewpoint has inspired continuous-depth models and neural ODEs.
+
+\section{Beyond ResNets: Variants of Skip Connections}
+
+Skip connections appear in many architectures.
+
+\subsection{Dense Connections}
+
+In DenseNet-style architectures, each layer receives inputs from all previous layers:
+\[
+h^{(\ell)} = F^{(\ell)}(h^{(0)}, \dots, h^{(\ell-1)}).
+\]
+
+This encourages feature reuse and improves gradient flow.
+
+\subsection{Encoder--Decoder Skips (U-Net)}
+
+In encoder--decoder models, skip connections link early layers to later layers:
+\begin{itemize}
+    \item preserve spatial information,
+    \item combine low-level and high-level features.
+\end{itemize}
+
+This is widely used in segmentation and generative tasks.
+
+\section{Worked Comparison: Plain vs Residual Networks}
+
+\subsection{Plain Network}
+
+\[
+h^{(\ell+1)} = F^{(\ell)}(h^{(\ell)}).
+\]
+
+Each layer must learn a full transformation.
+
+\subsection{Residual Network}
+
+\[
+h^{(\ell+1)} = h^{(\ell)} + F^{(\ell)}(h^{(\ell)}).
+\]
+
+Each layer learns only a correction.
+
+\subsection{Implication}
+
+Residual networks:
+\begin{itemize}
+    \item are easier to optimize,
+    \item support greater depth,
+    \item improve gradient flow.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Skip connections fundamentally change the geometry of deep networks. By anchoring each layer to the identity, they:
+\begin{itemize}
+    \item stabilize signal propagation,
+    \item improve gradient transport,
+    \item align with iterative refinement and dynamical systems.
+\end{itemize}
+
+Thus residual networks succeed not by increasing expressivity alone, but by making deep models \emph{trainable}.
+
+\section{Summary}
+
+In this chapter we studied residual networks and skip connections. We explained the degradation problem and showed how residual updates reformulate learning as perturbations of the identity. We analyzed gradient transport and demonstrated how skip connections stabilize training.
+
+We also introduced the dynamical-systems perspective and discussed extensions such as DenseNet and U-Net. Residual connections are one of the key architectural innovations enabling modern deep learning.

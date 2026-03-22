@@ -1,0 +1,296 @@
+\chapter{Regularization and Structure}
+
+\section{Norm-Based Regularization}
+
+In previous chapters, we saw that highly expressive models can fit training data extremely well, yet risk overfitting. Regularization provides a systematic way to control model complexity and improve generalization.
+
+\medskip
+
+\noindent
+\textbf{Basic idea.}  
+Augment the empirical risk with a penalty on the parameters:
+\[
+\min_{\theta \in \Theta} \; \hat{R}_n(\theta) + \lambda \, \Omega(\theta),
+\]
+where:
+\begin{itemize}
+    \item $\Omega(\theta)$ measures the complexity of the model,
+    \item $\lambda > 0$ controls the strength of regularization.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Common choices of penalties.}
+
+\begin{itemize}
+    \item \textbf{$\ell_2$ regularization (weight decay):}
+    \[
+    \Omega(\theta) = \|\theta\|_2^2.
+    \]
+
+    \item \textbf{$\ell_1$ regularization:}
+    \[
+    \Omega(\theta) = \|\theta\|_1.
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $\ell_2$ regularization favors small, distributed parameters
+    \item $\ell_1$ regularization promotes sparsity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric viewpoint.}  
+Regularization restricts the solution to lie in a region of parameter space with controlled norm.
+
+\medskip
+
+\noindent
+\textbf{Statistical viewpoint.}  
+Norm penalties can be interpreted as imposing prior distributions on parameters:
+\begin{itemize}
+    \item $\ell_2$ $\rightarrow$ Gaussian prior
+    \item $\ell_1$ $\rightarrow$ Laplace prior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical effect.}  
+Regularization reduces variance and improves stability, often at the cost of a small increase in bias.
+
+\section{Constraints and Penalization}
+
+Regularization can be formulated in two equivalent ways:
+\begin{itemize}
+    \item \textbf{Penalized form:}
+    \[
+    \min_\theta \; \hat{R}_n(\theta) + \lambda \Omega(\theta),
+    \]
+    \item \textbf{Constrained form:}
+    \[
+    \min_\theta \; \hat{R}_n(\theta) \quad \text{subject to} \quad \Omega(\theta) \leq C.
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+These formulations are closely related: for appropriate choices of $\lambda$ and $C$, they yield similar solutions.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Ridge regression: $\ell_2$ penalty
+    \item Lasso: $\ell_1$ penalty
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+The constraint limits the effective search space, preventing overly complex solutions.
+
+\medskip
+
+\noindent
+\textbf{Dual perspective.}  
+Penalization trades off between data fit and model simplicity, while constraints enforce a strict bound on complexity.
+
+\medskip
+
+\noindent
+\textbf{Engineering perspective.}  
+Penalized formulations are often easier to optimize, while constrained formulations provide clearer geometric intuition.
+
+\section{Implicit Regularization}
+
+Not all regularization is explicit. In many modern learning systems, the optimization algorithm itself induces a preference for certain solutions.
+
+\medskip
+
+\noindent
+\textbf{Definition (informal).}  
+Implicit regularization refers to the tendency of an algorithm to favor specific solutions even in the absence of explicit penalties.
+
+\medskip
+
+\noindent
+\textbf{Example (linear models).}  
+In overparameterized linear regression, gradient descent converges to the minimum-norm solution among all interpolating solutions.
+
+\medskip
+
+\noindent
+\textbf{Example (deep learning).}
+\begin{itemize}
+    \item SGD tends to find solutions with particular structure
+    \item Different optimizers can lead to different generalization behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Sources of implicit regularization.}
+\begin{itemize}
+    \item Initialization
+    \item Optimization dynamics
+    \item Stochasticity (e.g., mini-batching)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Even when a model has enough capacity to perfectly fit the data, the training procedure determines \emph{which} solution is found.
+
+\medskip
+
+\noindent
+\textbf{Implication.}  
+Understanding generalization requires analyzing not only the model and loss, but also the optimization process.
+
+\section{Early Stopping and Practical Methods}
+
+Regularization can also be achieved through practical training strategies.
+
+\medskip
+
+\noindent
+\textbf{Early stopping.}  
+Instead of minimizing training loss completely, we stop training when validation performance begins to degrade.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Early iterations capture large-scale structure
+    \item Later iterations may fit noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to regularization.}  
+Early stopping behaves similarly to $\ell_2$ regularization in many settings.
+
+\medskip
+
+\noindent
+\textbf{Other practical methods.}
+
+\begin{itemize}
+    \item \textbf{Dropout:} randomly deactivate units during training
+    \item \textbf{Data augmentation:} expand dataset through transformations
+    \item \textbf{Noise injection:} add noise to inputs or parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Dropout encourages redundancy and robustness
+    \item Data augmentation encodes invariances
+    \item Noise smooths the learned function
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Engineering perspective.}  
+These methods are often simple to implement yet highly effective, especially in deep learning systems.
+
+\section{Structure as Regularization}
+
+Beyond explicit penalties and training tricks, model structure itself acts as a powerful form of regularization.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Convolutional layers enforce locality
+    \item Residual connections stabilize deep networks
+    \item Attention mechanisms capture relational structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Structure restricts the class of functions that can be represented, thereby guiding learning toward meaningful solutions.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+In modern machine learning, architecture design is often more important than explicit regularization.
+
+\section{A Unifying Perspective}
+
+Regularization can be understood as controlling the effective complexity of the learned function.
+
+\medskip
+
+\noindent
+\textbf{Forms of regularization.}
+\begin{itemize}
+    \item Explicit (penalties, constraints)
+    \item Implicit (optimization dynamics)
+    \item Structural (model architecture)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Unified objective.}
+\[
+\text{Fit the data} \quad + \quad \text{control complexity}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+\begin{itemize}
+    \item Model class
+    \item Regularization mechanism
+    \item Optimization algorithm
+\end{itemize}
+
+\medskip
+
+\noindent
+These elements interact to determine both training performance and generalization.
+
+\section{Outlook}
+
+This chapter introduced regularization as a central tool for controlling model complexity:
+\begin{itemize}
+    \item norm-based penalties,
+    \item constraints and penalization,
+    \item implicit effects of optimization,
+    \item practical techniques such as early stopping and dropout.
+\end{itemize}
+
+\medskip
+
+In the next part of the book, we turn to concrete supervised learning models, beginning with linear regression and least squares.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Successful learning requires not only fitting data, but shaping the solution space so that meaningful patterns emerge.

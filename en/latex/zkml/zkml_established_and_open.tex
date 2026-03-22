@@ -1,0 +1,263 @@
+Here’s a clean, textbook-ready breakdown of what is well-established versus actively researched in zkML (with emphasis on R1CS / PLONK / Halo2 and ML circuits). I’ll keep it conceptual but precise.
+
+1. What is firmly established
+
+These are ideas that are stable, widely used, and unlikely to change fundamentally.
+
+1.1 Arithmetic circuit view of ML
+
+Neural networks can be compiled into algebraic constraints.
+
+Linear layers → affine constraints
+Activations → polynomial / lookup constraints
+Entire model → composition of constraints
+
+This reduction:
+
+ML model
+→
+arithmetic circuit
+→
+proof system
+ML model→arithmetic circuit→proof system
+
+is foundational and settled.
+
+1.2 R1CS as a canonical baseline
+
+Even if not always used directly:
+
+R1CS defines the minimal expressive core
+Many compilers still lower to “R1CS-like” representations
+
+👉 This is unlikely to disappear conceptually.
+
+1.3 PLONKish paradigm (modern standard)
+
+The shift to:
+
+polynomial constraints
+custom gates
+lookup arguments
+
+is now industry standard.
+
+Key facts:
+
+Lookup arguments are essential for efficiency
+Custom gates reduce constraint count dramatically
+Universal setup (vs circuit-specific) is a major advantage
+
+👉 This design philosophy is mature and widely adopted.
+
+1.4 Halo2-style circuit engineering
+
+Well-established patterns:
+
+columns (advice / fixed / selector)
+regions and reusable gadgets
+lookup-based nonlinearities
+equality (copy) constraints
+
+👉 This is now the practical way to build zk circuits.
+
+1.5 Quantization is unavoidable
+
+All zkML systems rely on:
+
+𝑅
+→
+𝑍
+→
+𝐹
+𝑝
+R→Z→F
+p
+	​
+
+fixed-point arithmetic
+bounded integer ranges
+
+👉 This is not a temporary workaround—it is structurally necessary.
+
+1.6 Lookup-based nonlinearities
+
+For functions like:
+
+ReLU
+sigmoid (quantized)
+softmax (approximate)
+
+Lookup tables are:
+
+more efficient
+more accurate (on discrete domain)
+
+👉 This is now a dominant design pattern.
+
+1.7 Constraint cost dominates performance
+
+A fundamental law:
+
+Proving cost ∝ number of constraints
+
+Thus:
+
+model size directly impacts proof time
+architecture design affects feasibility
+
+👉 This is a core engineering constraint.
+
+2. What is still active research
+
+These are areas where no consensus exists yet, and rapid progress is ongoing.
+
+2.1 Scalable zkML for large models
+
+Current reality:
+
+MNIST / small CNN → feasible
+ResNet / Transformers → very expensive
+
+Open questions:
+
+Can we prove inference for large foundation models efficiently?
+How to reduce constraint count by orders of magnitude?
+2.2 Better representations than circuits
+
+Alternatives being explored:
+
+zkVMs (prove execution instead of circuits)
+STARK AIR systems
+hybrid representations
+
+Key question:
+
+Is “circuit compilation” the right abstraction for ML?
+
+2.3 Efficient nonlinearities
+
+Still unresolved tradeoffs:
+
+lookup vs polynomial vs hybrid
+precision vs cost
+domain size vs table size
+
+Especially hard:
+
+softmax
+normalization layers
+2.4 Training in zero knowledge
+
+Inference is already hard—but training is much harder.
+
+Challenges:
+
+backpropagation doubles computation
+gradients require high precision
+massive memory requirements
+
+👉 Fully practical zk training is still research-level.
+
+2.5 Floating-point vs fixed-point gap
+
+We currently prove:
+
+quantized model
+quantized model
+
+But we want:
+
+original floating-point model
+original floating-point model
+
+Open problems:
+
+error guarantees
+faithful equivalence proofs
+stable quantization pipelines
+2.6 Architecture design for zk
+
+A new emerging field:
+
+“zk-friendly neural networks”
+
+Questions:
+
+What activations are optimal?
+What layer structures minimize constraints?
+Can we co-design ML + proof system?
+2.7 Proof system improvements
+
+Even beyond circuits:
+
+faster proving algorithms
+better polynomial commitments
+recursion and aggregation
+
+Goal:
+
+real-time or near real-time proofs
+2.8 Data privacy vs model privacy
+
+Different goals:
+
+private input, public model
+public input, private model
+both private
+
+Tradeoffs:
+
+efficiency
+expressiveness
+cryptographic assumptions
+
+Still evolving.
+
+2.9 Verifiable training / auditing
+
+Emerging direction:
+
+prove dataset usage
+prove fairness constraints
+prove training correctness
+
+This connects zkML to:
+
+AI safety
+governance
+compliance
+3. A clean conceptual split
+Established core
+ML
+→
+Arithmetic constraints
+→
+ZK proof
+ML→Arithmetic constraints→ZK proof
+	​
+
+R1CS / PLONK / Halo2
+quantization
+lookup-based activations
+Open frontier
+How to scale, optimize, and generalize this pipeline
+How to scale, optimize, and generalize this pipeline
+	​
+
+large models
+better abstractions
+training
+architecture co-design
+4. The most important meta-insight
+
+There is a deep tension:
+
+Machine learning prefers continuous, high-dimensional, approximate computation
+
+Zero-knowledge proofs prefer discrete, algebraic, exact computation
+
+Almost all current research is about:
+
+bridging this gap efficiently
+bridging this gap efficiently

@@ -1,0 +1,271 @@
+\section{Tutorial 4: Regression vs Classification}
+
+\subsection{Objectives}
+
+This tutorial develops a clear understanding of the differences and connections between regression and classification:
+
+\begin{itemize}
+    \item Compare linear regression and logistic regression
+    \item Understand loss functions and probabilistic interpretations
+    \item Analyze decision boundaries
+    \item Explore when each formulation is appropriate
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Unify regression and classification under the framework of function approximation and probabilistic modeling.
+
+\subsection{Exercise 1: Linear Regression for Classification}
+
+Suppose we use linear regression for binary classification:
+\[
+f(x) = w^\top x, \quad \hat{y} = \text{sign}(f(x)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What loss is being minimized?
+    \item What are the potential issues with this approach?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item The squared loss:
+\[
+\sum_i (w^\top x_i - y_i)^2.
+\]
+
+\item Issues:
+\begin{itemize}
+    \item Predictions are not probabilities
+    \item Outputs can lie outside $[0,1]$
+    \item Sensitive to outliers
+    \item Does not align well with classification objectives
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Regression loss is not well-suited for classification.
+
+\subsection{Exercise 2: Logistic Regression Interpretation}
+
+Recall:
+\[
+p(y=1 \mid x) = \sigma(w^\top x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Why is the sigmoid function appropriate here?
+    \item What does $w^\top x$ represent?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Sigmoid maps $\mathbb{R} \to (0,1)$, making it suitable for probabilities.
+
+\item $w^\top x$ represents the log-odds:
+\[
+\log \frac{p(y=1 \mid x)}{p(y=0 \mid x)}.
+\]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Logistic regression provides a principled probabilistic interpretation.
+
+\subsection{Exercise 3: Loss Function Comparison}
+
+Compare:
+
+\begin{itemize}
+    \item Squared loss (regression)
+    \item Cross-entropy loss (classification)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item How do they penalize errors differently?
+    \item Which is more appropriate for classification and why?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item 
+\begin{itemize}
+    \item Squared loss penalizes distance symmetrically
+    \item Cross-entropy penalizes confident wrong predictions heavily
+\end{itemize}
+
+\item Cross-entropy is more appropriate because:
+\begin{itemize}
+    \item It arises from likelihood
+    \item It reflects uncertainty
+    \item It aligns with classification objectives
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Choice of loss reflects modeling assumptions.
+
+\subsection{Exercise 4: Decision Boundaries}
+
+Consider:
+\[
+f(x) = w^\top x.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe the decision boundary for regression (if thresholded).
+    \item Describe the decision boundary for logistic regression.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Regression with thresholding:
+\begin{itemize}
+    \item Boundary: $w^\top x = c$ (depends on threshold)
+\end{itemize}
+
+\item Logistic regression:
+\begin{itemize}
+    \item Boundary: $w^\top x = 0$
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Both produce linear boundaries, but logistic regression has a probabilistic interpretation.
+
+\subsection{Exercise 5: Effect of Feature Mapping}
+
+Suppose we use features $\phi(x)$ instead of $x$.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What happens to the decision boundary?
+    \item How does this affect expressivity?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Decision boundary becomes:
+\[
+w^\top \phi(x) = 0,
+\]
+which can be nonlinear in the original input space.
+
+\item Expressivity increases:
+\begin{itemize}
+    \item More complex patterns can be captured
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Nonlinearity arises through representation, not necessarily through the model.
+
+\subsection{Exercise 6 (Discussion): When to Use Regression vs Classification}
+
+\textbf{Question.}  
+When should we use regression, and when should we use classification?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Regression:
+    \begin{itemize}
+        \item Continuous outputs
+        \item Predicting quantities
+    \end{itemize}
+
+    \item Classification:
+    \begin{itemize}
+        \item Discrete labels
+        \item Decision-making tasks
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Subtle point.}
+\begin{itemize}
+    \item Classification models often estimate probabilities
+    \item Final decisions arise from thresholds
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Classification can be viewed as structured regression on probabilities.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Regression predicts continuous values; classification predicts labels
+    \item Logistic regression provides probabilistic classification
+    \item Cross-entropy aligns with likelihood-based modeling
+    \item Both models can produce linear decision boundaries
+    \item Nonlinearity arises through feature transformations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now generalize linear models using feature maps and kernel methods to capture nonlinear relationships.

@@ -1,0 +1,390 @@
+\section{Transfer Learning and Adaptation}
+
+Section 4.1 introduced the representation map
+\[
+\phi : X \to Z
+\]
+and the downstream decomposition
+\[
+f = g \circ \phi.
+\]
+Section 4.2 then explained how self-supervised learning can train such a map without task-specific labels.
+The next question is therefore structural rather than merely procedural:
+once a representation has been learned, how should it be reused on a new task or a new domain?
+This is the subject of transfer learning and adaptation.
+
+The central idea of this section is that transfer is not a single method but a design space.
+One may freeze a pretrained representation and learn only a new head.
+One may fine-tune all parameters.
+One may insert small trainable modules.
+One may constrain the update to lie in a low-rank subspace.
+These choices are different computationally, statistically, and geometrically.
+They also respond differently to domain shift.
+
+\subsection*{Basic definitions: source, target, and adaptation under shift}
+
+We begin by formalizing the setting.
+A pretrained model is typically obtained from one data source and then reused on another.
+Those two environments need not coincide.
+
+\begin{definition}[Source domain and target domain]
+A \emph{source domain} is a probability distribution
+\[
+\mathcal{D}_S
+\]
+on an input--label space $X \times Y_S$ or, more generally, on an input space $X$ together with whatever supervision or self-supervision is used during pretraining.
+A \emph{target domain} is a probability distribution
+\[
+\mathcal{D}_T
+\]
+on $X \times Y_T$ corresponding to the downstream task of interest.
+The source and target may differ in input marginal, label space, or task objective.
+\end{definition}
+
+This deliberately broad definition covers several common cases.
+Sometimes the source and target share the same label semantics but differ in acquisition conditions, such as photographs in daylight versus photographs at night.
+Sometimes the source objective is self-supervised while the target objective is supervised.
+Sometimes the source and target have different label spaces altogether, as when image pretraining is reused for medical classification.
+
+\begin{definition}[Domain shift]
+There is \emph{domain shift} when the source and target environments are not identical.
+At the most basic level this means
+\[
+\mathcal{D}_S \neq \mathcal{D}_T.
+\]
+In practice one often distinguishes at least three possibilities:
+\begin{itemize}
+    \item \textbf{covariate shift:} the input marginals differ while the predictive relationship is relatively stable,
+    \item \textbf{label or task shift:} the target labels or task definition differ from those in pretraining,
+    \item \textbf{representation mismatch:} the pretrained features fail to expose the distinctions needed downstream.
+\end{itemize}
+\end{definition}
+
+The third item is especially important in modern transfer learning.
+Even when source and target inputs look similar, the internal coordinates learned during pretraining may or may not align with what the downstream task needs.
+This is why adaptation is fundamentally about representation, not only about data overlap.
+
+\begin{definition}[Feature extraction]
+Let $\phi_{\theta_0} : X \to Z$ be a pretrained representation map.
+\emph{Feature extraction} means keeping $\theta_0$ fixed and learning a downstream predictor
+\[
+g_{\psi} : Z \to Y_T
+\]
+on top of the frozen features $z = \phi_{\theta_0}(x)$.
+The optimization problem is
+\[
+\min_{\psi} \; \widehat R_T(g_{\psi}(\phi_{\theta_0}(x)),y).
+\]
+\end{definition}
+
+\begin{definition}[Fine-tuning]
+\emph{Fine-tuning} means initializing a model from pretrained parameters and then updating some or all of those parameters on the target task.
+If both the representation and the head are updated, one solves
+\[
+\min_{\theta,\psi} \; \widehat R_T(g_{\psi}(\phi_{\theta}(x)),y)
+\]
+starting from $(\theta,\psi)$ near pretrained values rather than random initialization.
+\end{definition}
+
+These two definitions already express an important distinction.
+Feature extraction restricts the learner to the induced hypothesis class
+\[
+\mathcal{H}_{\phi_{\theta_0}} = \{g \circ \phi_{\theta_0} : g \in \mathcal{G}\}.
+\]
+Fine-tuning instead changes the representation itself and therefore changes the effective hypothesis class.
+The gain in flexibility comes with extra optimization cost and greater risk of overfitting or catastrophic drift.
+
+\subsection*{A formal taxonomy of adaptation strategies}
+
+Transfer learning is often described in broad language, but the main strategies can be written precisely.
+Suppose a pretrained network is parameterized by $\theta_0$ and produces hidden states $h = \phi_{\theta_0}(x)$.
+Let $g_{\psi}$ be the target head.
+Then the main adaptation choices are as follows.
+
+\begin{definition}[Linear probing]
+\emph{Linear probing} is the special case of feature extraction in which the downstream predictor is restricted to an affine map on representation space:
+\[
+g_{\psi}(z) = Wz + b.
+\]
+Thus the only trainable parameters are those of a linear classifier or regressor on top of frozen features.
+\end{definition}
+
+\begin{definition}[Full fine-tuning]
+\emph{Full fine-tuning} updates all pretrained parameters.
+Equivalently, if the model weights are written collectively as $\theta$, then one optimizes over all perturbations
+\[
+\Delta \theta
+\]
+through the parameterization $\theta = \theta_0 + \Delta \theta$.
+No structural restriction is imposed on $\Delta \theta$ beyond those already implicit in the model class and optimization method.
+\end{definition}
+
+\begin{definition}[Adapter-based tuning]
+\emph{Adapters} are small trainable modules inserted into a mostly frozen backbone.
+A standard form adds a bottleneck residual module
+\[
+h \mapsto h + U\sigma(Vh),
+\]
+where $V \in \mathbb{R}^{r \times d}$, $U \in \mathbb{R}^{d \times r}$, and $r \ll d$.
+The backbone parameters remain fixed, while the adapter parameters $(U,V)$ and the task head are trained.
+\end{definition}
+
+\begin{definition}[Low-rank adaptation]
+\emph{Low-rank adaptation} constrains weight updates to be low rank.
+If a pretrained linear map has weight matrix $W_0 \in \mathbb{R}^{d_{\mathrm{out}} \times d_{\mathrm{in}}}$, then a low-rank update has the form
+\[
+W = W_0 + BA,
+\]
+where
+\[
+B \in \mathbb{R}^{d_{\mathrm{out}} \times r},
+\qquad
+A \in \mathbb{R}^{r \times d_{\mathrm{in}}},
+\qquad
+r \ll \min(d_{\mathrm{out}},d_{\mathrm{in}}).
+\]
+Only $A$ and $B$ are trained.
+\end{definition}
+
+These definitions describe four distinct points in the adaptation design space.
+Linear probing changes only the readout.
+Full fine-tuning changes everything.
+Adapters preserve the main backbone while introducing small task-specific nonlinear modules.
+Low-rank adaptation allows weight changes but restricts them to a low-dimensional subspace.
+
+\begin{remark}[What changes geometrically]
+Each strategy modifies a different part of the predictor geometry.
+Linear probing changes only the separating surface in the learned representation space.
+Full fine-tuning can change both the representation geometry and the readout.
+Adapters and low-rank updates occupy an intermediate position: they allow controlled reshaping of the representation without rewriting the whole model.
+\end{remark}
+
+\subsection*{Why adaptation is not only optimization}
+
+It is tempting to treat transfer learning as simply a warm start for gradient descent.
+That would be too narrow.
+A pretrained model does not merely provide convenient initial parameters.
+It provides an already structured coordinate system for the data.
+Adaptation decisions are therefore decisions about how much of that coordinate system should be trusted.
+
+If the target task is close to the source and the representation already exposes the relevant distinctions, then a linear probe may suffice.
+If the representation contains the needed information but in a form that is not linearly accessible, a richer head or a small adapter may help.
+If the source and target domains differ substantially, the representation itself may need to move.
+This is why transfer learning has a genuine statistical question behind its engineering surface:
+when does success on the source domain imply anything useful on the target domain?
+
+\subsection*{A theorem-level result from domain adaptation theory}
+
+A widely cited answer comes from the theory of domain adaptation for binary classification.
+The theorem below is given in a simplified form.
+It does not solve the full modern transfer problem, but it gives an important and rigorous decomposition of target error.
+
+Let $\mathcal{H}$ be a hypothesis class of binary classifiers on $X$.
+For a distribution $\mathcal{D}$ on $X \times \{0,1\}$, let
+\[
+\varepsilon_{\mathcal{D}}(h)
+\]
+denote the population classification error of $h$ under $\mathcal{D}$.
+Write $\mathcal{D}_S^X$ and $\mathcal{D}_T^X$ for the source and target input marginals.
+
+\begin{definition}[$\mathcal{H}\Delta\mathcal{H}$ divergence, informal form]
+Given a hypothesis class $\mathcal{H}$, the quantity
+\[
+d_{\mathcal{H}\Delta\mathcal{H}}(\mathcal{D}_S^X,\mathcal{D}_T^X)
+\]
+measures how well classifiers formed by disagreements of hypotheses in $\mathcal{H}$ can distinguish source inputs from target inputs.
+If this divergence is small, the two domains look similar to the discriminative power of the class.
+If it is large, the domains are readily distinguishable and transfer is harder.
+\end{definition}
+
+\begin{theorem}[Simplified domain-adaptation bound]
+Let $\mathcal{H}$ be a hypothesis class for binary classification.
+Then for every $h \in \mathcal{H}$,
+\[
+\varepsilon_T(h)
+\le
+\varepsilon_S(h)
++ \frac{1}{2} d_{\mathcal{H}\Delta\mathcal{H}}(\mathcal{D}_S^X,\mathcal{D}_T^X)
++ \lambda_{\mathcal{H}},
+\]
+where
+\[
+\lambda_{\mathcal{H}} = \inf_{h \in \mathcal{H}} \bigl(\varepsilon_S(h) + \varepsilon_T(h)\bigr)
+\]
+is the error of the best joint classifier in the class across both domains.
+\end{theorem}
+
+\paragraph{Interpretation.}
+The theorem says that small source error alone is not enough.
+To guarantee small target error, one also needs the source and target domains to be similar as seen through the hypothesis class, and one needs the class to contain a classifier that performs well on both domains simultaneously.
+The three terms have distinct meanings:
+\begin{itemize}
+    \item \(\varepsilon_S(h)\): how well the chosen classifier fits the source domain,
+    \item \(\tfrac{1}{2} d_{\mathcal{H}\Delta\mathcal{H}}\): how different source and target look to the class,
+    \item \(\lambda_{\mathcal{H}}\): whether the two tasks are even jointly compatible inside the chosen representation and hypothesis class.
+\end{itemize}
+
+\paragraph{Why this matters for representation learning.}
+The bound is usually presented for a hypothesis class on raw inputs, but in transfer learning the relevant class is often induced by a representation.
+If one uses a fixed pretrained map $\phi$, then the downstream class is effectively
+\[
+\mathcal{H}_{\phi} = \{g \circ \phi : g \in \mathcal{G}\}.
+\]
+A good transferable representation can therefore help in three ways at once:
+it can reduce source error by making the task easier, it can make source and target appear more similar in representation space, and it can enlarge the chance that one simple readout works well on both domains.
+
+\paragraph{What the theorem does and does not say.}
+This result is rigorous, but its scope is limited.
+It is a statement for an abstract hypothesis class under binary classification, not a complete theory of large-scale fine-tuning in deep networks.
+It does not tell us which representation to learn, how gradient descent finds it, or why a particular adapter design works better than another.
+Still, it captures a central truth:
+transfer depends jointly on source performance, domain discrepancy, and representational compatibility.
+
+\subsection*{Worked example: frozen backbone versus full fine-tuning}
+
+A toy example makes the distinction concrete.
+Consider inputs $x = (x_1,x_2) \in \mathbb{R}^2$.
+Suppose pretraining on the source task produced a one-dimensional representation
+\[
+\phi_{\theta_0}(x) = x_1.
+\]
+This is plausible if the source labels depended only on $x_1$.
+For example, the source task might have been
+\[
+y_S = \mathbf{1}\{x_1 > 0\}.
+\]
+Now consider a target task with labels
+\[
+y_T = \mathbf{1}\{x_1 + x_2 > 0\}.
+\]
+The target requires information from both coordinates.
+
+\paragraph{Frozen backbone with linear probe.}
+If we freeze the backbone, then every downstream predictor has the form
+\[
+\hat y = \mathbf{1}\{w\phi_{\theta_0}(x) + b > 0\} = \mathbf{1}\{wx_1 + b > 0\}.
+\]
+No choice of $w$ and $b$ can represent the diagonal decision boundary $x_1 + x_2 = 0$, because the predictor does not depend on $x_2$ at all.
+Thus frozen feature extraction fails for a structural reason:
+the required information is absent from the representation.
+
+\paragraph{Full fine-tuning.}
+Now allow the representation to adapt within the family
+\[
+\phi_{\alpha}(x) = x_1 + \alpha x_2.
+\]
+With a linear probe $g(z) = \mathbf{1}\{z > 0\}$ and the choice $\alpha = 1$, we obtain
+\[
+\hat y = \mathbf{1}\{x_1 + x_2 > 0\},
+\]
+which matches the target task exactly.
+Here fine-tuning succeeds because it changes the representation itself rather than only the readout.
+
+\begin{example}[What the toy example teaches]
+The lesson is not that fine-tuning is always better.
+The lesson is that frozen features succeed only when the downstream task can already be expressed within the induced class $\mathcal{H}_{\phi_{\theta_0}}$.
+When the target distinction is missing from the representation, no probe can recover it.
+Fine-tuning, adapters, or low-rank updates are valuable precisely because they can alter what information becomes explicit.
+\end{example}
+
+A practical version of the same story occurs constantly.
+A vision encoder pretrained on natural photographs may already support linear probing for coarse object categories, yet require fine-tuning for radiology, satellite imagery, or fine-grained species classification.
+A language model may support probing for sentiment or topic, yet need adaptation for legal drafting, protein sequences, or code repair.
+The key question is always the same:
+does the current representation already expose the target structure, or must the representation itself move?
+
+\subsection*{The adaptation design space in one picture}
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.95\textwidth}
+\centering
+\textbf{Adaptation design space}
+
+\vspace{0.6em}
+\begin{tabular}{p{0.19\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.18\textwidth}}
+\textbf{Strategy} & \textbf{Trainable part} & \textbf{Flexibility} & \textbf{Cost} & \textbf{Best when} \\
+Linear probe & head only & low & very low & representation already separates target task \\
+Feature extraction with richer head & head only & moderate & low & pretrained features are useful but linear readout is too weak \\
+Adapters & small inserted modules + head & moderate to high & moderate & some representation reshaping is needed but full tuning is expensive \\
+Low-rank adaptation & restricted weight updates + head & moderate to high & moderate & large model must adapt within a compact update budget \\
+Full fine-tuning & most or all parameters & highest & highest & target differs substantially or maximum specialization is needed
+\end{tabular}
+\end{minipage}}
+\caption{Transfer learning is not a binary choice between freezing and retraining everything.
+It is a spectrum of design decisions about where adaptation is allowed to occur and how much geometric reshaping of the learned representation is permitted.}
+\end{figure}
+
+This figure should be read as a structural summary rather than a rigid ranking.
+More flexibility is not always better.
+With small target data, a low-capacity adaptation strategy may generalize better because it preserves useful source structure and reduces overfitting.
+Conversely, if the source and target are substantially misaligned, high rigidity can lock the model into the wrong representation.
+
+\subsection*{What is understood, and what remains partly empirical}
+
+Transfer learning today sits between theory and design practice.
+Some points are reasonably well understood.
+A fixed representation induces a restricted hypothesis class.
+Domain adaptation theory explains why low source error need not imply low target error under shift.
+Low-rank or bottleneck adaptation reduces parameter count by imposing algebraic structure on the update.
+These are mathematically clear facts.
+
+But many central questions remain mostly empirical.
+When does full fine-tuning outperform low-rank adaptation by a large margin?
+How much target data is needed before unfreezing the backbone is worthwhile?
+Which layers should be adapted first?
+Why do some tasks benefit from preserving early layers while others require deep representational change?
+How do optimization dynamics interact with catastrophic forgetting and feature drift?
+These questions are answered today more by experiment and engineering judgment than by closed theory.
+
+This is why transfer learning is a good place to see modern machine learning in its full character.
+There are formal definitions and meaningful theorems, but there is also a substantial design layer in which one chooses an adaptation mechanism to balance compute, robustness, and specialization.
+The science is real, but it is not yet complete.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item Transfer learning studies how a pretrained representation or model is reused on a new target task or domain.
+    \item Feature extraction freezes the representation and learns a new head; fine-tuning updates some or all pretrained parameters.
+    \item Linear probing, full fine-tuning, adapters, and low-rank adaptation are formally distinct points in the adaptation design space.
+    \item A simplified domain-adaptation bound shows that target error depends not only on source error but also on domain discrepancy and on whether one classifier can perform well on both domains.
+    \item Frozen backbones succeed only when the target task lies inside the induced hypothesis class of the pretrained representation.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item \textbf{``Pretrained'' does not mean ``already optimal for every target.''} A pretrained model may still require substantial adaptation under shift.
+    \item \textbf{Linear probing is not the same as feature extraction in general.} Linear probing is a special, especially restrictive case of feature extraction.
+    \item \textbf{Full fine-tuning is not automatically superior.} More flexibility can also mean more overfitting, more compute, and more instability on small target datasets.
+    \item \textbf{Domain shift is not only a change in visual appearance or data source.} It can also be a mismatch between what the representation makes accessible and what the target task needs.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Let $\phi : X \to Z$ be fixed and let $\mathcal{G}$ be a class of downstream predictors on $Z$.
+    Show that feature extraction restricts learning to the induced class $\mathcal{H}_{\phi} = \{g \circ \phi : g \in \mathcal{G}\}$.
+    Explain why fine-tuning changes this class.
+    \item In the toy example above, prove that no linear probe on the frozen feature $\phi_{\theta_0}(x)=x_1$ can realize the target decision rule $\mathbf{1}\{x_1+x_2>0\}$.
+    \item Derive from first principles the parameter count of a low-rank update $BA$ and compare it with the parameter count of a full update to a matrix in $\mathbb{R}^{d_{\mathrm{out}} \times d_{\mathrm{in}}}$.
+    \item Compare two methods: adapters and low-rank adaptation.
+    In what sense do both restrict the update space, and in what sense are their restrictions geometrically different?
+    \item Explain the three terms in the simplified domain-adaptation bound and give a concrete failure mode corresponding to each term being large.
+    \item Suppose a target dataset is extremely small but very close to the source domain.
+    Which adaptation strategy would you try first, and why?
+    Then answer the same question when the target domain is small but strongly shifted from the source.
+    \item Consider a pretrained language model adapted to two tasks: sentiment classification and specialized biomedical question answering.
+    Argue which task is more likely to work with linear probing and which is more likely to require deeper adaptation.
+    \item Give an example of covariate shift in vision or time series and explain whether you would expect frozen features, adapters, or full fine-tuning to be most promising.
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+Transfer learning as a general framework is classically surveyed by Pan and Yang.
+For a broad deep-learning treatment, Goodfellow, Bengio, and Courville provide useful background on representation reuse and fine-tuning.
+The domain-adaptation bound presented here is associated with the theory developed by Ben-David and collaborators, which remains one of the clearest formal accounts of why transfer under shift is delicate.
+For parameter-efficient adaptation, the modern literature on adapters and low-rank adaptation is central, especially in large language and vision models.
+A good reading strategy is to keep three levels separate:
+representation reuse as a conceptual framework, domain adaptation as the source of rigorous error decompositions, and parameter-efficient tuning as an engineering response to scale and deployment constraints.

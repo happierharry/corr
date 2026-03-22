@@ -1,0 +1,293 @@
+\chapter{Model Evaluation and Selection}
+
+\section{Training, Validation, and Testing}
+
+In previous chapters, we developed models and optimization methods for learning from data. However, a crucial practical question remains:
+
+\medskip
+
+\noindent
+\textbf{How do we evaluate and compare models in a reliable way?}
+
+\medskip
+
+A central challenge is that the true risk
+\[
+R(f) = \mathbb{E}_{(x,y)\sim P}[\ell(f(x), y)]
+\]
+is unknown, since the data-generating distribution $P$ is not accessible.
+
+\medskip
+
+\noindent
+\textbf{Data splitting.}  
+To approximate generalization performance, we divide the available dataset into three parts:
+
+\begin{itemize}
+    \item \textbf{Training set:} used to fit model parameters
+    \item \textbf{Validation set:} used to tune hyperparameters
+    \item \textbf{Test set:} used to estimate final performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Workflow.}
+\begin{enumerate}
+    \item Train model on training set
+    \item Select hyperparameters using validation set
+    \item Evaluate final model on test set
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key principle.}  
+The test set must not be used during model selection, as this would lead to overly optimistic estimates.
+
+\medskip
+
+\noindent
+\textbf{Overfitting to validation data.}  
+Repeated tuning can indirectly overfit the validation set. This motivates more robust evaluation strategies, such as cross-validation.
+
+\section{Cross-Validation}
+
+Cross-validation provides a systematic way to estimate model performance using limited data.
+
+\medskip
+
+\noindent
+\textbf{$k$-fold cross-validation.}
+\begin{itemize}
+    \item Partition the dataset into $k$ subsets (folds)
+    \item For each fold:
+    \begin{itemize}
+        \item Train on $k-1$ folds
+        \item Evaluate on the remaining fold
+    \end{itemize}
+    \item Average the results across folds
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Cross-validation estimate.}
+\[
+\hat{R}_{\text{CV}} = \frac{1}{k} \sum_{j=1}^k R_j,
+\]
+where $R_j$ is the validation error on fold $j$.
+
+\medskip
+
+\noindent
+\textbf{Advantages.}
+\begin{itemize}
+    \item Efficient use of data
+    \item More stable performance estimates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Choice of $k$.}
+\begin{itemize}
+    \item Small $k$ (e.g., $5$): faster, higher bias
+    \item Large $k$ (e.g., leave-one-out): lower bias, higher variance and cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical use.}  
+Cross-validation is widely used for hyperparameter tuning, especially when datasets are small or moderate in size.
+
+\section{Performance Metrics}
+
+The choice of evaluation metric depends on the learning task.
+
+\subsection{Regression Metrics}
+
+\begin{itemize}
+    \item \textbf{Mean Squared Error (MSE):}
+    \[
+    \frac{1}{n} \sum_{i=1}^n (f(x_i) - y_i)^2
+    \]
+
+    \item \textbf{Mean Absolute Error (MAE):}
+    \[
+    \frac{1}{n} \sum_{i=1}^n |f(x_i) - y_i|
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item MSE penalizes large errors more strongly
+    \item MAE is more robust to outliers
+\end{itemize}
+
+\subsection{Classification Metrics}
+
+\medskip
+
+\noindent
+\textbf{Accuracy.}
+\[
+\frac{\text{number of correct predictions}}{\text{total number of predictions}}
+\]
+
+\medskip
+
+\noindent
+\textbf{Precision and recall.}
+\begin{itemize}
+    \item Precision: fraction of predicted positives that are correct
+    \item Recall: fraction of actual positives that are detected
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{F1 score.}
+\[
+\text{F1} = 2 \cdot \frac{\text{precision} \cdot \text{recall}}{\text{precision} + \text{recall}}
+\]
+
+\medskip
+
+\noindent
+\textbf{ROC and AUC.}
+\begin{itemize}
+    \item ROC curve plots true positive rate vs false positive rate
+    \item AUC summarizes overall classification performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Imbalanced data.}  
+Accuracy can be misleading when classes are imbalanced; precision, recall, and AUC provide more informative evaluation.
+
+\medskip
+
+\noindent
+\textbf{Probabilistic metrics.}  
+For models that output probabilities, cross-entropy loss is often used as an evaluation metric.
+
+\section{Model Comparison}
+
+Selecting a model involves comparing multiple candidates based on validation performance.
+
+\medskip
+
+\noindent
+\textbf{Hyperparameters.}
+\begin{itemize}
+    \item Regularization strength
+    \item Model architecture
+    \item Optimization parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Selection procedure.}
+\begin{enumerate}
+    \item Define a set of candidate models
+    \item Evaluate each model using validation or cross-validation
+    \item Select the model with best performance
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Model selection vs evaluation.}
+\begin{itemize}
+    \item Model selection uses validation data
+    \item Final evaluation uses test data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Overfitting in model selection.}  
+Testing many models increases the risk of selecting one that performs well by chance.
+
+\medskip
+
+\noindent
+\textbf{Practical strategies.}
+\begin{itemize}
+    \item Use cross-validation
+    \item Limit the search space of hyperparameters
+    \item Prefer simpler models when performance is similar
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+\begin{itemize}
+    \item Accuracy vs complexity
+    \item Performance vs computational cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Reproducibility.}  
+Reliable model comparison requires consistent data splits and controlled experimental settings.
+
+\section{A Unifying Perspective}
+
+Model evaluation and selection are integral parts of the learning process.
+
+\medskip
+
+\noindent
+\textbf{Pipeline.}
+\begin{itemize}
+    \item Train models on data
+    \item Estimate generalization performance
+    \item Select the best model
+    \item Evaluate final performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key challenges.}
+\begin{itemize}
+    \item Limited data
+    \item Variance in estimates
+    \item Risk of overfitting during selection
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core insight.}  
+Reliable evaluation requires separating the roles of training, validation, and testing.
+
+\section{Outlook}
+
+This chapter introduced the principles of model evaluation and selection:
+\begin{itemize}
+    \item separating data for unbiased evaluation,
+    \item using cross-validation for robust estimates,
+    \item choosing appropriate performance metrics,
+    \item comparing models systematically.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study optimization methods in greater depth, focusing on practical techniques used in large-scale machine learning.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+A model is only as good as the way it is evaluated. Reliable evaluation is essential for meaningful learning.

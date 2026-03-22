@@ -1,0 +1,289 @@
+\chapter{Neural Networks as Compositional Models}
+
+\section{Layered Architectures}
+
+Neural networks are structured as compositions of simple transformations organized into layers. This layered architecture is the defining feature that enables them to model complex relationships.
+
+\medskip
+
+\noindent
+\textbf{Basic structure.}  
+A neural network with $L$ layers defines a function
+\[
+f(x) = f_L \circ f_{L-1} \circ \cdots \circ f_1(x),
+\]
+where each layer has the form
+\[
+f_\ell(z) = \sigma(W_\ell z + b_\ell).
+\]
+
+\medskip
+
+\noindent
+\textbf{Components.}
+\begin{itemize}
+    \item $W_\ell$: weight matrix
+    \item $b_\ell$: bias vector
+    \item $\sigma$: nonlinear activation function
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Forward propagation.}  
+Given an input $x$, the network computes intermediate representations:
+\[
+z^{(1)} = f_1(x), \quad
+z^{(2)} = f_2(z^{(1)}), \quad \dots, \quad
+z^{(L)} = f(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Each layer transforms the representation of the data
+    \item The final output depends on successive refinements
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Common activation functions.}
+\begin{itemize}
+    \item ReLU: $\sigma(z) = \max(0, z)$
+    \item Sigmoid: $\sigma(z) = \frac{1}{1 + e^{-z}}$
+    \item Tanh: $\sigma(z) = \tanh(z)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role of nonlinearity.}  
+Without nonlinear activation functions, a composition of linear layers reduces to a single linear transformation.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Nonlinearity enables neural networks to represent complex, non-linear relationships.
+
+\section{Expressivity and Depth}
+
+A central question is how the architecture of a neural network influences its expressive power.
+
+\medskip
+
+\noindent
+\textbf{Width vs depth.}
+\begin{itemize}
+    \item \textbf{Width:} number of units per layer
+    \item \textbf{Depth:} number of layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Shallow vs deep networks.}
+\begin{itemize}
+    \item Shallow networks: few layers, possibly very wide
+    \item Deep networks: many layers, often narrower
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key observation.}  
+Depth allows functions to be represented more efficiently.
+
+\medskip
+
+\noindent
+\textbf{Example (compositional functions).}  
+Functions with hierarchical structure can be represented compactly by deep networks, but may require exponentially many parameters in shallow networks.
+
+\medskip
+
+\noindent
+\textbf{Geometric intuition.}  
+Each layer reshapes the input space, gradually transforming complex structures into simpler ones.
+
+\medskip
+
+\noindent
+\textbf{Piecewise linearity.}  
+Networks with ReLU activations represent piecewise linear functions with potentially many regions.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth increases the number of linear regions exponentially, enhancing expressivity.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Greater depth $\rightarrow$ higher expressivity
+    \item But also more challenging optimization
+\end{itemize}
+
+\section{Universal Approximation (Insight)}
+
+A fundamental theoretical result explains why neural networks are powerful approximators.
+
+\medskip
+
+\noindent
+\textbf{Universal approximation (informal).}  
+A feedforward neural network with a single hidden layer and a suitable activation function can approximate any continuous function on a compact domain, given sufficient width.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Neural networks are highly expressive
+    \item Even shallow networks can approximate complex functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitation.}
+\begin{itemize}
+    \item The theorem does not specify how many units are required
+    \item Practical learning may be difficult
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role of depth.}  
+While shallow networks are theoretically sufficient, deep networks often provide more efficient representations.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Universal approximation guarantees existence, but not efficiency or learnability.
+
+\medskip
+
+\noindent
+\textbf{Connection to practice.}  
+Deep architectures are preferred because they:
+\begin{itemize}
+    \item require fewer parameters,
+    \item are easier to train in many cases,
+    \item align with compositional structure in data.
+\end{itemize}
+
+\section{Representation Learning}
+
+One of the defining features of neural networks is their ability to learn representations automatically.
+
+\medskip
+
+\noindent
+\textbf{Learned features.}  
+Each layer produces a representation
+\[
+z^{(\ell)} = f_\ell(z^{(\ell-1)}),
+\]
+which encodes information about the input.
+
+\medskip
+
+\noindent
+\textbf{Hierarchy of representations.}
+\begin{itemize}
+    \item Early layers: local or low-level features
+    \item Intermediate layers: patterns and structures
+    \item Final layers: task-specific features
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Contrast with classical methods.}
+\begin{itemize}
+    \item Classical models use fixed feature maps
+    \item Neural networks learn features from data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric viewpoint.}  
+Each layer transforms the geometry of the data, making it progressively easier to separate or model.
+
+\medskip
+
+\noindent
+\textbf{Compositional learning.}  
+Features are built by combining simpler features across layers.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+Learning involves discovering both:
+\begin{itemize}
+    \item how to represent the data,
+    \item how to map representations to outputs.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Representation learning is a key reason for the success of deep learning across diverse domains.
+
+\section{A Unifying Perspective}
+
+Neural networks can be understood through three complementary viewpoints:
+
+\begin{itemize}
+    \item \textbf{Functional:} compositions of nonlinear functions
+    \item \textbf{Geometric:} transformations of data representations
+    \item \textbf{Computational:} layered processing architectures
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Parameters $(W_\ell, b_\ell)$
+    \item Nonlinear activations
+    \item Compositional structure
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The power of neural networks lies not only in their expressivity, but in their ability to learn structured representations through composition.
+
+\section{Outlook}
+
+This chapter introduced neural networks as compositional models:
+\begin{itemize}
+    \item layered architectures,
+    \item the role of depth in expressivity,
+    \item universal approximation as a theoretical foundation,
+    \item representation learning as a central principle.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study how neural networks are trained efficiently using backpropagation and automatic differentiation.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Complex functions can often be understood as compositions of simpler ones, and neural networks provide a framework for learning such compositions from data.

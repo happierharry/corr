@@ -1,0 +1,263 @@
+\chapter{Geometry and Dynamics of Learning}
+
+\section{Loss Landscapes}
+
+Training a neural network can be viewed as navigating a high-dimensional loss landscape.
+
+\medskip
+
+\noindent
+\textbf{Loss function.}  
+Given parameters $\theta \in \mathbb{R}^d$, the loss defines a function:
+\[
+L(\theta): \mathbb{R}^d \to \mathbb{R}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Landscape interpretation.}
+\begin{itemize}
+    \item Points correspond to parameter configurations
+    \item Height corresponds to loss value
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Critical points.}
+\begin{itemize}
+    \item Local minima: $\nabla L(\theta) = 0$, positive curvature
+    \item Saddle points: mixed curvature directions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{High-dimensional geometry.}
+\begin{itemize}
+    \item Saddle points are more prevalent than poor local minima
+    \item Many directions are nearly flat
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Flat vs sharp minima.}
+\begin{itemize}
+    \item Flat minima: robust to perturbations
+    \item Sharp minima: sensitive to parameter changes
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Visualization (conceptual).}  
+Low-dimensional projections reveal valleys, ridges, and plateaus.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The geometry of the loss landscape strongly influences optimization and generalization.
+
+\section{Neural Tangent Kernel (Intuition)}
+
+The neural tangent kernel (NTK) provides a linearized view of neural network training.
+
+\medskip
+
+\noindent
+\textbf{Linearization.}  
+Around initialization $\theta_0$, the network can be approximated as:
+\[
+f_\theta(x) \approx f_{\theta_0}(x) + \nabla_\theta f_{\theta_0}(x)^\top (\theta - \theta_0).
+\]
+
+\medskip
+
+\noindent
+\textbf{Neural tangent kernel.}
+\[
+K(x, x') = \nabla_\theta f_{\theta_0}(x)^\top \nabla_\theta f_{\theta_0}(x').
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Defines a kernel induced by the network at initialization
+    \item Training resembles kernel regression with kernel $K$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Infinite-width limit.}
+\begin{itemize}
+    \item NTK becomes deterministic
+    \item Training dynamics become linear
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The NTK connects deep learning with classical kernel methods.
+
+\section{Continuous-Time View of Training}
+
+Gradient-based optimization can be viewed as a continuous-time dynamical system.
+
+\medskip
+
+\noindent
+\textbf{Gradient descent update.}
+\[
+\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Continuous-time limit.}  
+As $\eta \to 0$, we obtain a differential equation:
+\[
+\frac{d\theta(t)}{dt} = -\nabla L(\theta(t)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Gradient flow.}
+\begin{itemize}
+    \item Parameters evolve along the steepest descent direction
+    \item Trajectories follow curves in parameter space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Energy interpretation.}  
+The loss decreases along trajectories:
+\[
+\frac{d}{dt} L(\theta(t)) = -\|\nabla L(\theta(t))\|^2 \leq 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Extension to stochastic dynamics.}  
+Stochastic gradient descent introduces noise:
+\[
+d\theta(t) = -\nabla L(\theta(t)) dt + \Sigma^{1/2} dW_t,
+\]
+where $W_t$ is Brownian motion.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Training can be understood as a continuous flow shaped by both gradients and noise.
+
+\section{Dynamical Systems Perspective}
+
+Neural network training and representation learning can be viewed through the lens of dynamical systems.
+
+\medskip
+
+\noindent
+\textbf{Parameter dynamics.}
+\begin{itemize}
+    \item Evolution of $\theta(t)$ under optimization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Representation dynamics.}
+\begin{itemize}
+    \item Evolution of features $f_{\theta(t)}(x)$ during training
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stability.}
+\begin{itemize}
+    \item Stable fixed points correspond to minima
+    \item Stability depends on curvature and noise
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Attractors.}
+\begin{itemize}
+    \item Optimization may converge to particular regions of parameter space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to residual networks.}  
+Deep networks resemble discretized dynamical systems.
+
+\medskip
+
+\noindent
+\textbf{Feature evolution.}
+\begin{itemize}
+    \item Early training: rapid feature changes
+    \item Later stages: fine adjustments
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning is a dynamic process that evolves both parameters and representations over time.
+
+\section{A Unifying Perspective}
+
+The geometry and dynamics of learning provide a unified framework:
+
+\begin{itemize}
+    \item \textbf{Geometry:} structure of the loss landscape
+    \item \textbf{Dynamics:} trajectories of optimization
+    \item \textbf{Linearization:} NTK approximation
+    \item \textbf{Stochasticity:} role of noise in training
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Understanding learning requires analyzing both the structure of the objective and the dynamics of optimization.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Modern deep learning lies at the intersection of geometry, probability, and dynamical systems.
+
+\section{Outlook}
+
+This chapter examined the geometry and dynamics of learning:
+\begin{itemize}
+    \item loss landscapes and their structure,
+    \item neural tangent kernel perspective,
+    \item continuous-time view of optimization,
+    \item dynamical systems interpretation.
+\end{itemize}
+
+\medskip
+
+These perspectives provide a deeper theoretical understanding of how learning occurs in modern machine learning systems.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Learning is both a geometric problem and a dynamical process, shaped by the interplay between model structure and optimization.

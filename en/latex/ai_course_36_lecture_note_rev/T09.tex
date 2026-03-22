@@ -1,0 +1,431 @@
+\section{Tutorial 9: Generative Modeling Comparison Lab}
+
+\subsection{Objectives}
+
+This tutorial serves as a final synthesis of the generative modeling block. Its purpose is to compare the major paradigms not only mathematically, but also conceptually and practically.
+
+\begin{itemize}
+    \item Understand latent interpolation in variational autoencoders
+    \item Analyze sample diversity and mode collapse in GANs
+    \item Interpret diffusion generation as an iterative denoising trajectory
+    \item Compare likelihood-based, adversarial, and denoising-based generative approaches
+    \item Evaluate generative models in terms of sample quality, controllability, training stability, and inference cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Generative modeling is not one idea but a family of approaches with different strengths, weaknesses, and inductive principles.
+
+\subsection{Exercise 1: Latent Interpolation in a VAE}
+
+Suppose a trained VAE has latent prior
+\[
+p(z)=\mathcal{N}(0,I),
+\]
+encoder
+\[
+q_\phi(z\mid x),
+\]
+and decoder
+\[
+p_\theta(x\mid z).
+\]
+
+Let two data points \(x^{(1)}\) and \(x^{(2)}\) be encoded to latent means
+\[
+\mu^{(1)}, \mu^{(2)} \in \mathbb{R}^d.
+\]
+
+Define a linear interpolation in latent space:
+\[
+z(\alpha) = (1-\alpha)\mu^{(1)} + \alpha \mu^{(2)}, \qquad \alpha\in[0,1].
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What is the purpose of decoding \(z(\alpha)\) for different values of \(\alpha\)?
+    \item Why is latent interpolation often smoother in a VAE than interpolation directly in pixel space?
+    \item What does smooth interpolation suggest about the learned latent space?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\begin{enumerate}
+    \item Decoding \(z(\alpha)\) reveals how the model moves between two represented data points through latent space.
+
+    \item The VAE is trained to organize data in a structured latent representation, so nearby latent codes often correspond to semantically related outputs. Pixel-space interpolation, by contrast, often mixes low-level intensities rather than meaningful features.
+
+    \item Smooth interpolation suggests that the latent space has captured a meaningful geometric organization of the data, where intermediate points correspond to plausible intermediate samples.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+VAEs are not only generators; they are also representation learners with structured latent spaces.
+
+\subsection{Exercise 2: Reconstruction vs Regularization in VAEs}
+
+Recall the VAE objective:
+\[
+\mathcal{L}(x;\theta,\phi)
+=
+\mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)]
+-
+\mathrm{KL}(q_\phi(z\mid x)\|p(z)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Which term encourages accurate reconstruction?
+    \item Which term encourages latent-space regularity?
+    \item What happens if the KL term is weighted too strongly?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\begin{enumerate}
+    \item The term
+    \[
+    \mathbb{E}_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)]
+    \]
+    encourages accurate reconstruction.
+
+    \item The term
+    \[
+    \mathrm{KL}(q_\phi(z\mid x)\|p(z))
+    \]
+    regularizes the latent distribution toward the prior.
+
+    \item If the KL term is too strong, the encoder may ignore the input and produce latent codes close to the prior for all examples. This can lead to posterior collapse and weaker reconstructions.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+VAEs balance reconstruction quality against latent-space structure.
+
+\subsection{Exercise 3: GAN Sample Diversity and Mode Collapse}
+
+A GAN trains a generator \(G(z)\) and discriminator \(D(x)\) through an adversarial game.
+
+Suppose a GAN trained on a dataset of handwritten digits generates very sharp samples, but most outputs resemble only the digits \(1\) and \(7\).
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What problem is illustrated here?
+    \item Why is this undesirable even if individual samples look realistic?
+    \item Why can adversarial training encourage this behavior?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\begin{enumerate}
+    \item This is \textbf{mode collapse}.
+
+    \item A good generative model should capture the full data distribution, not just a few highly realistic modes.
+
+    \item The generator is rewarded for fooling the discriminator, and it may discover that producing a narrow family of convincing outputs is enough to succeed locally, even if diversity is poor.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+High sample quality does not necessarily imply good coverage of the data distribution.
+
+\subsection{Exercise 4: Diffusion Denoising Trajectory}
+
+A diffusion model defines a forward process
+\[
+x_0 \to x_1 \to \cdots \to x_T
+\]
+that gradually adds noise, and a learned reverse process
+\[
+x_T \to x_{T-1} \to \cdots \to x_0
+\]
+that removes it.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Why is generation in a diffusion model naturally interpreted as iterative refinement?
+    \item What should the intermediate states \(x_t\) look like as \(t\) decreases during sampling?
+    \item Why is this often easier to train than adversarial generation?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\begin{enumerate}
+    \item Because the model does not generate the final sample in one step; it repeatedly makes small denoising corrections.
+
+    \item Early states are mostly noise, intermediate states contain coarse emerging structure, and late states contain increasingly refined details.
+
+    \item Training resembles supervised denoising at many noise levels, which is generally more stable than training a generator against an adversarial opponent.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Diffusion models trade fast generation for stable training and strong sample quality.
+
+\subsection{Exercise 5: Likelihood-Based vs Adversarial vs Denoising Approaches}
+
+Consider three generative paradigms:
+
+\begin{itemize}
+    \item \textbf{Likelihood-based:} e.g. VAE or autoregressive models
+    \item \textbf{Adversarial:} GAN
+    \item \textbf{Denoising-based:} diffusion models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Task.}  
+Complete the following conceptual comparison.
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+Paradigm & Main objective & Core intuition \\
+\hline
+Likelihood-based & ? & ? \\
+Adversarial & ? & ? \\
+Denoising-based & ? & ? \\
+\hline
+\end{tabular}
+\end{center}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+Paradigm & Main objective & Core intuition \\
+\hline
+Likelihood-based & maximize or approximate log-likelihood & fit the data distribution explicitly \\
+Adversarial & fool a discriminator & generate realistic samples through a game \\
+Denoising-based & reverse a noising process & generate by iterative denoising and refinement \\
+\hline
+\end{tabular}
+\end{center}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Different generative models solve different mathematical problems, even when they aim at the same practical goal.
+
+\subsection{Exercise 6: Sample Quality vs Likelihood}
+
+Suppose Model A achieves better log-likelihood than Model B, but Model B produces sharper and more realistic-looking images.
+
+\medskip
+
+\noindent
+\textbf{Questions.}
+\begin{enumerate}
+    \item Why is this not necessarily a contradiction?
+    \item Which model would be preferred for compression or density estimation?
+    \item Which model might be preferred for image synthesis?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\begin{enumerate}
+    \item Log-likelihood measures statistical fit to the data distribution, while perceptual sample quality measures realism in generated outputs. These are related but not identical goals.
+
+    \item The higher-likelihood model would typically be preferred for density estimation or compression.
+
+    \item The model with sharper and more realistic samples may be preferred for image synthesis.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Evaluation of generative models depends strongly on the intended application.
+
+\subsection{Exercise 7: Controllability}
+
+Different generative models allow different types of control over generation.
+
+\medskip
+
+\noindent
+\textbf{Question.}  
+Which of the following tends to support more direct control?
+
+\begin{enumerate}
+    \item a VAE with a structured latent space,
+    \item a GAN without explicit latent regularization,
+    \item a conditional diffusion model.
+\end{enumerate}
+
+Explain briefly.
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item A VAE often supports controllable interpolation and latent manipulation because its latent space is regularized.
+
+    \item A GAN may allow some latent control, but without explicit latent structure this can be less stable or interpretable.
+
+    \item A conditional diffusion model can provide strong control through conditioning variables such as class labels, text prompts, or guidance signals.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Controllability depends on whether the model organizes generation around an interpretable latent or conditional structure.
+
+\subsection{Exercise 8: Training Stability and Inference Cost}
+
+\textbf{Task.}  
+Compare the three paradigms qualitatively in terms of:
+\begin{itemize}
+    \item training stability,
+    \item sample quality,
+    \item controllability,
+    \item inference cost.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+A reasonable comparison is:
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+Model family & Training stability & Sample quality & Controllability & Inference cost \\
+\hline
+VAE & relatively stable & moderate & often good & low \\
+GAN & often unstable & often very sharp & moderate & low \\
+Diffusion & usually stable & very high & high in conditional form & high \\
+\hline
+\end{tabular}
+\end{center}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+There is no universally best generative model; different methods optimize different tradeoffs.
+
+\subsection{Exercise 9: Autoregressive Models in the Comparison}
+
+Modern language models are usually autoregressive rather than VAE-, GAN-, or diffusion-based.
+
+\medskip
+
+\noindent
+\textbf{Questions.}
+\begin{enumerate}
+    \item What is the core factorization used in autoregressive modeling?
+    \item Why does this make likelihood training straightforward?
+    \item What is one major disadvantage at inference time?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+\begin{enumerate}
+    \item The model uses
+    \[
+    p(x)=\prod_{t=1}^T p(x_t\mid x_{<t}).
+    \]
+
+    \item This factorization turns the joint likelihood into a sum of conditional log-likelihood terms, so training becomes next-token prediction.
+
+    \item Sampling is sequential, so inference can be slow for long outputs.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Autoregressive models form another major generative paradigm and are especially natural for language.
+
+\subsection{Exercise 10 (Synthesis): Which Model Would You Choose?}
+
+For each application below, suggest a suitable generative paradigm and justify your choice briefly.
+
+\begin{enumerate}
+    \item learning an interpretable low-dimensional latent space for scientific data,
+    \item generating very sharp synthetic images for design prototypes,
+    \item producing high-fidelity conditional image generation from text,
+    \item next-token prediction in a large language model,
+    \item density estimation for anomaly detection.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Possible discussion.}
+
+\begin{enumerate}
+    \item VAE, because latent structure and interpolation are central.
+    \item GAN, if sharp image quality is the main goal and instability is manageable.
+    \item Conditional diffusion, because it combines high quality with strong controllability.
+    \item Autoregressive transformer, because language is naturally sequential.
+    \item Likelihood-based model, because explicit density estimation matters.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Final insight.}  
+Model choice should follow the objective: representation quality, sample realism, controllability, tractable likelihood, or inference speed.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item VAEs emphasize latent structure, interpolation, and tractable variational learning
+    \item GANs emphasize realistic sample generation but may suffer from instability and mode collapse
+    \item Diffusion models generate by iterative denoising and often achieve strong quality with stable training
+    \item Autoregressive models factorize likelihood exactly and are central in language modeling
+    \item Generative paradigms should be compared through their tradeoffs, not only through a single metric
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Final course takeaway.}  
+Modern machine learning is not organized around a single best model, but around families of models whose mathematical structure matches different goals: prediction, representation learning, generation, and decision-making.

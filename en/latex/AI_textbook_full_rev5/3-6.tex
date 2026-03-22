@@ -1,0 +1,378 @@
+\section{From Recurrence to Attention}
+
+The previous two sections developed a precise picture of what recurrent models do well and where they struggle.
+Recurrence is a natural architecture for temporal data because it processes a sequence through an evolving state.
+That state functions as a running summary of the past.
+But this same mechanism also creates a structural bottleneck.
+If information from an early part of a long sequence is needed much later, then it must survive repeated state updates and repeated Jacobian products.
+Even gated architectures make that dependence travel through time one step after another.
+
+\medskip
+
+Attention arose as a structural response to this problem.
+Instead of requiring all relevant information to be compressed into one fixed-size state, the model is allowed to access past representations directly and selectively.
+The central idea is content-based retrieval inside the network: a model forms a query describing what it currently needs, compares that query with a collection of candidate keys, and then aggregates the corresponding values according to learned relevance weights.
+The result is not merely a different formula.
+It is a different architecture for memory access.
+
+\medskip
+
+The purpose of this section is to make that transition mathematically explicit.
+We will define attention as content-based weighted aggregation, derive its weighted-sum form from similarity scores, explain the encoder--decoder bottleneck in classical sequence-to-sequence models, prove a basic structural proposition about the output of attention, and work through a small alignment example.
+The pedagogical point is that attention did not appear as an arbitrary design fashion.
+It solved a precise architectural problem.
+
+\subsection*{The encoder--decoder bottleneck}
+
+Consider a classical sequence-to-sequence architecture for translation.
+An encoder reads an input sequence $x_1,\dots,x_T$ and produces a final state $h_T$.
+A decoder then produces an output sequence $y_1,\dots,y_S$ using that final state as its initial summary of the source.
+At an abstract level one writes
+\[
+ h_t = F(h_{t-1},x_t),
+ \qquad
+ s_u = G(s_{u-1},y_{u-1},h_T),
+\]
+where $h_t$ is the encoder state and $s_u$ is the decoder state.
+The entire source sentence is therefore compressed into the single vector $h_T$.
+
+\medskip
+
+This architecture can work well for short sequences, but it imposes a severe information bottleneck.
+A fixed-dimensional vector must simultaneously retain all the details that might later matter for every output token.
+When sequences become longer or dependencies become more specific, the decoder may need information that was present earlier in the source but is not adequately represented in the final summary.
+In that sense, classical sequence-to-sequence recurrence asks one vector to do too much.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[>=Latex, node distance=0.9cm and 0.8cm]
+\tikzstyle{tok}=[draw, rounded corners, minimum width=0.9cm, minimum height=0.55cm]
+\tikzstyle{state}=[draw, circle, minimum size=0.62cm, inner sep=0pt]
+\node[tok] (x1) at (0,0) {$x_1$};
+\node[tok] (x2) at (1.4,0) {$x_2$};
+\node[tok] (x3) at (2.8,0) {$\cdots$};
+\node[tok] (x4) at (4.2,0) {$x_T$};
+\node[state] (h1) at (0,1.3) {$h_1$};
+\node[state] (h2) at (1.4,1.3) {$h_2$};
+\node[state] (h3) at (2.8,1.3) {$\cdots$};
+\node[state, thick] (hT) at (4.2,1.3) {$h_T$};
+\node[state] (s1) at (5.9,1.3) {$s_1$};
+\node[state] (s2) at (7.3,1.3) {$s_2$};
+\node[state] (s3) at (8.7,1.3) {$\cdots$};
+\node[tok] (y1) at (5.9,0) {$y_1$};
+\node[tok] (y2) at (7.3,0) {$y_2$};
+\node[tok] (y3) at (8.7,0) {$y_S$};
+\draw[->] (x1) -- (h1);
+\draw[->] (x2) -- (h2);
+\draw[->] (x4) -- (hT);
+\draw[->, thick] (h1) -- (h2);
+\draw[->, thick] (h2) -- (h3);
+\draw[->, thick] (h3) -- (hT);
+\draw[->, thick, line width=1pt] (hT) -- node[above] {single summary vector} (s1);
+\draw[->, thick] (s1) -- (s2);
+\draw[->, thick] (s2) -- (s3);
+\draw[->] (s1) -- (y1);
+\draw[->] (s2) -- (y2);
+\draw[->] (s3) -- (y3);
+\node[align=center] at (4.95,2.15) {encoder--decoder bottleneck};
+\end{tikzpicture}
+\caption{Classical sequence-to-sequence recurrence compresses the entire source into one summary state before decoding. Attention replaces this single bottleneck with selective access to many encoder states.}
+\label{fig:seq2seq-bottleneck}
+\end{figure}
+
+Attention loosens this bottleneck.
+Instead of forcing the decoder to rely only on $h_T$, it allows the decoder at time $u$ to construct a context vector from the entire collection $h_1,\dots,h_T$.
+The context depends on what the decoder currently needs, so different output positions may retrieve different parts of the source.
+
+\subsection*{Core definitions}
+
+\begin{definition}[Attention mechanism]
+Let $q\in\mathbb{R}^{d_q}$ be a query, let $k_1,\dots,k_n\in\mathbb{R}^{d_q}$ be keys, and let $v_1,\dots,v_n\in\mathbb{R}^{d_v}$ be values.
+An \emph{attention mechanism} is a map that assigns a relevance weight $\alpha_i(q)$ to each pair $(q,k_i)$ and then returns an aggregate of the values:
+\[
+\operatorname{Attn}(q,\{(k_i,v_i)\}_{i=1}^n)
+= \sum_{i=1}^{n} \alpha_i(q) v_i.
+\]
+When the weights depend on content similarity between the query and the keys, the mechanism is called \emph{content-based attention}.
+\end{definition}
+
+\begin{definition}[Compatibility score and alignment weights]
+A \emph{compatibility score} or \emph{similarity score} is a function
+\[
+ s:\mathbb{R}^{d_q}\times \mathbb{R}^{d_q}\to\mathbb{R}
+\]
+that measures how relevant a key is to a given query.
+Given scores $s(q,k_i)$, the corresponding \emph{alignment weights} are commonly defined by the softmax normalization
+\[
+ \alpha_i(q)=\frac{\exp(s(q,k_i))}{\sum_{j=1}^{n}\exp(s(q,k_j))},
+ \qquad i=1,\dots,n.
+\]
+These weights are nonnegative and sum to $1$.
+\end{definition}
+
+\begin{definition}[Context vector]
+In encoder--decoder attention, the \emph{context vector} at decoder step $u$ is the weighted combination
+\[
+ c_u = \sum_{t=1}^{T} \alpha_{u,t} h_t,
+\]
+where $h_t$ are encoder states and $\alpha_{u,t}$ are alignment weights determined by the current decoder state and the source representations.
+The context vector summarizes the source \emph{relative to the current decoding need}, not in one fixed way for the whole sentence.
+\end{definition}
+
+\subsection*{From similarity scores to weighted aggregation}
+
+The weighted-sum form of attention is not arbitrary.
+It emerges naturally from three requirements.
+First, each candidate memory item should receive a relevance score based on its match with the current query.
+Second, these scores should be normalized so that they become comparable across different numbers of candidates.
+Third, the retrieved information should remain differentiable with respect to both the scores and the stored representations.
+
+\medskip
+
+Suppose the current decoder state or query is $q$, and suppose the encoder has produced candidate memories $h_1,\dots,h_T$.
+A score function $s(q,h_t)$ assigns a real number to each source position.
+To transform these scores into usable weights, one applies a normalization map.
+The most common choice is the softmax:
+\[
+ e_t = s(q,h_t),
+ \qquad
+ \alpha_t = \frac{e^{e_t}}{\sum_{j=1}^{T} e^{e_j}}.
+\]
+Now $\alpha_t\ge 0$ and $\sum_t \alpha_t=1$.
+The natural differentiable retrieval rule is then
+\[
+ c(q)=\sum_{t=1}^{T}\alpha_t h_t.
+\]
+Thus the weighted-sum form of attention is obtained by the composition
+\[
+ \text{query and memories}
+ \xrightarrow{\text{score}}
+ (e_1,\dots,e_T)
+ \xrightarrow{\text{softmax}}
+ (\alpha_1,\dots,\alpha_T)
+ \xrightarrow{\text{weighted sum}}
+ c.
+\]
+
+\medskip
+
+This formula has an important interpretation.
+The model does not retrieve one memory slot in a hard, discrete way.
+Instead it forms a soft data-dependent average over the available values.
+That soft selection is what makes attention trainable by gradient-based methods.
+At the same time, when one weight becomes much larger than the others, the mechanism approximates nearly discrete retrieval.
+
+\subsection*{A structural proposition about attention outputs}
+
+The weighted-sum form immediately imposes geometric structure on what attention can produce.
+
+\begin{proposition}[Attention outputs lie in the span and, with softmax weights, in the convex hull of the values]
+Let $v_1,\dots,v_n\in\mathbb{R}^{d_v}$ and let
+\[
+ y = \sum_{i=1}^{n}\alpha_i v_i.
+\]
+Then $y\in \operatorname{span}\{v_1,\dots,v_n\}$.
+If in addition $\alpha_i\ge 0$ for all $i$ and $\sum_{i=1}^{n}\alpha_i=1$, then $y$ lies in the convex hull of $\{v_1,\dots,v_n\}$.
+In particular, standard softmax attention produces outputs that are convex combinations of the available values.
+\end{proposition}
+
+\begin{proof}
+By definition, $y$ is a linear combination of the vectors $v_1,\dots,v_n$, so it belongs to their span.
+If moreover the coefficients are nonnegative and sum to $1$, then $y$ is a convex combination of those vectors, which is exactly the definition of membership in the convex hull.
+For softmax attention the weights satisfy these properties automatically, so the conclusion follows.
+\end{proof}
+
+\medskip
+
+This proposition is elementary but conceptually important.
+Attention does not create information from nowhere.
+It reweights and recombines existing value vectors.
+Its power comes from making the coefficients data-dependent.
+The architecture therefore changes \emph{which} information can be accessed and \emph{when} it can be accessed, even though each context vector remains a structured combination of the stored values.
+
+\begin{remark}
+The proposition also explains why learned linear projections are often placed before and after attention.
+If one wants the retrieved vector to live in a more expressive feature space, one can transform the stored values before aggregation or transform the resulting context afterward.
+Attention itself supplies adaptive selection; linear maps around it expand the representational class.
+\end{remark}
+
+\subsection*{Why attention solves a precise recurrent problem}
+
+The bottleneck in classical sequence-to-sequence recurrence has two aspects.
+First, the source must be summarized in a single vector before the decoder begins to use it.
+Second, the contribution of an early source token to a late target token must travel through many recurrent transitions.
+Attention addresses both problems.
+At decoder step $u$, one computes a fresh query from the current decoding state and retrieves a context vector from all source positions.
+Thus source token $x_t$ can influence output token $y_u$ directly through the coefficient $\alpha_{u,t}$ rather than only indirectly through a long chain of recurrent state updates.
+
+\medskip
+
+This does not remove all sequential structure.
+In an encoder--decoder model the decoder still evolves through time.
+But it replaces one global compressed memory with dynamic access to a whole collection of source-side representations.
+That is the decisive conceptual change.
+Memory is no longer only something carried forward; it becomes something that can be queried.
+
+\subsection*{Worked example: a short alignment problem}
+
+Consider a toy translation example with source sentence
+\[
+ \text{the cat sleeps}
+\]
+and target sentence
+\[
+ \text{le chat dort}.
+\]
+Suppose the encoder has produced source representations $h_1,h_2,h_3$ for \emph{the}, \emph{cat}, and \emph{sleeps}.
+At the decoder step for producing \emph{chat}, the current decoder state should look most strongly at the source word \emph{cat}.
+A simplified set of scores might be
+\[
+ e=(0.2,\,2.4,\,0.1).
+\]
+The softmax weights are then approximately
+\[
+ \alpha\approx(0.091,\,0.827,\,0.082).
+\]
+Therefore the context vector is
+\[
+ c \approx 0.091 h_1 + 0.827 h_2 + 0.082 h_3.
+\]
+This means that the decoder forms a source summary specialized to the current target word.
+For the next decoder step, when producing \emph{dort}, the largest alignment weight would typically shift toward the source word \emph{sleeps}.
+
+\begin{example}[A tiny numerical attention computation]
+Suppose the three source values are one-dimensional for simplicity:
+\[
+ v_1=0,
+ \qquad
+ v_2=1,
+ \qquad
+ v_3=2,
+\]
+and suppose the attention weights at one decoder step are
+\[
+ \alpha=(0.1,0.8,0.1).
+\]
+Then the retrieved context is
+\[
+ c = 0.1\cdot 0 + 0.8\cdot 1 + 0.1\cdot 2 = 1.0.
+\]
+If the weights instead become $(0.05,0.15,0.80)$, then
+\[
+ c = 0.05\cdot 0 + 0.15\cdot 1 + 0.80\cdot 2 = 1.75.
+\]
+The values have not changed; what changed is the content-dependent routing.
+This is the basic mechanism by which attention can focus on different parts of a sequence at different times.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[>=Latex]
+% matrix labels
+\node at (1.0,4.35) {the};
+\node at (2.2,4.35) {cat};
+\node at (3.4,4.35) {sleeps};
+\node[rotate=90] at (-0.35,3.2) {le};
+\node[rotate=90] at (-0.35,2.0) {chat};
+\node[rotate=90] at (-0.35,0.8) {dort};
+% cells row 1
+\fill[black!20] (0.4,2.8) rectangle (1.6,4.0);
+\fill[black!8]  (1.6,2.8) rectangle (2.8,4.0);
+\fill[black!6]  (2.8,2.8) rectangle (4.0,4.0);
+% row 2
+\fill[black!10] (0.4,1.6) rectangle (1.6,2.8);
+\fill[black!70] (1.6,1.6) rectangle (2.8,2.8);
+\fill[black!8]  (2.8,1.6) rectangle (4.0,2.8);
+% row 3
+\fill[black!5]  (0.4,0.4) rectangle (1.6,1.6);
+\fill[black!12] (1.6,0.4) rectangle (2.8,1.6);
+\fill[black!78] (2.8,0.4) rectangle (4.0,1.6);
+% grid
+\draw[step=1.2cm, black] (0.4,0.4) grid (4.0,4.0);
+% numbers
+\node at (1.0,3.4) {0.72};
+\node at (2.2,3.4) {0.16};
+\node at (3.4,3.4) {0.12};
+\node[text=white] at (2.2,2.2) {0.82};
+\node at (1.0,2.2) {0.10};
+\node at (3.4,2.2) {0.08};
+\node at (1.0,1.0) {0.06};
+\node at (2.2,1.0) {0.14};
+\node[text=white] at (3.4,1.0) {0.80};
+\end{tikzpicture}
+\caption{A toy alignment matrix for translating \emph{the cat sleeps} to \emph{le chat dort}. Darker cells indicate larger attention weights. Different target words retrieve different source positions, which is exactly what a single fixed source summary cannot do.}
+\label{fig:alignment-matrix}
+\end{figure}
+
+The alignment matrix in \Cref{fig:alignment-matrix} visualizes the same idea at the sentence level.
+Each row corresponds to one decoder step, and each column corresponds to one source position.
+The weights in each row sum to $1$.
+For \emph{chat}, the mass is concentrated on \emph{cat}; for \emph{dort}, it is concentrated on \emph{sleeps}.
+Thus the decoder forms different context vectors for different output tokens.
+This is what it means for attention to provide dynamic, content-based access.
+
+\subsection*{Relation to the later transformer viewpoint}
+
+Pedagogically it is important to pause here before moving to transformers.
+Attention should first be understood as a mechanism:
+\begin{itemize}
+    \item it responds to the encoder--decoder bottleneck,
+    \item it replaces one fixed summary by query-dependent retrieval,
+    \item it creates direct interactions between distant positions,
+    \item it remains differentiable because the retrieval is soft rather than hard.
+\end{itemize}
+Only after this mechanism is clear does it become natural to study architectures built primarily from attention, such as transformers.
+In that sense, attention is not yet the whole architecture.
+It is the key structural idea that makes a different architecture possible.
+
+\whattoremember{Attention is content-based weighted aggregation.
+A query is compared with a collection of keys, the resulting scores are normalized into alignment weights, and a context vector is formed as a weighted sum of values.
+This directly addresses the classical sequence-to-sequence bottleneck by allowing different output positions to retrieve different source information instead of relying on one fixed summary vector.}
+
+\commonconfusion{Attention is sometimes described as if it were a mysterious replacement for recurrence.
+That is too vague.
+Its original role in sequence-to-sequence models was much more specific: it allowed the decoder to access the full collection of encoder states instead of depending only on a single compressed vector.
+Also, attention is not hard lookup.
+With softmax normalization it produces a convex combination of values, so its power comes from adaptive weighting rather than from magically creating new information.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Let values $v_1,v_2,v_3\in\mathbb{R}^d$ and weights $\alpha_1,\alpha_2,\alpha_3$ satisfy $\alpha_i\ge 0$ and $\alpha_1+\alpha_2+\alpha_3=1$.
+Show directly that $\sum_i \alpha_i v_i$ lies in the convex hull of $\{v_1,v_2,v_3\}$.
+Why does this apply automatically to softmax attention?
+\end{exercise}
+
+\begin{exercise}
+Suppose a decoder step produces similarity scores $(1,2,0)$ against three source positions.
+Compute the corresponding softmax weights.
+Which source position receives the largest share of attention?
+\end{exercise}
+
+\begin{exercise}
+Explain in your own words why the vector $h_T$ in a classical encoder--decoder model is a bottleneck.
+Your answer should refer both to representation capacity and to long-range dependence through recurrent updates.
+\end{exercise}
+
+\begin{exercise}
+In a toy translation example with source words $(x_1,x_2,x_3)$ and target words $(y_1,y_2)$, suppose the alignment weights are
+\[
+(0.7,0.2,0.1)\quad\text{for }y_1,
+\qquad
+(0.1,0.1,0.8)\quad\text{for }y_2.
+\]
+Describe qualitatively what this says about the different context vectors used at the two decoder steps.
+\end{exercise}
+
+\begin{exercise}
+Why is the weighted-sum form of attention more compatible with gradient-based training than a hard rule that selects exactly one memory slot by an argmax operation?
+Give both an optimization-based and a representational answer.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+The attention mechanism entered modern deep learning through sequence-to-sequence learning, where it was introduced as a remedy for the fixed-vector bottleneck of encoder--decoder recurrence.
+Work by Bahdanau, Cho, and Bengio was especially influential in making this point explicit for neural machine translation.
+Luong and collaborators developed closely related attention formulations, and the language of alignments helped connect neural translation to earlier ideas from statistical machine translation.
+From a broader perspective, attention can be understood as differentiable content-based retrieval over an external set of representations.
+That viewpoint became central once later architectures were built almost entirely from attention, but its pedagogical meaning is already clear here: attention solved a precise memory-access problem before it became the organizing principle of transformers.

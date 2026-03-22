@@ -1,0 +1,271 @@
+\section{Lecture 17: Activation Functions and Depth}
+
+\subsection{Motivation}
+
+In the previous lecture, we saw that training deep networks is difficult due to unstable gradient flow.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How can we design networks that both:
+\begin{itemize}
+    \item are expressive,
+    \item and are trainable?
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Activation functions and architectural design play a central role in controlling both expressivity and gradient flow.
+
+\subsection{Nonlinear Activations}
+
+A neural network layer has the form:
+\[
+h = \sigma(Wx + b),
+\]
+where $\sigma$ is a nonlinear activation function.
+
+\medskip
+
+\noindent
+\textbf{Why nonlinearity is necessary.}
+
+\begin{itemize}
+    \item Without $\sigma$, composition of layers is linear:
+    \[
+    W_L \cdots W_1 x = W x
+    \]
+    \item Depth would not increase expressivity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Common activation functions.}
+
+\begin{itemize}
+    \item \textbf{Sigmoid:}
+    \[
+    \sigma(z) = \frac{1}{1 + e^{-z}}
+    \]
+
+    \item \textbf{Tanh:}
+    \[
+    \tanh(z)
+    \]
+
+    \item \textbf{ReLU:}
+    \[
+    \text{ReLU}(z) = \max(0, z)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Comparison.}
+
+\begin{itemize}
+    \item Sigmoid / tanh:
+    \begin{itemize}
+        \item smooth
+        \item saturate $\Rightarrow$ vanishing gradients
+    \end{itemize}
+
+    \item ReLU:
+    \begin{itemize}
+        \item non-saturating for $z > 0$
+        \item preserves gradient magnitude
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Activation functions control both expressivity and gradient flow.
+
+\subsection{Architectural Design Patterns}
+
+Beyond individual layers, architecture matters.
+
+\medskip
+
+\noindent
+\textbf{Basic pattern.}
+\begin{itemize}
+    \item Linear transformation $\rightarrow$ nonlinearity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Stacking layers.}
+\begin{itemize}
+    \item Builds hierarchical representations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key considerations.}
+
+\begin{itemize}
+    \item Depth (number of layers)
+    \item Width (number of units per layer)
+    \item Activation choice
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Design principle.}  
+Structure should reflect the underlying structure of the data.
+
+\subsection{Depth versus Width}
+
+\textbf{Two ways to increase model capacity:}
+
+\begin{itemize}
+    \item Increase width (more neurons per layer)
+    \item Increase depth (more layers)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Width.}
+\begin{itemize}
+    \item Can approximate complex functions (universal approximation)
+    \item May require exponentially many units
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Depth.}
+\begin{itemize}
+    \item Enables compositional structure
+    \item More parameter-efficient
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key intuition.}
+
+\begin{itemize}
+    \item Depth allows reuse of intermediate features
+    \item Represents hierarchical computations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Deeper networks are harder to train
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth provides efficient expressivity but introduces optimization challenges.
+
+\subsection{Expressivity Considerations}
+
+\textbf{Piecewise linear perspective (ReLU networks).}
+
+\begin{itemize}
+    \item ReLU networks partition input space into regions
+    \item Each region corresponds to a linear function
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect of depth.}
+
+\begin{itemize}
+    \item Number of linear regions grows rapidly with depth
+    \item Enables highly complex decision boundaries
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Representation viewpoint.}
+
+\begin{itemize}
+    \item Early layers: simple features
+    \item Deeper layers: abstract features
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to kernels.}
+
+\begin{itemize}
+    \item Kernel methods use fixed feature maps
+    \item Deep networks learn feature maps dynamically
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Expressivity depends on both architecture and learned representation.
+
+\subsection{A Unifying Perspective}
+
+Activation functions and depth together determine:
+
+\begin{itemize}
+    \item \textbf{Expressivity:} ability to represent complex functions
+    \item \textbf{Trainability:} stability of gradient flow
+    \item \textbf{Inductive bias:} structure imposed on solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Deep networks balance expressivity and trainability through architectural design.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The success of deep learning depends as much on architecture as on optimization.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item nonlinear activation functions,
+    \item architectural design patterns,
+    \item depth versus width tradeoffs,
+    \item expressivity of neural networks.
+\end{itemize}
+
+\medskip
+
+\noindent
+However, activation functions alone do not fully solve training instability.
+
+\medskip
+
+\noindent
+In the next lecture, we study normalization methods, which stabilize training and enable deeper networks.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Designing deep networks requires balancing expressivity with stable gradient propagation.

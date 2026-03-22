@@ -1,0 +1,496 @@
+\section{Latent Variables, Incomplete Data, and the EM Principle}
+
+Section~5.1 introduced the idea that a generative model may explain observations through hidden causes.
+That idea becomes mathematically nontrivial as soon as the latent variables are unobserved.
+Even when the joint model $p_\theta(x,z)$ is simple, the observed-data likelihood may become awkward because the latent variable must be summed or integrated out.
+This section develops the expectation--maximization (EM) principle as the canonical response to that difficulty.
+It is one of the oldest and still one of the clearest examples of how lower bounds, latent inference, and parameter estimation interact in generative modeling.
+
+\medskip
+
+\noindent
+\textbf{Section role.}
+The goal here is not merely to describe EM procedurally.
+The section formalizes the distinction between complete-data and incomplete-data likelihoods, derives the EM lower bound using Jensen's inequality, proves the monotonic-improvement property in a clean finite setting, and works through Gaussian mixtures as the chapter's first full latent-variable example.
+
+\subsection*{Complete data, incomplete data, and the source of the difficulty}
+
+Suppose observations $x_1,\dots,x_n$ are accompanied by latent variables $z_1,\dots,z_n$.
+The model is specified through a joint density or probability mass function
+\[
+p_\theta(x,z).
+\]
+If the latent variables were observed, parameter estimation would often be straightforward.
+This motivates the following distinction.
+
+\begin{definition}[Complete-data likelihood]
+For observations $x=(x_1,\dots,x_n)$ and latent variables $z=(z_1,\dots,z_n)$, the complete-data likelihood is
+\[
+L_c(\theta; x,z) = p_\theta(x,z),
+\]
+and the complete-data log-likelihood is
+\[
+\ell_c(\theta; x,z)=\log p_\theta(x,z).
+\]
+\end{definition}
+
+\begin{definition}[Incomplete-data or observed-data likelihood]
+When only $x$ is observed, the relevant likelihood is
+\[
+L(\theta; x)=p_\theta(x)=\sum_z p_\theta(x,z)
+\]
+for discrete latent variables, or
+\[
+L(\theta; x)=p_\theta(x)=\int p_\theta(x,z)\,dz
+\]
+for continuous latent variables.
+Its logarithm
+\[
+\ell(\theta; x)=\log p_\theta(x)
+\]
+is called the observed-data or incomplete-data log-likelihood.
+\end{definition}
+
+The complete-data problem is often easy because the logarithm distributes over products and because the latent structure appears explicitly.
+The incomplete-data problem is harder because one must first marginalize and only then take the logarithm.
+For independent observations,
+\[
+\ell(\theta; x_1,\dots,x_n)=\sum_{i=1}^n \log p_\theta(x_i)
+= \sum_{i=1}^n \log \sum_{z_i} p_\theta(x_i,z_i),
+\]
+or the corresponding integral form.
+The expression
+\[
+\log \sum_{z_i} p_\theta(x_i,z_i)
+\]
+is the characteristic obstruction: the logarithm of a sum destroys much of the simple algebra available in the complete-data setting.
+
+\subsection*{A lower bound from Jensen's inequality}
+
+The central idea behind EM is to introduce an auxiliary distribution over the latent variables.
+For one observation $x$, let $q(z)$ be any distribution on the latent space with $q(z)>0$ whenever $p_\theta(x,z)>0$.
+Then
+\[
+\log p_\theta(x)
+= \log \sum_z q(z)\frac{p_\theta(x,z)}{q(z)}.
+\]
+Since $\log$ is concave, Jensen's inequality gives
+\[
+\log p_\theta(x)
+\geq
+\sum_z q(z)\log \frac{p_\theta(x,z)}{q(z)}.
+\]
+For a dataset, summing over $i$ yields the lower bound
+\[
+\ell(\theta; x_1,\dots,x_n)
+\geq
+\sum_{i=1}^n \sum_{z_i} q_i(z_i) \log \frac{p_\theta(x_i,z_i)}{q_i(z_i)}.
+\]
+It is useful to name the right-hand side.
+Define
+\[
+\mathcal{F}(q,\theta)
+=
+\sum_{i=1}^n
+\sum_{z_i} q_i(z_i)\log p_\theta(x_i,z_i)
+-
+\sum_{i=1}^n \sum_{z_i} q_i(z_i)\log q_i(z_i).
+\]
+Then
+\[
+\ell(\theta; x_1,\dots,x_n) \geq \mathcal{F}(q,\theta).
+\]
+The first term is an expected complete-data log-likelihood; the second is the entropy of the auxiliary distributions.
+
+A more informative form comes from comparing the bound to the exact posterior.
+
+\begin{proposition}[Likelihood decomposition]
+For any choice of auxiliary distributions $q_i(z_i)$,
+\[
+\ell(\theta; x_1,\dots,x_n)
+=
+\mathcal{F}(q,\theta)
++
+\sum_{i=1}^n \mathrm{KL}\bigl(q_i(z_i)\,\|\,p_\theta(z_i\mid x_i)\bigr),
+\]
+where $\mathrm{KL}(q\|p)=\sum_z q(z)\log \frac{q(z)}{p(z)}$ in the discrete case.
+In particular, $\mathcal{F}(q,\theta)$ is a lower bound on the observed-data log-likelihood, and equality holds if and only if
+\[
+q_i(z_i)=p_\theta(z_i\mid x_i)
+\quad\text{for all } i.
+\]
+\end{proposition}
+
+\begin{proof}
+Starting from Bayes' rule,
+\[
+p_\theta(z_i\mid x_i)=\frac{p_\theta(x_i,z_i)}{p_\theta(x_i)},
+\]
+we obtain
+\[
+\log p_\theta(x_i)
+= \log p_\theta(x_i,z_i) - \log p_\theta(z_i\mid x_i).
+\]
+Taking expectation with respect to $q_i$ gives
+\[
+\log p_\theta(x_i)
+= \sum_{z_i} q_i(z_i)\log p_\theta(x_i,z_i)
+- \sum_{z_i} q_i(z_i)\log p_\theta(z_i\mid x_i).
+\]
+Add and subtract $\sum_{z_i}q_i(z_i)\log q_i(z_i)$ to get
+\[
+\log p_\theta(x_i)
+=
+\sum_{z_i} q_i(z_i)\log \frac{p_\theta(x_i,z_i)}{q_i(z_i)}
++
+\sum_{z_i} q_i(z_i)\log \frac{q_i(z_i)}{p_\theta(z_i\mid x_i)}.
+\]
+The first term is the $i$th contribution to $\mathcal{F}(q,\theta)$ and the second term is the KL divergence.
+Summing over $i$ proves the claim.
+\end{proof}
+
+This proposition explains EM conceptually.
+The lower bound becomes tight when the auxiliary distribution is chosen to be the exact posterior under the current parameters.
+The algorithm then improves the parameters while keeping that posterior-based bound in view.
+
+\subsection*{The EM algorithm}
+
+Let $\theta^{\mathrm{old}}$ denote the current parameter value.
+EM alternates between an inference step and an optimization step.
+The inference step chooses the posterior under the current parameters:
+\[
+q_i^{\mathrm{old}}(z_i)=p_{\theta^{\mathrm{old}}}(z_i\mid x_i).
+\]
+Because the KL divergence then vanishes,
+\[
+\ell(\theta^{\mathrm{old}};x)=\mathcal{F}(q^{\mathrm{old}},\theta^{\mathrm{old}}).
+\]
+If we now keep $q^{\mathrm{old}}$ fixed and maximize $\mathcal{F}(q^{\mathrm{old}},\theta)$ over $\theta$, the entropy term is constant in $\theta$, so the relevant objective reduces to
+\[
+Q(\theta,\theta^{\mathrm{old}})
+=
+\sum_{i=1}^n \mathbb{E}_{z_i\sim p_{\theta^{\mathrm{old}}}(z_i\mid x_i)}
+\bigl[\log p_\theta(x_i,z_i)\bigr].
+\]
+This is the classical EM surrogate.
+
+\paragraph{E-step.}
+Compute the posterior distributions
+\[
+q_i^{\mathrm{old}}(z_i)=p_{\theta^{\mathrm{old}}}(z_i\mid x_i).
+\]
+
+\paragraph{M-step.}
+Choose a new parameter value $\theta^{\mathrm{new}}$ satisfying
+\[
+Q(\theta^{\mathrm{new}},\theta^{\mathrm{old}})
+\geq
+Q(\theta^{\mathrm{old}},\theta^{\mathrm{old}}).
+\]
+In the exact version of EM, $\theta^{\mathrm{new}}$ maximizes $Q(\theta,\theta^{\mathrm{old}})$.
+In generalized EM, it is enough to improve it.
+
+\subsection*{Monotonic improvement of EM}
+
+The most classical theoretical fact about EM is that each iteration does not decrease the observed-data likelihood.
+This does not imply convergence to the global optimum, but it does explain why EM is algorithmically stable and conceptually appealing.
+
+\begin{theorem}[Monotonic improvement of EM]
+Assume the observed-data log-likelihood is finite and that, at iteration $t$:
+\begin{itemize}
+    \item the E-step sets
+    \[
+    q_i^{(t)}(z_i)=p_{\theta^{(t)}}(z_i\mid x_i),
+    \]
+    \item the M-step chooses $\theta^{(t+1)}$ such that
+    \[
+    Q(\theta^{(t+1)},\theta^{(t)}) \geq Q(\theta^{(t)},\theta^{(t)}).
+    \]
+\end{itemize}
+Then
+\[
+\ell(\theta^{(t+1)};x_1,\dots,x_n)
+\geq
+\ell(\theta^{(t)};x_1,\dots,x_n).
+\]
+\end{theorem}
+
+\begin{proof}
+By the likelihood decomposition,
+\[
+\ell(\theta;x)=\mathcal{F}(q,\theta)+\sum_{i=1}^n \mathrm{KL}\bigl(q_i\,\|\,p_\theta(z_i\mid x_i)\bigr).
+\]
+At iteration $t$, choose $q=q^{(t)}$ from the E-step.
+Because $q_i^{(t)}(z_i)=p_{\theta^{(t)}}(z_i\mid x_i)$, every KL divergence vanishes at $\theta=\theta^{(t)}$.
+Hence
+\[
+\ell(\theta^{(t)};x)=\mathcal{F}(q^{(t)},\theta^{(t)}).
+\]
+Now compare the same bound at the new parameter value $\theta^{(t+1)}$.
+Since KL divergences are always nonnegative,
+\[
+\ell(\theta^{(t+1)};x) \geq \mathcal{F}(q^{(t)},\theta^{(t+1)}).
+\]
+During the M-step, $q^{(t)}$ is fixed, so the entropy part of $\mathcal{F}(q^{(t)},\theta)$ is constant in $\theta$.
+Therefore improving $Q(\theta,\theta^{(t)})$ is equivalent to improving $\mathcal{F}(q^{(t)},\theta)$.
+The M-step assumption gives
+\[
+\mathcal{F}(q^{(t)},\theta^{(t+1)})
+\geq
+\mathcal{F}(q^{(t)},\theta^{(t)}).
+\]
+Combining the last three displays yields
+\[
+\ell(\theta^{(t+1)};x)
+\geq
+\mathcal{F}(q^{(t)},\theta^{(t+1)})
+\geq
+\mathcal{F}(q^{(t)},\theta^{(t)})
+=
+\ell(\theta^{(t)};x).
+\]
+This proves monotonic improvement.
+\end{proof}
+
+\noindent
+The theorem is intentionally modest.
+It does not say that EM finds the best parameter value, only that the observed-data likelihood cannot decrease under exact E-steps and improving M-steps.
+In nonconvex models, the algorithm may still converge to local optima or stationary points.
+
+\subsection*{A figure for the EM principle}
+
+Figure~\ref{fig:em-alternation} summarizes the logic of EM as alternating hidden-assignment inference and parameter re-estimation.
+
+\begin{figure}[ht]
+\centering
+\setlength{\fboxsep}{8pt}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{c}
+\fbox{\parbox{0.82\textwidth}{\centering
+Observed data $x_1,\dots,x_n$ and current parameters $\theta^{(t)}$
+}}\\[0.7em]
+$\Downarrow$ E-step: compute latent assignments or soft responsibilities\\[0.7em]
+\fbox{\parbox{0.82\textwidth}{\centering
+Posterior weights $q_i^{(t)}(z_i)=p_{\theta^{(t)}}(z_i\mid x_i)$
+}}\\[0.7em]
+$\Downarrow$ M-step: maximize expected complete-data log-likelihood\\[0.7em]
+\fbox{\parbox{0.82\textwidth}{\centering
+Updated parameters $\theta^{(t+1)}$ from weighted latent assignments
+}}\\[0.7em]
+$\circlearrowleft$ repeat until the likelihood stops improving
+\end{tabular}
+\caption{The logic of EM. The E-step infers hidden assignments under the current model, and the M-step re-estimates parameters as if those assignments were softly observed.}
+\label{fig:em-alternation}
+\end{figure}
+
+\subsection*{Gaussian mixtures: the canonical EM example}
+
+The Gaussian mixture model (GMM) is the standard worked example because every part of EM can be written explicitly.
+Assume data $x_i\in\mathbb{R}^d$ are generated from one of $K$ Gaussian components.
+Introduce a latent variable $z_i\in\{1,\dots,K\}$ indicating the component identity, with mixture weights $\pi_k\geq 0$ and $\sum_{k=1}^K \pi_k=1$.
+The joint model is
+\[
+p_\theta(x_i,z_i=k)=\pi_k\,\mathcal{N}(x_i\mid \mu_k,\Sigma_k),
+\]
+where
+\[
+\theta = \bigl(\pi_1,\dots,\pi_K,\mu_1,\dots,\mu_K,\Sigma_1,\dots,\Sigma_K\bigr).
+\]
+Marginalizing over $z_i$ gives
+\[
+p_\theta(x_i)=\sum_{k=1}^K \pi_k\,\mathcal{N}(x_i\mid \mu_k,\Sigma_k).
+\]
+
+It is often convenient to represent $z_i$ through indicator variables $z_{ik}\in\{0,1\}$ with $\sum_{k=1}^K z_{ik}=1$.
+Then the complete-data log-likelihood for the dataset is
+\[
+\ell_c(\theta;x,z)
+=
+\sum_{i=1}^n\sum_{k=1}^K z_{ik}
+\Bigl(
+\log \pi_k + \log \mathcal{N}(x_i\mid \mu_k,\Sigma_k)
+\Bigr).
+\]
+Because the indicators would be observed in the complete-data problem, maximizing this expression would simply be weighted Gaussian estimation for each component.
+EM replaces the unknown indicators by their posterior expectations.
+
+\paragraph{E-step for GMMs.}
+Given current parameters $\theta^{\mathrm{old}}$, compute the responsibilities
+\[
+\gamma_{ik}
+=
+\mathbb{E}[z_{ik}\mid x_i,\theta^{\mathrm{old}}]
+=
+ p_{\theta^{\mathrm{old}}}(z_i=k\mid x_i)
+=
+\frac{\pi_k\,\mathcal{N}(x_i\mid \mu_k,\Sigma_k)}{\sum_{j=1}^K \pi_j\,\mathcal{N}(x_i\mid \mu_j,\Sigma_j)}.
+\]
+These are soft assignment weights.
+They tell us how strongly the current model believes point $x_i$ came from component $k$.
+
+\paragraph{M-step for GMMs.}
+Define the effective component counts
+\[
+N_k = \sum_{i=1}^n \gamma_{ik}.
+\]
+Maximizing the expected complete-data log-likelihood subject to $\sum_k \pi_k=1$ gives the updates
+\[
+\pi_k^{\mathrm{new}} = \frac{N_k}{n},
+\]
+\[
+\mu_k^{\mathrm{new}} = \frac{1}{N_k}\sum_{i=1}^n \gamma_{ik}x_i,
+\]
+\[
+\Sigma_k^{\mathrm{new}} = \frac{1}{N_k}\sum_{i=1}^n \gamma_{ik}(x_i-\mu_k^{\mathrm{new}})(x_i-\mu_k^{\mathrm{new}})^\top.
+\]
+Thus each parameter update takes exactly the form one would obtain if the latent labels were observed, except that the hard assignments have been replaced by posterior weights.
+This is the clearest operational meaning of EM.
+
+\subsection*{A worked one-dimensional mixture example}
+
+To make the alternation explicit, consider a one-dimensional two-component mixture with fixed variance $\sigma^2=1$.
+Let the data be
+\[
+x_1=0,\qquad x_2=0.5,\qquad x_3=3,
+\]
+and initialize
+\[
+\pi_1^{\mathrm{old}}=\pi_2^{\mathrm{old}}=0.5,
+\qquad
+\mu_1^{\mathrm{old}}=0,
+\qquad
+\mu_2^{\mathrm{old}}=2.5.
+\]
+With variance fixed, the unknown parameters are only the mixture weights and means.
+
+For a standard normal density, we use the approximate values
+\[
+\mathcal{N}(0\mid 0,1)\approx 0.399,
+\qquad
+\mathcal{N}(0\mid 2.5,1)\approx 0.0175,
+\]
+\[
+\mathcal{N}(0.5\mid 0,1)\approx 0.352,
+\qquad
+\mathcal{N}(0.5\mid 2.5,1)\approx 0.0540,
+\]
+\[
+\mathcal{N}(3\mid 0,1)\approx 0.00443,
+\qquad
+\mathcal{N}(3\mid 2.5,1)\approx 0.352.
+\]
+The E-step responsibilities for component $1$ are therefore
+\[
+\gamma_{11}
+=
+\frac{0.5\cdot 0.399}{0.5\cdot 0.399 + 0.5\cdot 0.0175}
+\approx 0.958,
+\]
+\[
+\gamma_{21}
+=
+\frac{0.5\cdot 0.352}{0.5\cdot 0.352 + 0.5\cdot 0.0540}
+\approx 0.867,
+\]
+\[
+\gamma_{31}
+=
+\frac{0.5\cdot 0.00443}{0.5\cdot 0.00443 + 0.5\cdot 0.352}
+\approx 0.012.
+\]
+Hence the responsibilities for component $2$ are
+\[
+\gamma_{12}\approx 0.042,
+\qquad
+\gamma_{22}\approx 0.133,
+\qquad
+\gamma_{32}\approx 0.988.
+\]
+The effective counts become
+\[
+N_1 \approx 0.958+0.867+0.012 = 1.837,
+\qquad
+N_2 \approx 1.163.
+\]
+The M-step then gives updated weights
+\[
+\pi_1^{\mathrm{new}}\approx \frac{1.837}{3}\approx 0.612,
+\qquad
+\pi_2^{\mathrm{new}}\approx 0.388,
+\]
+and updated means
+\[
+\mu_1^{\mathrm{new}}
+\approx
+\frac{0.958\cdot 0 + 0.867\cdot 0.5 + 0.012\cdot 3}{1.837}
+\approx 0.256,
+\]
+\[
+\mu_2^{\mathrm{new}}
+\approx
+\frac{0.042\cdot 0 + 0.133\cdot 0.5 + 0.988\cdot 3}{1.163}
+\approx 2.605.
+\]
+After one EM iteration, the first component shifts toward the two smaller observations, while the second shifts toward the larger observation.
+The model has not yet produced hard clusters; instead it has produced \emph{softly weighted evidence} and then re-estimated the parameters accordingly.
+That is the characteristic behavior of EM in mixture models.
+
+\subsection*{What is established here, and what remains limited}
+
+This section establishes several mathematically precise facts.
+First, it formalizes the gap between complete-data and observed-data likelihood.
+Second, it shows that Jensen's inequality yields a lower bound whose slack is exactly a KL divergence to the posterior.
+Third, it proves that exact E-steps together with improving M-steps produce monotonic improvement of the observed-data likelihood.
+Fourth, it shows concretely in Gaussian mixtures how posterior soft assignments become weighted sufficient statistics.
+
+\medskip
+
+\noindent
+What remains limited is equally important.
+The monotonicity theorem does not guarantee the global maximum.
+It does not guarantee fast convergence.
+It does not say that the E-step or M-step is always tractable in complicated latent-variable models.
+Those limitations are precisely what motivate approximate inference and variational methods later in the chapter.
+EM should therefore be understood both as a successful algorithm and as a conceptual prototype for much of modern latent-variable learning.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item Complete-data likelihood treats latent variables as if they were observed; incomplete-data likelihood marginalizes them out.
+    \item The logarithm of a sum is the main obstacle in latent-variable maximum likelihood.
+    \item Jensen's inequality yields a lower bound on the observed-data log-likelihood.
+    \item The E-step makes this bound tight at the current parameter value by choosing the exact posterior.
+    \item The M-step improves the bound by maximizing the expected complete-data log-likelihood.
+    \item In Gaussian mixtures, EM reduces to soft cluster assignment followed by weighted re-estimation of mixture parameters.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item \textbf{EM does not integrate out the latent variables once and for all.} It alternates between posterior inference under the current model and parameter update under those posterior weights.
+    \item \textbf{Monotonic improvement does not mean global optimality.} The likelihood can still have many local maxima.
+    \item \textbf{The lower bound is not arbitrary.} Its tightness is controlled exactly by the KL divergence to the posterior.
+    \item \textbf{Responsibilities are not hard labels.} They are posterior probabilities or soft assignments.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Starting from Bayes' rule, derive the decomposition
+    \[
+    \ell(\theta;x)=\mathcal{F}(q,\theta)+\mathrm{KL}(q\|p_\theta(z\mid x))
+    \]
+    for a single observation.
+    \item Show that if the latent variables were directly observed, maximizing the complete-data likelihood of a finite Gaussian mixture reduces to weighted estimation of Gaussian parameters for each component.
+    \item For a two-component one-dimensional Gaussian mixture with known variance, carry out one additional EM iteration after the worked example in this section.
+    \item Explain carefully why improving $Q(\theta,\theta^{\mathrm{old}})$ is equivalent to improving $\mathcal{F}(q^{\mathrm{old}},\theta)$ during the M-step.
+    \item Compare EM with ordinary gradient ascent on the observed-data log-likelihood. What algebraic structure does EM exploit that direct gradient ascent does not?
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+EM is one of the foundational algorithms of latent-variable modeling and remains conceptually central far beyond mixture models.
+The basic monotonicity argument and the likelihood-lower-bound view are classical.
+Gaussian mixtures are the standard pedagogical example because the E-step and M-step can both be written explicitly.
+The same lower-bound logic later reappears in variational inference, where the exact posterior is replaced by a tractable approximation.
+For the purposes of this chapter, EM is important not only as an algorithm in its own right but also as the cleanest entry point into the broader principle that hard marginal-likelihood problems can be approached through auxiliary distributions and alternating optimization.

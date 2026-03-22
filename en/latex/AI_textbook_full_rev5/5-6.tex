@@ -1,0 +1,352 @@
+\section{Generation by Denoising and Iterative Refinement}
+
+The previous sections presented three major paradigms for generative modeling:
+latent-variable decoding, adversarial generation, and exact transport by invertible maps.
+Diffusion introduces a fourth viewpoint.
+Instead of generating a sample in one shot, or evaluating density by a single formula, it models generation as the gradual reversal of corruption.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}
+A complicated global distribution may be easier to learn through many small local denoising steps than through one direct global map.
+
+\medskip
+
+This section is intentionally slower and more conceptual than the next one.
+Its goal is to make precise what is being corrupted, what is being learned, and why repeated denoising can become a generative mechanism.
+
+\subsection*{From clean data to noisy data}
+
+Suppose $x_0\in \mathbb{R}^d$ denotes a data point drawn from the unknown data distribution.
+A denoising-based generative method begins by defining a family of corrupted versions
+\[
+x_1,x_2,\dots,x_T,
+\]
+of $x_0$, where larger $t$ corresponds to more corruption.
+The variable $x_T$ should be so heavily corrupted that it is close to a simple reference distribution such as an isotropic Gaussian.
+
+\begin{definition}[Forward corruption process]
+A forward corruption process is a conditional distribution
+\[
+q(x_{1:T}\mid x_0)
+\]
+that maps clean data $x_0$ into progressively noisier variables $x_1,\dots,x_T$.
+In diffusion models this process is usually chosen by design rather than learned from data.
+\end{definition}
+
+The choice to fix the forward process is important.
+It means that the difficult modeling problem is shifted away from ``how should we corrupt data?'' and toward ``how should we reverse that corruption?''
+
+\subsection*{A clean probabilistic formulation of gradual corruption}
+
+A convenient formulation is a Markov chain,
+\[
+q(x_{1:T}\mid x_0)=\prod_{t=1}^T q(x_t\mid x_{t-1}),
+\]
+where each step adds only a small amount of noise.
+A standard Gaussian choice is
+\[
+q(x_t\mid x_{t-1})=
+\mathcal{N}\!\left(x_t\mid \sqrt{1-\beta_t}\,x_{t-1},\, \beta_t I\right),
+\]
+with $0<\beta_t<1$ typically small.
+
+\medskip
+
+This formula has a direct interpretation:
+\begin{itemize}
+    \item the factor $\sqrt{1-\beta_t}$ slightly shrinks the previous signal,
+    \item the term $\beta_t I$ injects fresh Gaussian noise,
+    \item repeated application gradually destroys fine structure.
+\end{itemize}
+
+For a single corruption level, one may also study a simpler conditional model of the form
+\[
+q_\sigma(\tilde x\mid x)=\mathcal{N}(\tilde x\mid x,\sigma^2 I),
+\]
+where $\tilde x=x+\sigma\varepsilon$ and $\varepsilon\sim \mathcal{N}(0,I)$.
+This ``single-step corruption'' viewpoint is historically useful because it connects diffusion to denoising autoencoders.
+
+\subsection*{Denoising as learning reverse conditional structure}
+
+If corruption is probabilistic, then denoising is naturally a conditional inference problem.
+Given a noisy observation $x_t$, one would like to understand the conditional distribution of the less noisy variable that preceded it.
+This suggests learning reverse conditionals of the form
+\[
+p_\theta(x_{t-1}\mid x_t).
+\]
+
+\begin{definition}[Reverse denoising model]
+A reverse denoising model is a parameterized family of conditional distributions
+\[
+p_\theta(x_{t-1}\mid x_t),\qquad t=1,\dots,T,
+\]
+intended to approximate the true reverse conditionals induced by the forward process.
+\end{definition}
+
+If these reverse conditionals were exact, then one could generate by starting from a simple sample $x_T$ and successively drawing
+\[
+x_{T-1}\sim p_\theta(x_{T-1}\mid x_T),\quad
+x_{T-2}\sim p_\theta(x_{T-2}\mid x_{T-1}),\quad \dots,\quad
+x_0\sim p_\theta(x_0\mid x_1).
+\]
+Thus generation becomes iterative refinement:
+noise is converted into structure one small step at a time.
+
+\paragraph{What is being learned?}
+The reverse model does not need to memorize entire clean samples.
+Rather, at each stage it must capture the local conditional geometry of the data distribution:
+which slightly cleaner configurations are plausible given the current noisy one.
+
+\subsection*{From denoising autoencoders to iterative generation}
+
+Before diffusion models were formulated as full latent Markov chains, denoising autoencoders already used corruption as a learning device.
+A denoising autoencoder samples a corrupted input
+\[
+\tilde x\sim q_\sigma(\tilde x\mid x),
+\]
+and trains a network $r_\theta(\tilde x)$ to reconstruct the clean target $x$ by minimizing a loss such as
+\[
+\mathcal{L}_{\mathrm{DAE}}(\theta)
+=
+\mathbb{E}_{x\sim p_{\mathrm{data}},\,\tilde x\sim q_\sigma(\tilde x\mid x)}
+\bigl[\|x-r_\theta(\tilde x)\|^2\bigr].
+\]
+
+This is already a meaningful representation-learning problem:
+the model must learn which directions in input space correspond to signal and which correspond to nuisance perturbation.
+However, by itself, a denoising autoencoder is not yet a complete generative model in the same direct sense as a latent-variable sampler or a flow.
+It learns local restoration, but not necessarily a full multi-step sampling scheme.
+
+Diffusion extends this idea by:
+\begin{itemize}
+    \item defining a whole family of corruption levels rather than one fixed noise level,
+    \item learning denoising rules indexed by noise scale or time step,
+    \item chaining these rules into a generative process from nearly pure noise back to data.
+\end{itemize}
+
+\medskip
+
+This is the conceptual bridge:
+\begin{quote}
+A denoising autoencoder learns to undo corruption. A diffusion model organizes many such denoising tasks into a stochastic path from noise to data.
+\end{quote}
+
+\subsection*{A one-step Gaussian denoising calculation}
+
+The basic denoising idea can be seen in the simplest Gaussian setting.
+Assume the clean variable is one-dimensional with prior
+\[
+X\sim \mathcal{N}(0,1),
+\]
+and the observed noisy variable is
+\[
+Y=X+\varepsilon,
+\qquad \varepsilon\sim \mathcal{N}(0,\sigma^2),
+\]
+with $\varepsilon$ independent of $X$.
+Then the conditional distribution $p(x\mid y)$ is also Gaussian.
+Its mean is the Bayes-optimal denoiser under squared loss.
+
+\begin{proposition}[Posterior mean for Gaussian denoising]
+In the model above,
+\[
+X\mid Y=y \sim \mathcal{N}\!\left(\frac{1}{1+\sigma^2}y,\,\frac{\sigma^2}{1+\sigma^2}\right).
+\]
+In particular, the minimum mean-squared error estimator is
+\[
+\mathbb{E}[X\mid Y=y]=\frac{1}{1+\sigma^2}y.
+\]
+\end{proposition}
+
+\begin{proof}[Proof sketch]
+Because $(X,Y)$ is jointly Gaussian, the conditional distribution is Gaussian.
+Using
+\[
+\operatorname{Var}(X)=1,
+\qquad
+\operatorname{Var}(Y)=1+\sigma^2,
+\qquad
+\operatorname{Cov}(X,Y)=1,
+\]
+the standard conditional Gaussian formula gives
+\[
+\mathbb{E}[X\mid Y=y]
+=
+\frac{\operatorname{Cov}(X,Y)}{\operatorname{Var}(Y)}y
+=
+\frac{1}{1+\sigma^2}y,
+\]
+and
+\[
+\operatorname{Var}(X\mid Y)
+=
+1-\frac{\operatorname{Cov}(X,Y)^2}{\operatorname{Var}(Y)}
+=
+\frac{\sigma^2}{1+\sigma^2}.
+\]
+\end{proof}
+
+\paragraph{Interpretation.}
+The optimal denoiser does not simply output $y$.
+It shrinks $y$ toward the mean $0$, because the model knows that part of the observation is noise.
+As $\sigma^2\to 0$, the estimator approaches $y$.
+As $\sigma^2\to \infty$, the observation becomes uninformative and the estimator shrinks strongly toward $0$.
+
+This toy example is small, but it captures the essential probabilistic logic of denoising:
+learning a reverse conditional distribution means learning how clean structure is statistically related to noisy structure.
+
+\subsection*{A worked iterative toy example}
+
+Consider now a three-stage refinement picture in one dimension.
+Suppose $x_0\sim \mathcal{N}(0,1)$, and define two corrupted versions
+\[
+x_1 = x_0 + \varepsilon_1,
+\qquad
+x_2 = x_1 + \varepsilon_2,
+\]
+with independent noises $\varepsilon_1\sim \mathcal{N}(0,0.25)$ and $\varepsilon_2\sim \mathcal{N}(0,1)$.
+Then
+\[
+x_2 = x_0 + (\varepsilon_1+\varepsilon_2),
+\]
+so the total noise variance from $x_0$ to $x_2$ is $1.25$.
+The optimal one-step estimator of $x_0$ from $x_2$ is therefore
+\[
+\mathbb{E}[x_0\mid x_2]
+=
+\frac{1}{1+1.25}x_2
+=\frac{4}{9}x_2.
+\]
+Likewise, since $x_2=x_1+\varepsilon_2$ and $x_1\sim \mathcal{N}(0,1.25)$,
+\[
+\mathbb{E}[x_1\mid x_2]
+=
+\frac{1.25}{1.25+1}x_2
+=\frac{5}{9}x_2.
+\]
+Then from $x_1$, the optimal denoiser back to $x_0$ is
+\[
+\mathbb{E}[x_0\mid x_1]
+=
+\frac{1}{1+0.25}x_1
+=0.8x_1.
+\]
+
+If, for instance, we observe $x_2=1.8$, then the best intermediate denoised estimate is
+\[
+\hat x_1=\frac{5}{9}\cdot 1.8 = 1.0,
+\]
+and the next denoised estimate is
+\[
+\hat x_0=0.8\cdot 1.0=0.8.
+\]
+Direct denoising gives
+\[
+\mathbb{E}[x_0\mid x_2]=\frac{4}{9}\cdot 1.8 = 0.8
+\]
+as expected.
+
+\paragraph{Why keep the multi-step view?}
+In this simple Gaussian example, direct denoising and iterative denoising agree because everything is linear and exactly tractable.
+But in complex high-dimensional data, the multi-step decomposition is useful because each local denoising task may be much simpler than the full jump from noise to data.
+This is the practical intuition behind diffusion.
+
+\subsection*{Noise prediction versus clean-sample prediction}
+
+There are several equivalent-looking ways to parameterize a denoiser.
+One may try to predict:
+\begin{itemize}
+    \item the clean sample $x_0$ from a noisy input,
+    \item the previous state $x_{t-1}$ from $x_t$,
+    \item or the actual noise that was added.
+\end{itemize}
+
+These choices are related, but they are not merely cosmetic.
+Different parameterizations lead to different optimization behavior and different interpretations of what the network is learning.
+In modern diffusion practice, predicting the added noise is particularly common because it interacts conveniently with the Gaussian forward process and leads to simple training objectives.
+The next section makes this algebra explicit.
+
+\subsection*{Progressive corruption and recovery}
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.9\textwidth}
+\centering
+\vspace{0.2em}
+\textbf{Progressive corruption and iterative recovery}\par\medskip
+\begin{tabular}{c c c c c}
+clean data & $\longrightarrow$ & lightly noisy & $\longrightarrow$ & heavily noisy \\
+$x_0$ &  & $x_1$ &  & $x_T \approx \mathcal{N}(0,I)$
+\end{tabular}
+
+\medskip
+
+\begin{tabular}{c c c c c}
+$\mathcal{N}(0,I)$ & $\longrightarrow$ & coarse structure & $\longrightarrow$ & sample \\
+$x_T$ &  & $x_{T-1},x_{T-2},\dots$ &  & $x_0$
+\end{tabular}
+
+\medskip
+
+Forward process: fixed stochastic corruption.\\
+Reverse process: learned conditional denoising steps.
+\vspace{0.2em}
+\end{minipage}}
+\caption{Diffusion-style generation as reversal of a progressive corruption process.}
+\end{figure}
+
+The forward and reverse arrows should not be confused.
+The forward process is usually chosen analytically and known exactly.
+The reverse process is what must be learned from data.
+
+\subsection*{What is already understood, and what remains heuristic}
+
+It is useful to separate three levels of claim.
+
+\paragraph{Probabilistically well defined.}
+Once a forward corruption process is specified, the induced reverse conditionals are mathematically meaningful objects.
+The question ``what is the true distribution of a slightly cleaner sample given a noisier one?'' is a legitimate conditional inference question.
+
+\paragraph{Conceptually persuasive.}
+The idea that complex generation can be decomposed into many local denoising problems is strongly supported by modern practice.
+It explains why diffusion can be more stable than adversarial training and why denoising losses can be easier to optimize.
+
+\paragraph{Still design practice.}
+Specific noise schedules, parameterizations, samplers, and acceleration tricks often come from empirical design rather than from a single complete theory that tells us the unique correct choice.
+Thus diffusion is mathematically structured, but not fully determined by theory alone.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item Diffusion starts from a forward corruption process and learns to reverse it.
+    \item Denoising is a conditional inference problem, not merely a heuristic cleanup step.
+    \item Iterative refinement turns many local denoising tasks into a generative procedure.
+    \item Denoising autoencoders provide the conceptual bridge to full diffusion models.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item The forward process is usually fixed, not learned.
+    \item A denoiser is not automatically a full generative model unless it is embedded into a sampling procedure.
+    \item Predicting noise, predicting $x_0$, and predicting $x_{t-1}$ are related but not identical parameterizations.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Let $X\sim \mathcal{N}(0,1)$ and $Y=X+\varepsilon$ with $\varepsilon\sim \mathcal{N}(0,4)$. Compute $\mathbb{E}[X\mid Y=y]$ and $\operatorname{Var}(X\mid Y)$. Interpret the result.
+    \item Suppose $q_\sigma(\tilde x\mid x)=\mathcal{N}(\tilde x\mid x,\sigma^2 I)$. Explain why minimizing $\mathbb{E}\|x-r_\theta(\tilde x)\|^2$ trains the posterior mean estimator when the model class is rich enough.
+    \item Compare one-step denoising and multi-step denoising conceptually. Why might the multi-step version be easier in high dimensions?
+    \item In your own words, explain the conceptual difference between a denoising autoencoder and a diffusion sampler.
+\end{enumerate}
+
+\subsection*{Notes and References}
+
+Denoising as a learning principle predates modern diffusion models and appears prominently in work on denoising autoencoders and score-based viewpoints.
+Modern diffusion models combine this denoising intuition with a carefully designed forward noising process and a learned reverse chain.
+Historically important reference points include denoising autoencoders, score matching ideas, and the later diffusion and score-based generative-model literature.
+The next section develops the formal diffusion equations that make these ideas computationally effective.

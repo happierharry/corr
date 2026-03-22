@@ -1,0 +1,257 @@
+\chapter{Generalization and Overfitting}
+
+\section{Introduction}
+
+A central goal of machine learning is not merely to fit observed data, but to perform well on new data drawn from the same environment. This is the problem of \emph{generalization}. A model may achieve very small training error yet fail badly on unseen examples. Conversely, a model that does not fit the training data well may be too simple to capture the underlying pattern. These two failures are commonly called \emph{overfitting} and \emph{underfitting}.
+
+This chapter gives a compact but more formal treatment of generalization. We distinguish training, validation, and test performance; define the generalization gap; discuss model complexity and effective capacity; and introduce the basic concentration intuition behind why empirical performance can sometimes reflect population performance. We also examine the train/validation/test protocol and conclude with a brief remark on modern phenomena such as double descent.
+
+\section{What Generalization Means}
+
+Let $(X,Y)\sim P$ be a random input--output pair, and let
+\[
+(X_1,Y_1),\dots,(X_n,Y_n)
+\]
+be a training sample drawn i.i.d.\ from $P$. For a predictor $f$, recall the population risk
+\[
+R(f)=\mathbb{E}[\ell(f(X),Y)]
+\]
+and the empirical risk
+\[
+\widehat{R}_n(f)=\frac1n\sum_{i=1}^n \ell(f(X_i),Y_i).
+\]
+
+\begin{definition}[Generalization Gap]
+The generalization gap of a predictor $f$ is
+\[
+R(f)-\widehat{R}_n(f).
+\]
+\end{definition}
+
+A model generalizes well when its empirical performance is close to its population performance, that is, when the generalization gap is small and the population risk itself is low.
+
+The key distinction is:
+\begin{itemize}
+    \item \textbf{training error} measures fit to observed data;
+    \item \textbf{test error} estimates performance on unseen data;
+    \item \textbf{generalization} concerns how well training success transfers to future data.
+\end{itemize}
+
+\section{Overfitting and Underfitting}
+
+A model \emph{underfits} when it is too simple to capture the relevant structure in the data. Then both training and test errors are high.
+
+A model \emph{overfits} when it adapts too closely to accidental features of the training sample. Then training error is low but test error is substantially higher.
+
+\subsection{A Basic Pattern}
+
+As model complexity increases, one often sees:
+\begin{itemize}
+    \item training error decreases;
+    \item test error first decreases, then may increase if overfitting occurs.
+\end{itemize}
+
+This leads to the classical U-shaped test-error curve as a function of complexity.
+
+\subsection{Worked Example: Polynomial Regression}
+
+Suppose we fit data with polynomials of degree $m$:
+\[
+f_m(x)=a_0+a_1x+\cdots+a_m x^m.
+\]
+If $m$ is too small, the model cannot capture curvature and underfits. If $m$ is too large relative to sample size, it may interpolate noise and overfit. Thus low training error alone is not evidence of good prediction.
+
+\subsection{Worked Example: Noisy Classification}
+
+In classification with label noise, a very flexible classifier may memorize mislabeled points. This can drive training error toward zero while harming test performance. A less flexible classifier may have slightly larger training error but smaller population risk.
+
+\section{Sources of Generalization Error}
+
+Why can a model fail to generalize? Several sources matter.
+
+\subsection{Approximation Error}
+
+If the hypothesis class is too restrictive, even the best function in the class may be far from optimal. This is approximation error.
+
+\subsection{Estimation Error}
+
+Even if the class contains good predictors, finite data may not be enough to identify them reliably. This is estimation error.
+
+\subsection{Optimization Error}
+
+The training algorithm may fail to find a sufficiently good minimizer of the objective. This is optimization error.
+
+Very roughly,
+\[
+\text{prediction error}
+\approx
+\text{approximation error}
++
+\text{estimation error}
++
+\text{optimization error}.
+\]
+
+\subsection{Bias--Variance Intuition}
+
+A classical way to organize part of this tradeoff is through bias and variance.
+
+\begin{itemize}
+    \item \textbf{Bias} reflects systematic error from using a model class that is too rigid.
+    \item \textbf{Variance} reflects sensitivity to fluctuations in the training sample.
+\end{itemize}
+
+Simple models tend to have high bias and low variance. Flexible models tend to have lower bias but higher variance. Overfitting is closely related to excessive variance.
+
+\section{Capacity, Complexity, and Effective Complexity}
+
+Generalization depends not only on the number of parameters, but more broadly on model capacity: the richness of the functions the learner can effectively realize.
+
+\subsection{Capacity and Complexity}
+
+A highly expressive model can fit many patterns, including noise. A more restricted model may generalize better when data are limited. Complexity can be measured in many ways:
+\begin{itemize}
+    \item number of parameters,
+    \item norm size,
+    \item smoothness,
+    \item margin,
+    \item function-class complexity measures.
+\end{itemize}
+
+No single notion works universally, but the core idea is that richer classes require stronger control to generalize well.
+
+\subsection{Uniform Convergence Intuition}
+
+A central idea in learning theory is that empirical risk should approximate population risk \emph{uniformly} over a hypothesis class:
+\[
+\sup_{f\in\mathcal{H}} |R(f)-\widehat{R}_n(f)|
+\quad \text{is small.}
+\]
+If this holds, then any function that looks good on the sample is likely to be genuinely good on the population.
+
+This is the intuition behind uniform convergence: the larger or more complex the class, the harder it is to guarantee that empirical and population risks stay close simultaneously for all hypotheses.
+
+\subsection{Concentration Intuition}
+
+Why should empirical averages resemble expectations at all? Because averages of many independent observations tend to stabilize. This is the role of concentration. At an informal level:
+\begin{itemize}
+    \item for a fixed predictor, empirical risk is an average of random quantities;
+    \item such averages often stay close to their expectations when sample size is large;
+    \item controlling this simultaneously over many predictors becomes harder as the class grows.
+\end{itemize}
+
+This is why both sample size and model complexity matter.
+
+\subsection{Effective Complexity}
+
+In modern learning, raw parameter count is often not the full story. Two models with the same size may generalize differently depending on regularization, optimization, architecture, and data. This motivates the idea of \emph{effective complexity}: the complexity actually expressed by the trained solution, not just the nominal size of the hypothesis class.
+
+\section{The Train/Validation/Test Protocol}
+
+To estimate generalization and choose models responsibly, one separates data into different roles.
+
+\subsection{Training Set}
+
+The training set is used to fit parameters by minimizing empirical risk or a related objective.
+
+\subsection{Validation Set}
+
+The validation set is used for model selection:
+\begin{itemize}
+    \item choosing hyperparameters,
+    \item selecting architecture,
+    \item deciding stopping time,
+    \item comparing regularization strengths.
+\end{itemize}
+
+\subsection{Test Set}
+
+The test set is used only at the end to estimate final performance. It should not influence model design. Otherwise, test performance becomes optimistic and no longer represents true unseen accuracy.
+
+\subsection{Why the Distinction Matters}
+
+If the same data are repeatedly used both to fit and to evaluate models, then evaluation becomes contaminated. The train/validation/test split protects against this by separating learning, tuning, and final assessment.
+
+\section{Interpolation vs Extrapolation}
+
+It is useful to distinguish two kinds of prediction beyond observed points.
+
+\subsection{Interpolation}
+
+Interpolation refers to prediction within regions well covered by training data. Smoothness or local similarity assumptions often make this easier.
+
+\subsection{Extrapolation}
+
+Extrapolation refers to prediction outside the range or regime represented in the data. This is typically harder and depends much more strongly on inductive bias.
+
+\begin{example}[Interpolation vs Extrapolation]
+A polynomial fitted on inputs in the interval $[-1,1]$ may interpolate well within that interval but behave erratically outside it. Good interpolation does not guarantee good extrapolation.
+\end{example}
+
+This distinction matters because many models that appear accurate on familiar inputs can fail badly under distribution shift or out-of-range prediction.
+
+\section{A Brief Remark on Double Descent}
+
+The classical picture suggests that test error eventually worsens as model complexity increases. In modern overparameterized models, however, the behavior can be more subtle. In some settings, test error first increases near interpolation and then decreases again as model size grows further. This is known as \emph{double descent}.
+
+For now, the main point is only this: classical bias--variance intuition remains useful, but modern high-dimensional models can display more complicated generalization behavior than the simplest textbook picture suggests.
+
+\section{A Unifying Perspective}
+
+Generalization is the central success criterion of learning. A model should not merely explain the past; it should predict the future under the same underlying data-generating process. Whether this happens depends on a balance among hypothesis-class richness, sample size, noise level, regularization, and optimization.
+
+The central tension is:
+\[
+\text{fit the data well} \qquad \text{without fitting accidental noise.}
+\]
+Underfitting comes from insufficient flexibility; overfitting comes from excessive flexibility relative to the data and the inductive biases in use. Generalization theory studies when empirical performance is a trustworthy guide to population performance, and why complexity control matters.
+
+\section{Summary}
+
+In this chapter we defined generalization through the distinction between empirical and population risk and introduced the generalization gap. We explained overfitting and underfitting, discussed approximation, estimation, and optimization errors, and reviewed the bias--variance intuition. We also introduced uniform convergence and concentration at an intuitive level, emphasizing that sample averages can approximate expectations when model complexity is controlled.
+
+Finally, we described the train/validation/test protocol and distinguished interpolation from extrapolation. These ideas will be used repeatedly throughout the book when we study regularization, model selection, and the generalization behavior of deep networks.
+
+\section{Exercises}
+
+\begin{enumerate}
+    \item Define the population risk, empirical risk, and generalization gap of a predictor.
+
+    \item Explain the difference between training error and test error.
+
+    \item What does it mean for a model to overfit? What does it mean to underfit?
+
+    \item Suppose model A has high training error and high test error. Suppose model B has near-zero training error but much larger test error than training error. Which model is underfitting? Which is overfitting?
+
+    \item In polynomial regression, what may happen if the degree is too small? What may happen if the degree is too large relative to the sample size?
+
+    \item Give a noisy classification example in which a flexible classifier may memorize training labels.
+
+    \item Explain the difference between approximation error and estimation error.
+
+    \item What is optimization error? Give one practical reason it may be large.
+
+    \item State the bias--variance tradeoff in words.
+
+    \item Why is model complexity relevant to generalization?
+
+    \item What is the intuition behind uniform convergence?
+
+    \item What is the intuition behind concentration of empirical averages around expectations?
+
+    \item Why do we use separate validation and test sets?
+
+    \item A researcher repeatedly adjusts hyperparameters based on test performance. Why is this problematic?
+
+    \item Explain the difference between interpolation and extrapolation.
+
+    \item A model performs very well on inputs similar to the training sample but poorly on inputs far outside the training range. Is this primarily a failure of interpolation or extrapolation?
+
+    \item How can regularization reduce overfitting?
+
+    \item Why might effective complexity differ from raw parameter count?
+
+    \item Sketch the classical training-error and test-error curves as model complexity increases, and explain their shape.
+
+    \item What is the basic idea of double descent, and why does it complicate the classical picture?
+\end{enumerate}

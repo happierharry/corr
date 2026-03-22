@@ -1,0 +1,280 @@
+\section{Tutorial 2: Gradient Descent Exercises}
+
+\subsection{Objectives}
+
+This tutorial develops intuition and technical skill for gradient-based optimization:
+\begin{itemize}
+    \item Compute gradients for common losses
+    \item Analyze convergence of gradient descent
+    \item Understand the role of step size and conditioning
+    \item Connect algebraic updates with geometric intuition
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Work through simple but revealing cases where everything can be computed explicitly.
+
+\subsection{Exercise 1: Gradient of a Quadratic Loss}
+
+Let
+\[
+L(w) = \frac{1}{2}\|Xw - y\|^2, \quad X \in \mathbb{R}^{n \times d}, \; y \in \mathbb{R}^n.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute $\nabla_w L(w)$.
+    \item Write the gradient descent update.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item Using matrix calculus:
+\[
+\nabla_w L(w) = X^\top (Xw - y).
+\]
+
+\item Gradient descent:
+\[
+w_{t+1} = w_t - \eta X^\top (Xw_t - y).
+\]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Quadratic objectives lead to linear gradient updates.
+
+\subsection{Exercise 2: One-Dimensional Gradient Descent}
+
+Consider
+\[
+L(\theta) = \frac{1}{2} a \theta^2, \quad a > 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute the gradient.
+    \item Write the update rule.
+    \item Solve the recursion for $\theta_t$.
+    \item Determine when the method converges.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item 
+\[
+\nabla L(\theta) = a\theta.
+\]
+
+\item 
+\[
+\theta_{t+1} = \theta_t - \eta a \theta_t = (1 - \eta a)\theta_t.
+\]
+
+\item 
+\[
+\theta_t = (1 - \eta a)^t \theta_0.
+\]
+
+\item Convergence requires:
+\[
+|1 - \eta a| < 1 \quad \Rightarrow \quad 0 < \eta < \frac{2}{a}.
+\]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Step size controls convergence speed and stability.
+
+\subsection{Exercise 3: Effect of Conditioning}
+
+Let
+\[
+L(w) = \frac{1}{2} w^\top A w,
+\]
+where $A$ is symmetric positive definite.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute the gradient.
+    \item Explain how eigenvalues of $A$ affect convergence.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item 
+\[
+\nabla L(w) = A w.
+\]
+
+\item Let eigenvalues of $A$ be $\lambda_1 \leq \cdots \leq \lambda_d$.
+
+\begin{itemize}
+    \item Convergence rate depends on condition number:
+    \[
+    \kappa = \frac{\lambda_{\max}}{\lambda_{\min}}.
+    \]
+    \item Large $\kappa$ $\Rightarrow$ slow convergence
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Geometric interpretation.}  
+Level sets are ellipses; gradient descent zig-zags along narrow directions.
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Poor conditioning slows optimization.
+
+\subsection{Exercise 4: Stochastic Gradient Descent}
+
+Consider empirical loss:
+\[
+L(\theta) = \frac{1}{n} \sum_{i=1}^n \ell_i(\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Define the SGD update.
+    \item Compare SGD with full gradient descent.
+    \item Explain the effect of stochastic noise.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item SGD:
+\[
+\theta_{t+1} = \theta_t - \eta \nabla \ell_i(\theta_t),
+\]
+where $i$ is sampled randomly.
+
+\item Comparison:
+\begin{itemize}
+    \item GD: exact gradient, expensive
+    \item SGD: noisy gradient, cheap
+\end{itemize}
+
+\item Noise effects:
+\begin{itemize}
+    \item Helps escape saddle points
+    \item Introduces fluctuations near minima
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+SGD trades accuracy for efficiency and exploration.
+
+\subsection{Exercise 5: Gradient Descent as Projection}
+
+Consider linear regression:
+\[
+\min_w \|Xw - y\|^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe the solution geometrically.
+    \item Explain how gradient descent approaches this solution.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+\item The solution is the projection of $y$ onto the column space of $X$.
+
+\item Gradient descent:
+\begin{itemize}
+    \item Iteratively reduces residual $Xw - y$
+    \item Moves toward projection point
+\end{itemize}
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Optimization can be interpreted as a geometric projection process.
+
+\subsection{Exercise 6 (Discussion): Why Does GD Work in High Dimensions?}
+
+\textbf{Question.}  
+Neural networks are highly non-convex. Why does gradient descent often work well?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+\begin{itemize}
+    \item Many local minima are similarly good
+    \item High-dimensional landscapes dominated by saddle points
+    \item Overparameterization simplifies optimization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Optimization in modern machine learning behaves differently from classical low-dimensional intuition.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Gradient descent follows local gradients to minimize loss
+    \item Step size controls convergence behavior
+    \item Conditioning affects speed of convergence
+    \item Stochasticity introduces noise but aids exploration
+    \item Optimization has a geometric interpretation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now study how optimization interacts with generalization and overfitting.

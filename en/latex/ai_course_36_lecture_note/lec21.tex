@@ -1,0 +1,429 @@
+\section{Lecture 21: Convolutional Neural Networks}
+
+\subsection{Motivation}
+
+So far, we have studied neural networks as general function approximators.
+
+\medskip
+
+\noindent
+However, many real-world data types exhibit structure. In particular:
+
+\begin{itemize}
+    \item images have spatial structure,
+    \item nearby pixels are highly correlated,
+    \item patterns repeat across locations.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How can we design neural networks that exploit such structure?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Convolutional neural networks (CNNs) incorporate prior knowledge about spatial locality and translation invariance.
+
+\subsection{Convolution as a Structured Linear Operator}
+
+A convolutional layer applies a filter (kernel) across the input.
+
+\medskip
+
+\noindent
+For a 1D signal:
+\[
+y[i] = \sum_{k} w[k] \, x[i-k].
+\]
+
+\medskip
+
+\noindent
+For images (2D):
+\[
+y[i,j] = \sum_{u,v} w[u,v] \, x[i-u, j-v].
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item Local connectivity: each output depends on a small neighborhood
+    \item Weight sharing: the same filter is applied everywhere
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Matrix view.}
+
+\begin{itemize}
+    \item Convolution corresponds to a structured (Toeplitz) matrix
+    \item Far fewer parameters than fully connected layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Convolution imposes strong structure on linear transformations.
+
+\subsection{Translation Invariance}
+
+A key property of convolution:
+
+\medskip
+
+\noindent
+\textbf{Translation equivariance.}
+
+\begin{itemize}
+    \item Shifting the input shifts the output
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Why this matters.}
+
+\begin{itemize}
+    \item Objects may appear anywhere in an image
+    \item Model should detect features regardless of location
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Approximate invariance.}
+
+\begin{itemize}
+    \item Pooling and deeper layers help achieve invariance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs encode translation symmetry as an inductive bias.
+
+\subsection{Pooling and Hierarchies}
+
+\textbf{Pooling layers.}
+
+\begin{itemize}
+    \item Reduce spatial resolution
+    \item Aggregate local information
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item max pooling
+    \item average pooling
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+
+\begin{itemize}
+    \item increases receptive field
+    \item reduces sensitivity to small shifts
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hierarchical representations.}
+
+\begin{itemize}
+    \item early layers: edges, textures
+    \item deeper layers: shapes, objects
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs build representations from local to global structure.
+
+\subsection{Architectural Components}
+
+Modern CNNs combine several elements:
+
+\begin{itemize}
+    \item convolution layers
+    \item nonlinear activations (e.g., ReLU)
+    \item normalization (e.g., batch normalization)
+    \item pooling or strided convolution
+    \item residual connections
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Design pattern.}
+
+\[
+\text{Conv} \rightarrow \text{BN} \rightarrow \text{ReLU}
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs integrate multiple principles developed in earlier lectures.
+
+\subsection{Applications in Vision}
+
+CNNs are widely used in:
+
+\begin{itemize}
+    \item image classification
+    \item object detection
+    \item segmentation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Why CNNs work well.}
+
+\begin{itemize}
+    \item exploit spatial locality
+    \item reduce number of parameters
+    \item encode useful invariances
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+
+\begin{itemize}
+    \item limited ability to model long-range dependencies
+    \item fixed receptive field growth
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs are powerful but tailored to specific data structures.
+
+\subsection{Fourier Perspective on Convolution (Advanced)}
+
+Convolution has a fundamental interpretation in the frequency domain.
+
+\medskip
+
+\noindent
+\textbf{Fourier transform.}  
+Let $\mathcal{F}$ denote the Fourier transform. For a signal $x$:
+\[
+\hat{x}(\omega) = \mathcal{F}[x](\omega).
+\]
+
+\medskip
+
+\noindent
+\textbf{Convolution theorem.}  
+For signals $x$ and $w$:
+\[
+x * w \;\longleftrightarrow\; \hat{x}(\omega)\,\hat{w}(\omega),
+\]
+i.e., convolution in the spatial domain corresponds to pointwise multiplication in the frequency domain.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item Convolution acts as a \emph{filter} in frequency space
+    \item The kernel $w$ determines which frequencies are amplified or suppressed
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item Smooth filters $\Rightarrow$ low-pass (remove high-frequency noise)
+    \item Edge detectors $\Rightarrow$ emphasize high-frequency components
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Convolutional layers learn frequency-selective filters.
+
+\subsection{Spectral View of CNN Layers}
+
+Consider a convolutional layer:
+\[
+y = w * x.
+\]
+
+\medskip
+
+\noindent
+In the Fourier domain:
+\[
+\hat{y}(\omega) = \hat{w}(\omega)\,\hat{x}(\omega).
+\]
+
+\medskip
+
+\noindent
+\textbf{Implications.}
+
+\begin{itemize}
+    \item Each layer modulates the spectrum of the signal
+    \item Deep CNNs apply successive spectral transformations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+CNNs can be interpreted as hierarchical spectral filters.
+
+\subsection{Connection to Linear Operators}
+
+From linear algebra:
+
+\begin{itemize}
+    \item Convolution corresponds to a structured matrix (Toeplitz / circulant)
+    \item Fourier transform approximately diagonalizes convolution
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+
+\[
+\text{Convolution} \;\approx\; \text{diagonal operator in Fourier basis}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The Fourier basis reveals the intrinsic structure of convolutional operators.
+
+\subsection{Role of Nonlinearity}
+
+CNNs are not purely linear:
+
+\begin{itemize}
+    \item nonlinear activations break simple spectral interpretation
+    \item interactions between frequencies emerge across layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item linear part: frequency filtering
+    \item nonlinear part: mixing and recombining frequencies
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Deep CNNs combine spectral filtering with nonlinear feature interactions.
+
+\subsection{Broader Connections}
+
+This perspective connects CNNs to broader mathematical frameworks:
+
+\begin{itemize}
+    \item \textbf{Signal processing:} classical filtering theory
+    \item \textbf{Harmonic analysis:} decomposition into frequency components
+    \item \textbf{Operator theory:} diagonalization of structured operators
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Modern developments.}
+
+\begin{itemize}
+    \item spectral bias in neural networks
+    \item frequency-domain analysis of generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Convolutional neural networks can be understood as learnable spectral filters acting on structured data.
+
+\subsection{A Unifying Perspective}
+
+CNNs illustrate a central theme in machine learning:
+
+\begin{itemize}
+    \item incorporating structure into models improves efficiency and performance.
+\end{itemize}
+
+\medskip
+
+\noindent
+They combine:
+
+\begin{itemize}
+    \item inductive bias (locality, translation symmetry),
+    \item deep representations,
+    \item efficient parameterization.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Architectural design encodes prior knowledge about the data.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Good architectures reduce the burden on learning by building in the right structure.
+
+\subsection{Outlook}
+
+In this lecture, we introduced:
+
+\begin{itemize}
+    \item convolution as a structured linear operator,
+    \item translation invariance,
+    \item pooling and hierarchical representations,
+    \item applications in vision.
+\end{itemize}
+
+\medskip
+
+\noindent
+Next, we study sequence models, which address data with temporal or sequential structure.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Different data modalities require different architectural biases.

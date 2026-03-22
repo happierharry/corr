@@ -1,0 +1,777 @@
+\section{Lecture 27: Diffusion Models}
+
+\subsection{Bridge: Diffusion as a Generative Paradigm}
+
+In the previous lectures, we studied two major generative paradigms:
+
+\begin{itemize}
+    \item \textbf{latent-variable likelihood models} such as VAEs,
+    \item \textbf{implicit adversarial models} such as GANs.
+\end{itemize}
+
+Diffusion models offer a third viewpoint.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Instead of generating a complex sample in one step, diffusion models generate by \emph{iterative refinement}:
+\begin{itemize}
+    \item begin from simple noise,
+    \item repeatedly denoise,
+    \item gradually recover structure.
+\end{itemize}
+
+\medskip
+
+\noindent
+This changes the nature of the learning problem. Rather than learning one large jump from latent noise to data, the model learns many small denoising steps.
+
+\medskip
+
+\noindent
+\textbf{Why this is attractive.}
+\begin{itemize}
+    \item generation is broken into simpler local tasks,
+    \item training resembles supervised denoising,
+    \item optimization is often more stable than adversarial learning,
+    \item the model tends to cover diverse modes of the data distribution.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus diffusion models can be viewed as generative models built around a simple idea:
+\begin{quote}
+To learn how to create structure, first learn how to remove noise.
+\end{quote}
+
+\subsection{Why Generate by Denoising?}
+
+Direct generation of high-dimensional structured data such as images is difficult because the output space is extremely large and only a tiny region corresponds to realistic data.
+
+\medskip
+
+\noindent
+Diffusion models turn this into a sequence of easier problems:
+\begin{itemize}
+    \item start from a known simple distribution, usually Gaussian noise,
+    \item learn how to make a small correction,
+    \item repeat many times.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Intuition.}
+Correcting a slightly noisy image is easier than drawing a coherent image from scratch. If each step is small, the model only has to learn local refinement.
+
+\medskip
+
+\noindent
+\textbf{Iterative refinement viewpoint.}
+Generation is not a one-shot act but a progressive construction:
+\[
+x_T \to x_{T-1} \to \cdots \to x_1 \to x_0.
+\]
+
+\medskip
+
+\noindent
+Each step makes the sample slightly more structured and slightly less noisy.
+
+\subsection{The Forward Noising Process}
+
+Diffusion models begin by defining a \textbf{forward process} that gradually corrupts data.
+
+\medskip
+
+\noindent
+Starting from a clean sample $x_0$, we define a Markov chain:
+\[
+x_0 \to x_1 \to x_2 \to \cdots \to x_T.
+\]
+
+At each step, we add a small amount of Gaussian noise:
+\[
+q(x_t \mid x_{t-1})
+=
+\mathcal{N}\!\left(
+x_t \;\middle|\; \sqrt{1-\beta_t}\,x_{t-1},\; \beta_t I
+\right),
+\]
+where $\beta_t \in (0,1)$ is a prescribed noise schedule.
+
+\medskip
+
+\noindent
+Equivalently, we can write
+\[
+x_t = \sqrt{1-\beta_t}\,x_{t-1} + \sqrt{\beta_t}\,\epsilon_t,
+\qquad
+\epsilon_t \sim \mathcal{N}(0,I).
+\]
+
+\subsection{Interpretation of the Forward Process}
+
+The forward process gradually destroys structure.
+
+\begin{itemize}
+    \item for small $t$, $x_t$ is only slightly corrupted,
+    \item for intermediate $t$, major structure remains but details are noisy,
+    \item for large $t$, $x_t$ becomes nearly indistinguishable from Gaussian noise.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Role of the schedule.}
+The values $\beta_t$ determine how quickly information is destroyed. Small $\beta_t$ means gentle corruption; larger $\beta_t$ destroys structure faster.
+
+\medskip
+
+\noindent
+\textbf{Conceptual point.}
+The forward process is \emph{fixed}, not learned. It is chosen by us so that the final state is simple and tractable.
+
+\subsection{Closed-Form Forward Marginals}
+
+A key mathematical fact makes diffusion practical: although the forward process is defined recursively, we can sample $x_t$ directly from $x_0$.
+
+\medskip
+
+\noindent
+Define
+\[
+\alpha_t = 1-\beta_t,
+\qquad
+\bar{\alpha}_t = \prod_{s=1}^t \alpha_s.
+\]
+
+Then:
+\[
+q(x_t \mid x_0)
+=
+\mathcal{N}\!\left(
+x_t \;\middle|\; \sqrt{\bar{\alpha}_t}\,x_0,\; (1-\bar{\alpha}_t)I
+\right).
+\]
+
+\medskip
+
+\noindent
+Equivalently,
+\[
+x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon,
+\qquad
+\epsilon \sim \mathcal{N}(0,I).
+\]
+
+\medskip
+
+\noindent
+\textbf{Why this matters.}
+This means we do \emph{not} need to simulate the full forward chain during training. We can:
+\begin{itemize}
+    \item choose a random time step $t$,
+    \item sample one Gaussian noise vector $\epsilon$,
+    \item construct $x_t$ directly.
+\end{itemize}
+
+\subsection{Intuition Behind the Closed Form}
+
+The formula
+\[
+x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon
+\]
+shows that the noisy sample is a mixture of:
+\begin{itemize}
+    \item a shrunk version of the original data,
+    \item Gaussian noise with increasing strength.
+\end{itemize}
+
+\medskip
+
+\noindent
+As $t$ grows:
+\begin{itemize}
+    \item $\sqrt{\bar{\alpha}_t}$ decreases,
+    \item $1-\bar{\alpha}_t$ increases,
+    \item the original signal fades while noise dominates.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus diffusion constructs a continuum between structured data and pure noise.
+
+\subsection{The Reverse Denoising Process}
+
+Generation is defined by reversing the corruption.
+
+\medskip
+
+\noindent
+We posit a learned reverse Markov chain:
+\[
+p_\theta(x_{0:T})
+=
+p(x_T)\prod_{t=1}^T p_\theta(x_{t-1}\mid x_t),
+\]
+where
+\[
+p(x_T)=\mathcal{N}(0,I).
+\]
+
+\medskip
+
+\noindent
+So generation begins from
+\[
+x_T \sim \mathcal{N}(0,I),
+\]
+then repeatedly samples:
+\[
+x_{t-1} \sim p_\theta(x_{t-1}\mid x_t),
+\]
+until we obtain $x_0$.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+The reverse process is the learned generative model. Each step removes a small amount of noise and restores a small amount of structure.
+
+\subsection{Parameterizing the Reverse Process}
+
+A standard parameterization is Gaussian:
+\[
+p_\theta(x_{t-1}\mid x_t)
+=
+\mathcal{N}\!\left(
+x_{t-1} \mid \mu_\theta(x_t,t),\; \Sigma_\theta(x_t,t)
+\right).
+\]
+
+\medskip
+
+\noindent
+The neural network receives:
+\begin{itemize}
+    \item the noisy input $x_t$,
+    \item the time step $t$,
+\end{itemize}
+and predicts quantities describing the reverse transition.
+
+\medskip
+
+\noindent
+In practice, modern implementations often predict one of the following:
+\begin{itemize}
+    \item the noise $\epsilon$,
+    \item the clean sample $x_0$,
+    \item a score function related to $\nabla_x \log p(x_t)$.
+\end{itemize}
+
+These parameterizations are closely related.
+
+\subsection{Why Noise Prediction Is Natural}
+
+Suppose
+\[
+x_t = \sqrt{\bar{\alpha}_t}\,x_0 + \sqrt{1-\bar{\alpha}_t}\,\epsilon.
+\]
+
+If the model can predict the added noise,
+\[
+\epsilon_\theta(x_t,t) \approx \epsilon,
+\]
+then it can approximately recover the clean signal:
+\[
+x_0 \approx
+\frac{x_t - \sqrt{1-\bar{\alpha}_t}\,\epsilon_\theta(x_t,t)}
+{\sqrt{\bar{\alpha}_t}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Why this helps.}
+Predicting noise is often easier and more numerically stable than directly predicting the entire previous state.
+
+\medskip
+
+\noindent
+\textbf{Conceptual interpretation.}
+The network learns:
+\begin{quote}
+What part of this current sample is noise, and what part is meaningful structure?
+\end{quote}
+
+\subsection{ELBO View of Training}
+
+As in VAEs, diffusion training can be motivated by a variational lower bound.
+
+\medskip
+
+\noindent
+The forward process defines
+\[
+q(x_{1:T}\mid x_0)=\prod_{t=1}^T q(x_t\mid x_{t-1}),
+\]
+and the reverse model defines
+\[
+p_\theta(x_{0:T})=p(x_T)\prod_{t=1}^T p_\theta(x_{t-1}\mid x_t).
+\]
+
+\medskip
+
+\noindent
+We want to maximize $\log p_\theta(x_0)$. Using variational reasoning gives the ELBO:
+\[
+\mathbb{E}_q
+\left[
+\log p_\theta(x_{0:T}) - \log q(x_{1:T}\mid x_0)
+\right].
+\]
+
+\medskip
+
+\noindent
+After algebraic simplification, this leads to a practical objective that can be written in a much simpler form.
+
+\subsection{Usable Training Objective}
+
+The most common training loss is:
+\[
+\mathcal{L}_{\text{diff}}
+=
+\mathbb{E}_{t,x_0,\epsilon}
+\left[
+\left\|
+\epsilon - \epsilon_\theta(x_t,t)
+\right\|^2
+\right],
+\]
+where
+\[
+x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon,
+\qquad
+\epsilon \sim \mathcal{N}(0,I).
+\]
+
+\medskip
+
+\noindent
+\textbf{Training procedure.}
+For each minibatch:
+\begin{enumerate}
+    \item sample clean data $x_0$,
+    \item sample a time index $t$,
+    \item sample Gaussian noise $\epsilon$,
+    \item construct $x_t$ directly,
+    \item train the network to predict $\epsilon$ from $(x_t,t)$.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Important point.}
+Although the diffusion model defines a complex probabilistic chain, the practical loss is just a denoising regression problem.
+
+\subsection{Why the Objective Is Stable}
+
+The diffusion objective has a major practical advantage: it resembles supervised learning.
+
+\medskip
+
+\noindent
+\textbf{The target is known.}
+During training, we ourselves sample the noise $\epsilon$, so the model has an explicit regression target.
+
+\medskip
+
+\noindent
+\textbf{Contrast with GANs.}
+In GANs, the learning signal is produced by an adversarial discriminator and can become unstable. In diffusion, the model learns from direct denoising targets.
+
+\medskip
+
+\noindent
+\textbf{Result.}
+This often leads to:
+\begin{itemize}
+    \item smoother optimization,
+    \item less mode collapse,
+    \item more predictable training behavior.
+\end{itemize}
+
+\subsection{Score Function Intuition}
+
+A central concept in diffusion theory is the \textbf{score function}:
+\[
+s(x)=\nabla_x \log p(x).
+\]
+
+\medskip
+
+\noindent
+This vector points toward directions in which the log-density increases most rapidly.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+If a point lies in a low-probability region, the score points toward more likely regions. Thus score information can guide a sample back toward the data manifold.
+
+\medskip
+
+\noindent
+In noisy settings, the relevant object is the score of the noisy distribution at time $t$.
+
+\subsection{Noise Prediction and Score Prediction}
+
+The noise-prediction view and the score view are closely connected.
+
+\medskip
+
+\noindent
+When
+\[
+x_t = \sqrt{\bar{\alpha}_t}x_0 + \sqrt{1-\bar{\alpha}_t}\epsilon,
+\]
+predicting the noise is equivalent, up to scaling, to predicting a score:
+\[
+\epsilon_\theta(x_t,t)
+\;\Longleftrightarrow\;
+-\nabla_x \log q(x_t).
+\]
+
+\medskip
+
+\noindent
+\textbf{Intuition.}
+If the model knows which direction corresponds to ``noise,'' then it also knows which direction moves toward higher data density.
+
+\medskip
+
+\noindent
+Thus denoising can be interpreted as moving samples toward regions of higher probability.
+
+\subsection{Reverse Denoising as Probability-Guided Refinement}
+
+Each reverse step can be viewed as performing two related actions:
+
+\begin{itemize}
+    \item \textbf{remove estimated noise,}
+    \item \textbf{move toward more likely structure.}
+\end{itemize}
+
+\medskip
+
+\noindent
+This gives diffusion a geometric interpretation:
+\begin{quote}
+Generation proceeds by repeatedly nudging noise toward the data manifold.
+\end{quote}
+
+\medskip
+
+\noindent
+This viewpoint connects diffusion models to:
+\begin{itemize}
+    \item score matching,
+    \item stochastic dynamics,
+    \item iterative optimization.
+\end{itemize}
+
+\subsection{Iterative Refinement as a General Paradigm}
+
+A useful way to understand diffusion is not merely as a probability model, but as a broad computational strategy.
+
+\medskip
+
+\noindent
+\textbf{Iterative refinement principle.}
+Instead of solving a hard generation task in one step, solve it as a sequence of easier corrections:
+\[
+x_{t-1}=x_t+\text{small update}.
+\]
+
+\medskip
+
+\noindent
+This resembles:
+\begin{itemize}
+    \item residual learning,
+    \item gradient-based optimization,
+    \item classical iterative reconstruction algorithms.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Thought experiment.}
+Start from random pixels:
+\begin{itemize}
+    \item first only coarse structure appears,
+    \item then object shapes emerge,
+    \item then texture and detail sharpen,
+    \item finally the sample becomes realistic.
+\end{itemize}
+
+\medskip
+
+\noindent
+This layered emergence of structure is one reason diffusion models are so compelling conceptually.
+
+\subsection{Langevin Dynamics Connection}
+
+Diffusion also has a useful connection to Langevin dynamics.
+
+\medskip
+
+\noindent
+A simplified Langevin-style update takes the form
+\[
+x_{t-1}
+=
+x_t + \eta \nabla_x \log p(x_t) + \sqrt{2\eta}\,\xi,
+\]
+where $\xi$ is Gaussian noise.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item the gradient term pushes toward high-density regions,
+    \item the noise term maintains stochastic exploration.
+\end{itemize}
+
+\medskip
+
+\noindent
+Diffusion sampling can be viewed as a learned, time-dependent version of this idea: stochastic updates guided by an estimated score or denoising direction.
+
+\subsection{Continuous-Time View}
+
+If the number of diffusion steps becomes very large, the process approaches a continuous-time stochastic differential equation (SDE):
+\[
+dx = f(x,t)\,dt + g(t)\,dW_t.
+\]
+
+\medskip
+
+\noindent
+The reverse generative process is then another SDE that removes noise over time.
+
+\medskip
+
+\noindent
+\textbf{Why this matters conceptually.}
+It places diffusion at the intersection of:
+\begin{itemize}
+    \item probability,
+    \item dynamical systems,
+    \item stochastic processes.
+\end{itemize}
+
+\medskip
+
+\noindent
+For this lecture, however, the discrete-time viewpoint is enough to understand the main mechanism and training objective.
+
+\subsection{DDPM: Stochastic Sampling}
+
+The classic diffusion sampler is \textbf{DDPM} (Denoising Diffusion Probabilistic Model).
+
+\medskip
+
+\noindent
+Its main features are:
+\begin{itemize}
+    \item reverse sampling uses a learned probabilistic transition,
+    \item stochastic noise is injected during sampling,
+    \item many small steps are taken from $x_T$ to $x_0$.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+Because randomness remains in the reverse process, repeated runs can generate different outputs even from similar initial conditions.
+
+\medskip
+
+\noindent
+\textbf{Benefit.}
+This stochasticity supports diversity.
+
+\medskip
+
+\noindent
+\textbf{Cost.}
+Sampling can be slow because many denoising steps are required.
+
+\subsection{DDIM: Deterministic Sampling}
+
+A widely used alternative is \textbf{DDIM} (Denoising Diffusion Implicit Model).
+
+\medskip
+
+\noindent
+DDIM modifies the reverse sampling procedure so that it can follow a deterministic trajectory.
+
+\medskip
+
+\noindent
+\textbf{Main features.}
+\begin{itemize}
+    \item reduced or removed stochasticity,
+    \item a more direct trajectory through latent-noise space,
+    \item often fewer sampling steps.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+Instead of wandering stochastically while denoising, the model follows a more controlled path.
+
+\medskip
+
+\noindent
+\textbf{Benefit.}
+Sampling is often faster and more controllable.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+Less stochasticity can reduce diversity, though in practice DDIM often performs very well.
+
+\subsection{DDPM vs DDIM Intuition}
+
+The difference can be summarized intuitively as follows.
+
+\medskip
+
+\noindent
+\textbf{DDPM.}
+\begin{itemize}
+    \item more probabilistic,
+    \item more stochastic,
+    \item often more faithful to the original generative process.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{DDIM.}
+\begin{itemize}
+    \item more deterministic,
+    \item often faster,
+    \item often easier to steer or accelerate.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Conceptual lesson.}
+Once a denoising model is learned, there is freedom in how we traverse the reverse path from noise to data. Different samplers trade off diversity, speed, and controllability.
+
+\subsection{Why Diffusion Models Work Well in Practice}
+
+Diffusion models have become highly successful for several reasons.
+
+\begin{itemize}
+    \item \textbf{Stable training:} the objective is a denoising regression loss.
+    \item \textbf{Good mode coverage:} they are typically less prone to collapse than GANs.
+    \item \textbf{Iterative refinement:} complex generation is decomposed into simpler steps.
+    \item \textbf{Flexibility:} they adapt well to images, audio, video, and multimodal generation.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Main weakness.}
+Sampling is often slower than one-shot generation, because many reverse steps may be needed.
+
+\medskip
+
+\noindent
+Thus diffusion often trades speed for robustness and sample quality.
+
+\subsection{Comparison with Earlier Generative Models}
+
+\textbf{Compared with VAEs.}
+\begin{itemize}
+    \item diffusion usually produces sharper samples,
+    \item VAEs provide a more direct latent-variable inference framework,
+    \item both are grounded in probabilistic thinking.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Compared with GANs.}
+\begin{itemize}
+    \item diffusion is usually more stable to train,
+    \item GANs can sample faster,
+    \item diffusion is less vulnerable to mode collapse,
+    \item GANs rely on adversarial games, diffusion relies on denoising supervision.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Big-picture view.}
+Diffusion models show that high-quality generation does not require either exact likelihood tractability or adversarial competition. Iterative denoising is itself a powerful generative principle.
+
+\subsection{Summary}
+
+\textbf{Main points of this lecture.}
+
+\begin{itemize}
+    \item Diffusion models generate by reversing a gradual corruption process.
+    \item The forward process is a Gaussian Markov chain:
+    \[
+    q(x_t \mid x_{t-1})
+    =
+    \mathcal{N}\!\left(
+    x_t \;\middle|\; \sqrt{1-\beta_t}\,x_{t-1},\; \beta_t I
+    \right).
+    \]
+    \item A key closed-form identity is
+    \[
+    x_t
+    =
+    \sqrt{\bar{\alpha}_t}\,x_0
+    +
+    \sqrt{1-\bar{\alpha}_t}\,\epsilon,
+    \qquad
+    \epsilon \sim \mathcal{N}(0,I).
+    \]
+    \item The reverse model learns
+    \[
+    p_\theta(x_{t-1}\mid x_t),
+    \]
+    which performs denoising step by step.
+    \item In practice, training often reduces to noise prediction:
+    \[
+    \mathbb{E}_{t,x_0,\epsilon}
+    \left[
+    \|\epsilon-\epsilon_\theta(x_t,t)\|^2
+    \right].
+    \]
+    \item Noise prediction is closely related to score estimation.
+    \item Diffusion can be understood as iterative refinement toward higher-density regions.
+    \item DDPM uses stochastic reverse sampling, while DDIM uses more deterministic and often faster trajectories.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Final insight.}  
+Diffusion models succeed because they transform generation from a single difficult act into a long sequence of simple denoising corrections. This makes them both mathematically elegant and practically powerful.

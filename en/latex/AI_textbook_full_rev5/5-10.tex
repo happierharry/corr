@@ -1,0 +1,66 @@
+\section{What Is Established and What Remains Open}
+
+Generative modeling combines mature mathematics with rapidly evolving empirical practice.
+It is therefore especially important to distinguish settled ideas from open questions.
+
+\subsection*{What is well established}
+
+Several core principles are by now firmly understood.
+
+\paragraph{EM as lower-bound optimization.}
+The EM framework provides a principled way to optimize latent-variable likelihoods through alternating inference and parameter updates.
+
+\paragraph{ELBO logic in variational learning.}
+The evidence lower bound gives a clean variational foundation for approximate latent-variable inference in deep models.
+
+\paragraph{Change of variables in flows.}
+The flow framework is mathematically exact once one specifies an invertible transformation with tractable Jacobian determinant.
+
+\paragraph{Diffusion forward and reverse formalism.}
+The Gaussian forward process, its closed-form marginals, and reverse-process approximation framework are well established.
+
+\subsection*{What remains difficult}
+
+Other aspects are still less resolved.
+
+\paragraph{GAN stability and mode coverage.}
+Adversarial training remains delicate, and ensuring both realism and diversity is challenging.
+
+\paragraph{Semantic controllability in latent spaces.}
+Latent-variable models often learn useful structure, but guaranteeing interpretable and controllable semantics remains difficult.
+
+\paragraph{Why diffusion scales so well perceptually.}
+Diffusion models are empirically powerful, but the full explanation for their perceptual success across domains is still incomplete.
+
+\paragraph{Representation versus generation tradeoffs.}
+How sample quality, latent usefulness, controllability, and likelihood should be balanced remains an open modeling question.
+
+\paragraph{Evaluation across objectives.}
+Comparing generative models is inherently difficult because they optimize different goals:
+likelihood, realism, diversity, reconstruction, or denoising quality may not align.
+
+\subsection*{Closing perspective}
+
+This chapter has organized generative modeling around four major routes:
+\begin{itemize}
+    \item latent-variable inference,
+    \item adversarial learning,
+    \item invertible transport,
+    \item iterative denoising.
+\end{itemize}
+
+Each route offers a different answer to the problem of modeling complex data distributions.
+No single paradigm dominates every criterion.
+
+\medskip
+
+The broader lesson is that generative modeling is not a peripheral topic in modern AI.
+It is one of the main ways of learning structure, representation, and uncertainty in rich data.
+
+\medskip
+
+The next chapter steps back from specific model classes and asks a more reflective question:
+
+\begin{quote}
+what do we actually understand about deep learning, where does it remain unreliable, and what remains genuinely open?
+\end{quote}

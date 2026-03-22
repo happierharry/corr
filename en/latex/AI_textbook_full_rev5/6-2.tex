@@ -1,0 +1,110 @@
+\section{Generalization Beyond Classical Expectations}
+
+The most famous theoretical puzzle of deep learning concerns generalization.
+Why do large networks often predict well on new data despite extreme flexibility?
+
+\subsection*{Fitting versus predicting}
+
+The training objective is usually based on empirical risk:
+\[
+\widehat{R}_n(f)
+=
+\frac{1}{n}\sum_{i=1}^n \ell(f(x_i),y_i).
+\]
+The quantity we ultimately care about is the population risk:
+\[
+R(f)=\mathbb{E}_{(x,y)\sim P}[\ell(f(x),y)].
+\]
+
+\medskip
+
+Classical intuition emphasizes the danger that low empirical risk may not imply low population risk when the model class is too rich.
+That danger is real.
+But in modern deep learning, interpolation of the training data is often compatible with surprisingly good test performance.
+
+\subsection*{Implicit bias of optimization}
+
+One important idea is that learning algorithms do not explore parameter space arbitrarily.
+Gradient-based optimization may prefer certain kinds of solutions over others, even when many parameter settings achieve nearly identical training error.
+
+\medskip
+
+This preference is often called an \emph{implicit bias} or \emph{implicit regularization} of optimization.
+
+\medskip
+
+Thus the learned predictor is not determined only by:
+\begin{itemize}
+    \item the model class,
+    \item the dataset,
+    \item the explicit loss.
+\end{itemize}
+It is also shaped by:
+\begin{itemize}
+    \item initialization,
+    \item optimization dynamics,
+    \item architecture,
+    \item training schedule,
+    \item normalization and regularization mechanisms.
+\end{itemize}
+
+This helps explain why overparameterized systems may still converge to useful solutions rather than arbitrary memorizing ones.
+
+\subsection*{Norm and margin viewpoints}
+
+Another family of explanations emphasizes geometric quantities such as norm and margin.
+
+\paragraph{Norm.}
+A predictor may interpolate the training data while still being ``simple'' in an appropriate geometric sense, for example by having controlled parameter norm or controlled function complexity.
+
+\paragraph{Margin.}
+In classification, correct predictions made with large margin are often more stable than predictions made barely on the correct side of a boundary.
+Margin-based reasoning was central in classical methods such as support vector machines, and related ideas continue to matter in deep learning.
+
+\medskip
+
+These viewpoints do not provide a complete explanation of generalization in all deep models, but they often provide useful partial structure.
+
+\subsection*{Overparameterization as a changed regime}
+
+A striking modern lesson is that increasing model size does not always hurt test performance.
+In some settings, once the model becomes large enough to fit the data well, further increases in size may actually improve generalization again.
+
+\medskip
+
+This suggests that the classical ``more complex model means worse generalization'' picture is too simplistic for highly overparameterized regimes.
+
+\subsection*{Double descent}
+
+One influential conceptual picture is \emph{double descent}.
+In a simplified description, as model size increases:
+\begin{itemize}
+    \item test error may first decrease,
+    \item then increase near an interpolation threshold,
+    \item then decrease again in a larger overparameterized regime.
+\end{itemize}
+
+This phenomenon does not occur identically in all settings, but it captures a real and important departure from classical bias--variance intuition.
+
+\subsection*{What appears established}
+
+Several broad points now seem plausible and robust:
+\begin{itemize}
+    \item interpolation alone does not determine generalization quality,
+    \item optimization dynamics matter,
+    \item geometric notions such as norm and margin often remain relevant,
+    \item overparameterization changes the effective learning regime rather than simply making it worse.
+\end{itemize}
+
+\subsection*{What remains unclear}
+
+At the same time, no single theory fully explains:
+\begin{itemize}
+    \item why stochastic gradient methods often find good solutions so reliably,
+    \item why overparameterized models can be simultaneously easy to optimize and strong at prediction,
+    \item what depth contributes beyond width or linearized approximations,
+    \item how architecture and data structure enter the generalization story in a unified way.
+\end{itemize}
+
+Thus deep-learning generalization is not mysterious in the sense of being completely opaque, but it remains incomplete in the sense of lacking a definitive unified account.
+

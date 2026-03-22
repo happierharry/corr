@@ -1,0 +1,105 @@
+\section{STARKs and the Algebraic Intermediate Representation (AIR)}
+
+\subsection{Motivation}
+
+Traditional zk-SNARK systems represent computation as static constraint systems such as R1CS or PLONK circuits.  
+In contrast, STARKs describe computation as a dynamic process evolving over time.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+A computation is represented as a sequence of states, and correctness is enforced by algebraic constraints on state transitions.
+
+\subsection{Execution Trace}
+
+An \emph{execution trace} is a table:
+\[
+\begin{array}{c|ccc}
+t & s_t^{(1)} & s_t^{(2)} & \cdots \\
+\hline
+0 & s_0^{(1)} & s_0^{(2)} & \cdots \\
+1 & s_1^{(1)} & s_1^{(2)} & \cdots \\
+2 & s_2^{(1)} & s_2^{(2)} & \cdots \\
+\vdots & \vdots & \vdots & \ddots
+\end{array}
+\]
+
+Each row represents the system state at time step $t$.
+
+\subsection{AIR Constraints}
+
+The Algebraic Intermediate Representation consists of:
+
+\paragraph{Transition constraints.}
+\[
+P(s_t, s_{t+1}) = 0.
+\]
+
+Example:
+\[
+x_{t+1} - x_t^2 - 1 = 0.
+\]
+
+\paragraph{Boundary constraints.}
+\[
+s_0 = \text{input}, \qquad s_T = \text{output}.
+\]
+
+\paragraph{Algebraic form.}
+All constraints must be polynomial equations over a finite field.
+
+\subsection{Example}
+
+Consider the recurrence:
+\[
+x_{t+1} = x_t^2 + 1.
+\]
+
+This yields:
+\[
+x_{t+1} - x_t^2 - 1 = 0.
+\]
+
+\subsection{Comparison with Circuit Models}
+
+\begin{center}
+\begin{tabular}{l|c|c}
+Feature & R1CS / PLONK & AIR \\
+\hline
+View of computation & static circuit & time evolution \\
+Basic constraint & $a \cdot b = c$ & $P(s_t, s_{t+1}) = 0$ \\
+Structure & graph & trace \\
+Best suited for & structured circuits & general programs
+\end{tabular}
+\end{center}
+
+\subsection{AIR for Machine Learning}
+
+In zkML, AIR can represent inference as a sequence of steps:
+\begin{itemize}
+\item load inputs
+\item apply linear transformations
+\item apply nonlinearities
+\item produce outputs
+\end{itemize}
+
+Each step corresponds to a transition constraint.
+
+\subsection{Key Insight}
+
+\begin{quote}
+AIR represents computation as an algebraic dynamical system:
+\[
+s_{t+1} = F(s_t),
+\]
+with correctness enforced by polynomial constraints.
+\end{quote}
+
+\subsection{Discussion}
+
+\begin{itemize}
+\item AIR is more natural for program execution and zkVMs.
+\item Circuit-based models are often more compact for structured computations.
+\item The choice between AIR and circuit representations reflects a tradeoff between generality and efficiency.
+\end{itemize}

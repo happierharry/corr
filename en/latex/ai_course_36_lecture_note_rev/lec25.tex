@@ -1,0 +1,810 @@
+\section{Lecture 25: Variational Autoencoders}
+
+\subsection{Motivation: What Is Generative Modeling?}
+
+So far, much of machine learning has focused on prediction:
+\[
+x \mapsto y.
+\]
+
+In generative modeling, the goal is different.
+
+\medskip
+
+\noindent
+\textbf{Goal.}  
+Learn the structure of the data distribution itself.
+
+\medskip
+
+\noindent
+Instead of only predicting labels, we want a model that captures
+\[
+p_{\text{data}}(x),
+\]
+or an approximation
+\[
+p_\theta(x) \approx p_{\text{data}}(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{What this enables.}
+
+\begin{itemize}
+    \item sampling new data points
+    \item modeling uncertainty
+    \item learning useful latent representations
+    \item interpolation and structured generation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item generate images similar to a training dataset
+    \item compress data into meaningful hidden factors
+    \item fill in missing observations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+A generative model does not merely separate classes; it tries to explain how data could have been produced.
+
+\subsection{Latent-Variable Viewpoint}
+
+A powerful way to model complicated data is to assume that observations are generated from hidden variables.
+
+\medskip
+
+\noindent
+\textbf{Latent-variable model.}
+
+\[
+p_\theta(x,z) = p_\theta(x|z)p(z),
+\]
+where:
+\begin{itemize}
+    \item $z$ is a latent variable
+    \item $p(z)$ is a prior distribution
+    \item $p_\theta(x|z)$ is the conditional data model
+\end{itemize}
+
+\medskip
+
+\noindent
+The observable distribution is obtained by marginalizing out $z$:
+\[
+p_\theta(x) = \int p_\theta(x,z)\,dz
+= \int p_\theta(x|z)p(z)\,dz.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+The latent variable $z$ captures underlying factors of variation, while the conditional model $p_\theta(x|z)$ turns those factors into an actual observation.
+
+\medskip
+
+\noindent
+\textbf{Example intuition.}
+
+In image generation, $z$ might encode:
+\begin{itemize}
+    \item pose
+    \item shape
+    \item style
+    \item lighting
+\end{itemize}
+
+and the decoder maps these factors into an image $x$.
+
+\medskip
+
+\noindent
+\textbf{Challenge.}  
+Even if the model is conceptually simple, the marginal likelihood
+\[
+p_\theta(x)=\int p_\theta(x|z)p(z)\,dz
+\]
+is often hard to compute exactly.
+
+\subsection{Likelihood and the Need for Approximate Inference}
+
+If we want to learn $\theta$ by maximum likelihood, we would like to maximize
+\[
+\log p_\theta(x)
+=
+\log \int p_\theta(x,z)\,dz.
+\]
+
+\medskip
+
+\noindent
+\textbf{Difficulty.}  
+The integral over $z$ is usually intractable when:
+\begin{itemize}
+    \item $z$ is high-dimensional
+    \item $p_\theta(x|z)$ is parameterized by a neural network
+    \item the posterior $p_\theta(z|x)$ has no closed form
+\end{itemize}
+
+\medskip
+
+\noindent
+This creates two coupled problems:
+
+\begin{itemize}
+    \item \textbf{inference:} estimate which latent variables explain a given $x$
+    \item \textbf{learning:} update model parameters to better fit the data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Bridge to variational inference.}  
+Instead of computing the exact posterior
+\[
+p_\theta(z|x)=\frac{p_\theta(x,z)}{p_\theta(x)},
+\]
+we introduce a tractable approximation
+\[
+q_\phi(z|x).
+\]
+
+\medskip
+
+\noindent
+This leads directly to the central idea behind variational autoencoders.
+
+\subsection{From Autoencoders to Variational Autoencoders}
+
+A classical autoencoder consists of:
+\begin{itemize}
+    \item an encoder: $x \mapsto h$
+    \item a decoder: $h \mapsto \hat{x}$
+\end{itemize}
+
+trained so that $\hat{x}$ reconstructs $x$.
+
+\medskip
+
+\noindent
+\textbf{Limitation of a classical autoencoder.}  
+It is usually a deterministic compression model, not a full probabilistic generative model.
+
+\medskip
+
+\noindent
+\textbf{VAE idea.}  
+Replace the deterministic hidden code by a probability distribution over latent variables:
+\[
+q_\phi(z|x).
+\]
+
+Then:
+\begin{itemize}
+    \item the \textbf{encoder} produces a distribution over latent codes
+    \item the \textbf{decoder} defines a distribution over reconstructed data
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus a VAE combines:
+\begin{itemize}
+    \item latent-variable generative modeling
+    \item variational inference
+    \item neural-network parameterization
+\end{itemize}
+
+\subsection{The Generative Model and the Approximate Posterior}
+
+In a VAE, we specify:
+
+\medskip
+
+\noindent
+\textbf{Prior.}
+\[
+p(z)=\mathcal{N}(0,I)
+\]
+in the standard setting.
+
+\medskip
+
+\noindent
+\textbf{Decoder / generative model.}
+\[
+p_\theta(x|z).
+\]
+
+\medskip
+
+\noindent
+\textbf{Encoder / approximate posterior.}
+\[
+q_\phi(z|x).
+\]
+
+\medskip
+
+\noindent
+The decoder answers:
+\begin{quote}
+Given a latent code $z$, what distribution over data $x$ should we generate?
+\end{quote}
+
+The encoder answers:
+\begin{quote}
+Given an observed data point $x$, what latent values $z$ are likely to have produced it?
+\end{quote}
+
+\medskip
+
+\noindent
+\textbf{Typical Gaussian encoder.}
+\[
+q_\phi(z|x)=\mathcal{N}(z\mid \mu_\phi(x), \Sigma_\phi(x)).
+\]
+
+Often one uses diagonal covariance:
+\[
+\Sigma_\phi(x)=\mathrm{diag}(\sigma_\phi^2(x)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The encoder performs approximate inference, while the decoder performs generation.
+
+\subsection{Deriving the ELBO}
+
+We now derive the objective used to train a VAE.
+
+\medskip
+
+\noindent
+Start from the marginal log-likelihood:
+\[
+\log p_\theta(x)=\log \int p_\theta(x,z)\,dz.
+\]
+
+Introduce any distribution $q_\phi(z|x)$ and rewrite:
+\[
+\log p_\theta(x)
+=
+\log \int q_\phi(z|x)\frac{p_\theta(x,z)}{q_\phi(z|x)}\,dz.
+\]
+
+Applying Jensen's inequality gives:
+\[
+\log p_\theta(x)
+\ge
+\int q_\phi(z|x)\log \frac{p_\theta(x,z)}{q_\phi(z|x)}\,dz.
+\]
+
+\medskip
+
+\noindent
+\textbf{Definition (ELBO).}
+\[
+\mathcal{L}(x;\theta,\phi)
+=
+\mathbb{E}_{q_\phi(z|x)}
+\left[
+\log \frac{p_\theta(x,z)}{q_\phi(z|x)}
+\right].
+\]
+
+This is called the \textbf{Evidence Lower Bound}.
+
+\medskip
+
+\noindent
+Using
+\[
+p_\theta(x,z)=p_\theta(x|z)p(z),
+\]
+we obtain
+\[
+\mathcal{L}(x;\theta,\phi)
+=
+\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]
++
+\mathbb{E}_{q_\phi(z|x)}[\log p(z)]
+-
+\mathbb{E}_{q_\phi(z|x)}[\log q_\phi(z|x)].
+\]
+
+Grouping the last two terms,
+\[
+\mathcal{L}(x;\theta,\phi)
+=
+\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]
+-
+\mathrm{KL}\!\left(q_\phi(z|x)\,\|\,p(z)\right).
+\]
+
+\medskip
+
+\noindent
+\textbf{This is the standard VAE objective.}
+
+\subsection{Why the ELBO Makes Sense}
+
+The ELBO can also be related directly to the true posterior.
+
+\medskip
+
+\noindent
+\textbf{Key decomposition.}
+\[
+\log p_\theta(x)
+=
+\mathcal{L}(x;\theta,\phi)
++
+\mathrm{KL}\!\left(q_\phi(z|x)\,\|\,p_\theta(z|x)\right).
+\]
+
+Since KL divergence is always nonnegative,
+\[
+\mathrm{KL}\!\left(q_\phi(z|x)\,\|\,p_\theta(z|x)\right)\ge 0,
+\]
+we obtain
+\[
+\mathcal{L}(x;\theta,\phi)\le \log p_\theta(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+Maximizing the ELBO does two things at once:
+
+\begin{itemize}
+    \item it pushes the model toward higher data likelihood
+    \item it makes the approximate posterior $q_\phi(z|x)$ closer to the true posterior $p_\theta(z|x)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The ELBO is not an arbitrary training loss. It is a principled surrogate for maximum likelihood in a latent-variable model.
+
+\subsection{Encoder--Decoder Structure}
+
+The architecture of a VAE is conceptually simple.
+
+\medskip
+
+\noindent
+\textbf{Encoder network.}
+
+Given $x$, the encoder outputs parameters of a latent distribution:
+\[
+\mu_\phi(x), \quad \log \sigma_\phi^2(x).
+\]
+
+This defines
+\[
+q_\phi(z|x)=\mathcal{N}(z\mid \mu_\phi(x), \mathrm{diag}(\sigma_\phi^2(x))).
+\]
+
+\medskip
+
+\noindent
+\textbf{Sampling step.}
+
+A latent sample $z$ is drawn from this distribution.
+
+\medskip
+
+\noindent
+\textbf{Decoder network.}
+
+Given $z$, the decoder outputs parameters of a distribution over $x$:
+\[
+p_\theta(x|z).
+\]
+
+For example:
+\begin{itemize}
+    \item Gaussian output for continuous data
+    \item Bernoulli output for binary data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Learning objective.}  
+Jointly optimize $\theta$ and $\phi$ to maximize the ELBO over the dataset:
+\[
+\sum_{i=1}^n \mathcal{L}(x_i;\theta,\phi).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation of the architecture.}
+
+\begin{itemize}
+    \item encoder: approximate inference
+    \item decoder: probabilistic generation
+    \item latent space: compressed structured representation
+\end{itemize}
+
+\subsection{Reconstruction Term and KL Term}
+
+The ELBO has two parts:
+\[
+\mathcal{L}(x;\theta,\phi)
+=
+\underbrace{\mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]}_{\text{reconstruction term}}
+-
+\underbrace{\mathrm{KL}(q_\phi(z|x)\|p(z))}_{\text{regularization term}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Reconstruction term.}  
+This encourages the decoder to assign high probability to the observed data when conditioned on latent codes inferred from $x$.
+
+\medskip
+
+\noindent
+\textbf{KL term.}  
+This encourages the encoder's posterior distribution to remain close to the prior.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+
+\begin{itemize}
+    \item strong emphasis on reconstruction $\rightarrow$ better fidelity, weaker latent structure
+    \item strong emphasis on KL regularization $\rightarrow$ smoother latent space, but risk of underusing the latent code
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+A VAE is not just trying to reconstruct data. It is trying to reconstruct data using a latent code that remains organized and compatible with a simple prior.
+
+\subsection{The Reparameterization Trick}
+
+A challenge arises because the ELBO contains an expectation over
+\[
+z \sim q_\phi(z|x),
+\]
+and $q_\phi$ depends on the encoder parameters $\phi$.
+
+\medskip
+
+\noindent
+\textbf{Problem.}  
+Naively sampling $z$ can obstruct gradient flow through the encoder.
+
+\medskip
+
+\noindent
+\textbf{Solution.}  
+Rewrite the random variable so that the randomness is separated from the parameters.
+
+For a Gaussian encoder,
+\[
+z \sim \mathcal{N}(\mu,\sigma^2 I)
+\]
+can be written as
+\[
+z = \mu + \sigma \odot \epsilon,
+\qquad
+\epsilon \sim \mathcal{N}(0,I).
+\]
+
+Thus
+\[
+z = \mu_\phi(x) + \sigma_\phi(x)\odot \epsilon.
+\]
+
+\medskip
+
+\noindent
+\textbf{Equivalent expectation.}
+\[
+\mathbb{E}_{q_\phi(z|x)}[f(z)]
+=
+\mathbb{E}_{\epsilon \sim \mathcal{N}(0,I)}
+\left[
+f\bigl(\mu_\phi(x)+\sigma_\phi(x)\odot \epsilon\bigr)
+\right].
+\]
+
+\medskip
+
+\noindent
+\textbf{Why this helps.}  
+Now the stochasticity is entirely in $\epsilon$, which does not depend on $\phi$. Therefore gradients can backpropagate through $\mu_\phi(x)$ and $\sigma_\phi(x)$.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The reparameterization trick turns sampling into a differentiable computation graph.
+
+\subsection{Closed-Form KL for a Gaussian Encoder}
+
+In the standard VAE setting,
+\[
+q_\phi(z|x)=\mathcal{N}(\mu,\mathrm{diag}(\sigma^2)),
+\qquad
+p(z)=\mathcal{N}(0,I).
+\]
+
+Then the KL divergence has a closed form:
+\[
+\mathrm{KL}\!\left(q_\phi(z|x)\,\|\,p(z)\right)
+=
+\frac{1}{2}\sum_{j=1}^d
+\left(
+\mu_j^2+\sigma_j^2-\log \sigma_j^2 -1
+\right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Practical significance.}
+
+\begin{itemize}
+    \item no Monte Carlo estimator is needed for the KL term
+    \item optimization becomes efficient and stable
+\end{itemize}
+
+\medskip
+
+\noindent
+Typically the reconstruction term is estimated with one or a few samples of $\epsilon$, while the KL term is computed exactly.
+
+\subsection{How to Read the KL Term}
+
+The KL penalty is often described as a regularizer, but it has several connected meanings.
+
+\medskip
+
+\noindent
+\textbf{First interpretation: closeness to the prior.}  
+It prevents the encoder from producing arbitrary latent distributions far from $p(z)$.
+
+\medskip
+
+\noindent
+\textbf{Second interpretation: structure in latent space.}  
+If $q_\phi(z|x)$ stays near a shared simple prior, nearby latent points tend to decode into meaningful nearby outputs.
+
+\medskip
+
+\noindent
+\textbf{Third interpretation: information bottleneck flavor.}  
+A large KL term means the posterior is carrying substantial information about the specific input $x$. Penalizing this limits how much information can be stored in $z$.
+
+\medskip
+
+\noindent
+\textbf{Practical consequence.}
+
+\begin{itemize}
+    \item too little KL pressure $\rightarrow$ latent space becomes irregular, poor generative sampling
+    \item too much KL pressure $\rightarrow$ latent code carries too little information
+\end{itemize}
+
+\subsection{Training and Generation}
+
+\textbf{Training phase.}
+
+For each data point $x$:
+\begin{enumerate}
+    \item compute encoder outputs $\mu_\phi(x)$ and $\sigma_\phi(x)$
+    \item sample $\epsilon \sim \mathcal{N}(0,I)$
+    \item construct
+    \[
+    z=\mu_\phi(x)+\sigma_\phi(x)\odot \epsilon
+    \]
+    \item decode $z$ to obtain $p_\theta(x|z)$
+    \item maximize the ELBO
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Generation phase.}
+
+To sample new data:
+\begin{enumerate}
+    \item sample
+    \[
+    z \sim p(z)=\mathcal{N}(0,I)
+    \]
+    \item sample or decode from
+    \[
+    p_\theta(x|z)
+    \]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Important distinction.}  
+At generation time, no encoder is needed. The encoder is only used during training and inference.
+
+\subsection{Posterior Collapse}
+
+One of the best-known failure modes of VAEs is \textbf{posterior collapse}.
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+Posterior collapse occurs when
+\[
+q_\phi(z|x)\approx p(z)
+\]
+for many or all inputs $x$.
+
+\medskip
+
+\noindent
+In that case, the latent variable carries little information about the input.
+
+\medskip
+
+\noindent
+\textbf{What this means.}
+
+\begin{itemize}
+    \item the encoder effectively ignores $x$
+    \item the decoder learns to reconstruct without relying on the latent code
+    \item the latent representation becomes uninformative
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Typical causes.}
+
+\begin{itemize}
+    \item an overly expressive decoder
+    \item KL regularization that is too strong too early
+    \item optimization dynamics that favor ignoring $z$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Intuition.}  
+If the decoder is powerful enough to model the data almost on its own, then the easiest way to reduce the objective may be to keep $q_\phi(z|x)$ close to the prior and avoid using latent information.
+
+\subsection{Practical Caveats and Common Remedies}
+
+VAEs are elegant, but practical training requires care.
+
+\medskip
+
+\noindent
+\textbf{Caveat 1: blurry samples.}  
+Likelihood-based objectives often encourage averaging over uncertainty, which can produce samples that look smoother or blurrier than adversarial models.
+
+\medskip
+
+\noindent
+\textbf{Caveat 2: mismatch between reconstruction and generation.}  
+Good reconstructions do not automatically imply excellent unconditional samples from the prior.
+
+\medskip
+
+\noindent
+\textbf{Caveat 3: posterior collapse.}  
+As discussed above, the model may underuse the latent variables.
+
+\medskip
+
+\noindent
+\textbf{Common remedies.}
+
+\begin{itemize}
+    \item \textbf{KL annealing:} start with a weaker KL penalty and increase it gradually
+    \item \textbf{$\beta$-VAE:} replace the objective by
+    \[
+    \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]
+    -
+    \beta\,\mathrm{KL}(q_\phi(z|x)\|p(z))
+    \]
+    to control the tradeoff explicitly
+    \item \textbf{weaker or more carefully designed decoder:} prevent the decoder from ignoring $z$
+    \item \textbf{richer posterior families:} improve the approximation quality of $q_\phi(z|x)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation of $\beta$-VAE.}
+
+\begin{itemize}
+    \item $\beta > 1$ encourages stronger regularization and often more disentangled latent factors
+    \item $\beta < 1$ improves reconstruction but may weaken latent structure
+\end{itemize}
+
+\subsection{Conceptual Comparison with Earlier Models}
+
+VAEs sit at the intersection of several ideas we have seen before.
+
+\medskip
+
+\noindent
+\textbf{From probabilistic modeling.}  
+They inherit the goal of maximizing data likelihood.
+
+\medskip
+
+\noindent
+\textbf{From latent-variable models.}  
+They explain observations through hidden causes.
+
+\medskip
+
+\noindent
+\textbf{From variational methods.}  
+They replace intractable posterior inference by optimization over a tractable family.
+
+\medskip
+
+\noindent
+\textbf{From neural networks.}  
+They use flexible encoder and decoder parameterizations.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+A VAE is not merely an autoencoder with noise; it is a deep latent-variable model trained by variational inference.
+
+\subsection{Summary}
+
+\textbf{Main points of this lecture.}
+
+\begin{itemize}
+    \item Generative modeling aims to learn a distribution over data rather than only a predictive rule.
+    \item A latent-variable model writes
+    \[
+    p_\theta(x)=\int p_\theta(x|z)p(z)\,dz.
+    \]
+    \item Exact marginal likelihood and exact posterior inference are usually intractable.
+    \item VAEs introduce an approximate posterior $q_\phi(z|x)$ and optimize the ELBO:
+    \[
+    \mathcal{L}(x;\theta,\phi)
+    =
+    \mathbb{E}_{q_\phi(z|x)}[\log p_\theta(x|z)]
+    -
+    \mathrm{KL}(q_\phi(z|x)\|p(z)).
+    \]
+    \item The encoder performs approximate inference; the decoder performs generation.
+    \item The reparameterization trick makes gradient-based optimization possible.
+    \item The KL term regularizes the latent space and helps align it with the prior.
+    \item Posterior collapse is a major practical issue when the latent code is ignored.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Looking ahead.}  
+VAEs provide a principled likelihood-based route to deep generative modeling. In the next lectures, we will contrast this with adversarial training and denoising-based generation.

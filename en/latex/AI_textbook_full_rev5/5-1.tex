@@ -1,0 +1,345 @@
+\section{What Does It Mean to Model a Data Distribution?}
+
+The previous chapters emphasized prediction, representation, transfer, and control.
+In those settings the central object was often a map from an input $x$ to an output $y$ or to a useful internal representation.
+Generative modeling changes the point of view.
+Instead of asking only how to predict from data, we ask how to model the data distribution itself.
+
+\medskip
+
+\noindent
+\textbf{Chapter role.}
+This opening section sets the notation and taxonomy for the chapter.
+It introduces the main kinds of generative models, distinguishes likelihood evaluation from sample generation, and explains why latent variables and implicit samplers lead to different mathematical and algorithmic questions.
+
+\subsection*{Basic notation and the chapter's main question}
+
+Let $x\in\mathcal{X}$ denote an observed data point, for example an image, a sentence, an audio segment, or a trajectory.
+A dataset is written as
+\[
+D = \{x_1,\dots,x_n\}.
+\]
+A generative model with parameters $\theta$ attempts to capture the structure of the unknown data-generating distribution by introducing one or more of the following objects:
+\[
+p_\theta(x), \qquad p_\theta(x,z), \qquad x\sim p_\theta, \qquad x = G_\theta(\varepsilon).
+\]
+These symbols already suggest that generative modeling is not a single method but a family of related viewpoints.
+The main question of the chapter is therefore the following:
+
+\begin{quote}
+What mathematical object is the model learning, and what operations does that object support?
+\end{quote}
+
+Some models support exact or approximate evaluation of probabilities.
+Some support efficient sampling.
+Some introduce latent variables that organize the data through hidden structure.
+Some provide only a simulation mechanism without a tractable density.
+The rest of the chapter will develop these alternatives systematically.
+
+\subsection*{Definitions: generative model, density model, sampler, latent model, implicit model}
+
+\begin{definition}[Generative model]
+A \emph{generative model} is a parameterized family of distributions or sampling procedures intended to approximate the distribution of observed data.
+Depending on the framework, this may mean learning a density $p_\theta(x)$, a joint model $p_\theta(x,z)$ with latent variables, or a sampling map that produces synthetic observations with realistic statistics.
+\end{definition}
+
+\begin{definition}[Density model]
+A \emph{density model} is a generative model that assigns a probability mass or density value to each observation $x$ through an explicit expression such as
+\[
+p_\theta(x).
+\]
+When this quantity is tractable, one can evaluate likelihoods, compare models by log-likelihood, and reason directly about probability mass.
+\end{definition}
+
+\begin{definition}[Sampler]
+A \emph{sampler} is a mechanism that generates synthetic data points from a model distribution.
+We write
+\[
+x \sim p_\theta
+\]
+to indicate that $x$ is sampled from the model.
+The ability to sample does not by itself imply that $p_\theta(x)$ can be evaluated in closed form.
+\end{definition}
+
+\begin{definition}[Latent-variable model]
+A \emph{latent-variable model} introduces a hidden variable $z\in\mathcal{Z}$ and specifies a joint distribution
+\[
+p_\theta(x,z) = p_\theta(x\mid z)p_\theta(z).
+\]
+The observed-data distribution is obtained by marginalization:
+\[
+p_\theta(x) = \sum_z p_\theta(x,z)
+\]
+for discrete $z$, or
+\[
+p_\theta(x) = \int p_\theta(x,z)\,dz
+\]
+for continuous $z$.
+\end{definition}
+
+\begin{definition}[Implicit model]
+An \emph{implicit model} defines a procedure for generating data, often in the form
+\[
+\varepsilon \sim p(\varepsilon),
+\qquad
+x = G_\theta(\varepsilon),
+\]
+without necessarily providing a tractable formula for $p_\theta(x)$.
+Such models are judged primarily through sample quality, distributional matching, or downstream utility rather than direct likelihood evaluation.
+\end{definition}
+
+These definitions organize much of modern generative modeling.
+Likelihood-based models, latent-variable models, adversarial generators, normalizing flows, and diffusion models all fit into this language, but they emphasize different parts of it.
+
+\subsection*{Likelihood evaluation versus sample generation}
+
+Two goals in generative modeling are closely related but mathematically distinct.
+
+\paragraph{Likelihood evaluation.}
+A model supports likelihood evaluation if it can compute or approximate quantities such as
+\[
+p_\theta(x)
+\quad \text{or} \quad
+\log p_\theta(x).
+\]
+This is useful for density estimation, uncertainty quantification, compression, and comparison by probabilistic criteria.
+
+\paragraph{Sample generation.}
+A model supports sample generation if it can draw synthetic observations
+\[
+x^{\mathrm{new}} \sim p_\theta.
+\]
+This is useful for simulation, creative generation, imputation, and scenario construction.
+
+\medskip
+
+\noindent
+A key lesson of the chapter is that these two capabilities do not always coincide.
+A model may assign a tractable density but generate poor-looking samples, or generate highly realistic samples while providing no tractable pointwise likelihood.
+Thus one must always ask which operation the model is designed to support.
+
+\begin{example}[A density that is easy to evaluate]
+Suppose
+\[
+p_\theta(x)=\mathcal{N}(x\mid \mu,\Sigma).
+\]
+Then both evaluation and sampling are straightforward.
+For any $x$, one can compute $p_\theta(x)$ explicitly, and one can also generate synthetic samples by drawing from the Gaussian.
+This is the idealized case in which density estimation and sampling align cleanly.
+\end{example}
+
+\begin{example}[A sampler without tractable likelihood]
+Suppose
+\[
+\varepsilon \sim \mathcal{N}(0,I),
+\qquad
+x = G_\theta(\varepsilon),
+\]
+where $G_\theta$ is a deep neural network.
+Then generating $x$ may be easy, but the induced density on $x$ can be difficult or impossible to evaluate tractably.
+This is the typical situation for implicit generative models.
+\end{example}
+
+\subsection*{Latent variables and hidden structure}
+
+One of the chapter's main principles is that complicated observations may arise from simpler hidden causes.
+If $z$ denotes a latent variable, then the model is written as
+\[
+p_\theta(x,z)=p_\theta(x\mid z)p_\theta(z).
+\]
+The variable $z$ may represent class identity, geometric structure, semantic content, style, trajectory intent, or other hidden factors.
+The advantage of this factorization is conceptual and computational:
+modeling becomes easier if the complexity of the observations can be explained through lower-dimensional or more structured latent causes.
+
+\medskip
+
+\noindent
+Sampling from a latent-variable model typically proceeds in two stages:
+\[
+z \sim p_\theta(z),
+\qquad
+x \sim p_\theta(x\mid z).
+\]
+This separates the model into a prior over hidden structure and a decoder or observation model that maps hidden structure to visible data.
+
+\medskip
+
+\noindent
+Inference, however, runs in the opposite direction.
+Given an observed $x$, one would like to understand the posterior
+\[
+p_\theta(z\mid x)=\frac{p_\theta(x,z)}{p_\theta(x)}.
+\]
+This is often much harder than sampling, and it is one of the central reasons variational methods arise later in the chapter.
+
+\subsection*{Explicit models, latent models, and implicit samplers: three worked contrasts}
+
+This section is intended to set notation, but it should also make the distinctions concrete.
+The following three examples give a compact contrast among the main model types.
+
+\begin{example}[Explicit density model: a Gaussian on $\mathbb{R}^d$]
+Let
+\[
+p_\theta(x)=\mathcal{N}(x\mid \mu,\Sigma),
+\qquad
+\theta=(\mu,\Sigma).
+\]
+Then:
+\begin{itemize}
+    \item the model directly defines a density on observations,
+    \item likelihood evaluation is tractable,
+    \item sampling is tractable,
+    \item there is no latent variable separate from the observed $x$.
+\end{itemize}
+This is the cleanest form of explicit generative modeling, but it may be too restrictive for high-dimensional structured data.
+\end{example}
+
+\begin{example}[Latent-variable model: finite mixture]
+Let $z\in\{1,\dots,K\}$ and define
+\[
+p_\theta(z=k)=\pi_k,
+\qquad
+p_\theta(x\mid z=k)=\mathcal{N}(x\mid \mu_k,\Sigma_k).
+\]
+Then the joint model is
+\[
+p_\theta(x,z=k)=\pi_k\,\mathcal{N}(x\mid \mu_k,\Sigma_k),
+\]
+and the marginal observed-data density is
+\[
+p_\theta(x)=\sum_{k=1}^K \pi_k\,\mathcal{N}(x\mid \mu_k,\Sigma_k).
+\]
+Compared with a single Gaussian, this model introduces hidden structure.
+The latent variable $z$ explains which component generated the data point.
+Likelihood evaluation remains tractable, but latent inference becomes part of the problem.
+\end{example}
+
+\begin{example}[Implicit sampler: neural generator]
+Let
+\[
+\varepsilon \sim \mathcal{N}(0,I),
+\qquad
+x = G_\theta(\varepsilon).
+\]
+Then sampling is immediate: draw $\varepsilon$ and push it through $G_\theta$.
+However, unless $G_\theta$ has special structure, there may be no tractable closed-form expression for the density $p_\theta(x)$.
+The model is therefore suitable when realistic generation is primary, but it is less suitable when exact likelihood evaluation is required.
+\end{example}
+
+These three examples already preview the chapter's later routes:
+explicit density modeling, latent-variable inference, and sample-driven implicit generation.
+Normalizing flows and diffusion models will later show that some modern methods mix these viewpoints rather than falling perfectly into one category.
+
+\subsection*{A taxonomy of generative models}
+
+Figure~\ref{fig:gen-taxonomy} gives a compact taxonomy that will guide the rest of the chapter.
+
+\begin{figure}[ht]
+\centering
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|p{3.0cm}|p{3.0cm}|p{3.1cm}|p{3.2cm}|}
+\hline
+\textbf{Model family} & \textbf{Core object} & \textbf{Main operation} & \textbf{Typical question} \\
+\hline
+Explicit density model & $p_\theta(x)$ & Evaluate likelihood and sample & How much probability does the model assign to this $x$? \\
+\hline
+Latent-variable model & $p_\theta(x,z)$ & Marginalize or infer $z$ & Which hidden structure explains this observation? \\
+\hline
+Implicit model & $x=G_\theta(\varepsilon)$ & Sample generation & Can the model generate realistic observations? \\
+\hline
+Conditional generative model & $p_\theta(x\mid c)$ or $x=G_\theta(c,\varepsilon)$ & Controlled generation & How do we generate an $x$ consistent with condition $c$? \\
+\hline
+Hybrid models & combinations of the above & Trade off tractability and realism & Which operations are preserved and which are approximated? \\
+\hline
+\end{tabular}
+\caption{A compact taxonomy of generative models. The same model may belong to more than one row; for example, latent-variable models may also be explicit density models, and some modern architectures approximate several operations at once.}
+\label{fig:gen-taxonomy}
+\end{figure}
+
+\subsection*{Conditional generation and representation}
+
+Many generative tasks are conditional rather than unconditional.
+One may wish to generate an image from text, speech from phonetic content, or a completion from a prompt.
+In such cases one writes
+\[
+p_\theta(x\mid c)
+\]
+for a condition $c$.
+The condition may be a class label, a text description, a partial observation, or a control variable.
+
+\medskip
+
+\noindent
+Conditional generation is especially important in modern generative AI because the system is often evaluated by whether it can produce outputs consistent with instructions or side information.
+Mathematically, however, the same distinctions remain:
+one may seek a conditional density, a conditional latent-variable model, or a conditional implicit sampler.
+
+\medskip
+
+\noindent
+This also connects the chapter to representation learning.
+A useful representation may serve as the condition $c$, and conversely a generative model may learn a latent code $z$ that functions as a representation.
+Thus generative modeling and representation learning are not separate topics.
+They are often two views of the same internal structure.
+
+\subsection*{What this section establishes, and what it does not}
+
+At this stage, the mathematical claims are modest but important.
+The section establishes a clean vocabulary:
+\begin{itemize}
+    \item $p_\theta(x)$ denotes an explicit model of observed data,
+    \item $p_\theta(x,z)$ denotes a joint model with latent variables,
+    \item $x\sim p_\theta$ denotes sampling from the model,
+    \item $x = G_\theta(\varepsilon)$ denotes an implicit sampling mechanism.
+\end{itemize}
+It also establishes that likelihood evaluation and sample generation are distinct operations.
+
+\medskip
+
+\noindent
+What the section does \emph{not} yet establish is which generative route is best.
+That depends on the modeling objective, the data modality, the notion of tractability one requires, and the trade-off between statistical faithfulness and computational convenience.
+The remaining sections of the chapter develop these trade-offs in detail.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item A generative model may define a density, a joint model with latent variables, or a sampling procedure.
+    \item The notation $p_\theta(x)$, $p_\theta(x,z)$, and $x=G_\theta(\varepsilon)$ corresponds to genuinely different modeling commitments.
+    \item Likelihood evaluation and sample generation are related but not identical capabilities.
+    \item Latent-variable models explain visible data through hidden structure.
+    \item Implicit models may generate realistic data without offering tractable pointwise likelihoods.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item \textbf{``Generative'' does not always mean ``can compute exact likelihood.''} Some generative models are defined primarily through sampling.
+    \item \textbf{``Can sample'' does not imply ``understands probability well.''} High sample quality does not automatically provide calibrated density values.
+    \item \textbf{Latent variables are not required in every generative model.} They are one important route, not the only route.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Let $p_\theta(x)=\mathcal{N}(x\mid 0,I)$ on $\mathbb{R}^d$. Explain why this model is both an explicit density model and a sampler.
+    \item For a finite mixture model with $K$ components, derive the formula
+    \[
+    p_\theta(x)=\sum_{k=1}^K \pi_k p_\theta(x\mid z=k).
+    \]
+    Why is this a latent-variable model?
+    \item Give an example of a task in which tractable likelihood evaluation matters more than sample realism, and another in which sample realism matters more than tractable likelihood evaluation.
+    \item Compare an explicit density model and an implicit sampler on the following five criteria: tractable evaluation, sample quality, hidden structure, inference, and ease of training.
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+The basic distinction between explicit density modeling, latent-variable modeling, and implicit generation runs through the modern generative-modeling literature.
+Classical probability texts supply the background for density estimation and latent variables.
+Mixture models and the EM tradition develop one of the oldest latent-variable routes.
+Adversarial generation emphasizes implicit sampling.
+Normalizing flows restore tractable density through invertible transformations.
+Diffusion models show that high-quality generation can also emerge from iterative denoising constructions.
+The purpose of this chapter is to place these families in one coherent mathematical picture rather than to treat them as unrelated model brands.

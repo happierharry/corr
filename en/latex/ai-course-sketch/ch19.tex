@@ -1,0 +1,273 @@
+\chapter{Normalization Methods}
+
+\section{Batch Normalization}
+
+Training deep neural networks can be sensitive to the scale and distribution of activations. Normalization methods address this issue by standardizing intermediate representations.
+
+\medskip
+
+\noindent
+\textbf{Batch normalization (BatchNorm).}  
+Given activations $z$ in a layer, BatchNorm transforms them as follows:
+\[
+\hat{z}_i = \frac{z_i - \mu_B}{\sqrt{\sigma_B^2 + \varepsilon}},
+\]
+where $\mu_B$ and $\sigma_B^2$ are the mean and variance computed over a mini-batch.
+
+\medskip
+
+\noindent
+\textbf{Affine transformation.}  
+After normalization, a learnable transformation is applied:
+\[
+y_i = \gamma \hat{z}_i + \beta,
+\]
+where $\gamma$ and $\beta$ are parameters.
+
+\medskip
+
+\noindent
+\textbf{Purpose.}
+\begin{itemize}
+    \item Stabilize the distribution of activations
+    \item Improve gradient flow
+    \item Accelerate training
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+Batch normalization reduces sensitivity to the scale of parameters and inputs.
+
+\medskip
+
+\noindent
+\textbf{Training vs inference.}
+\begin{itemize}
+    \item During training: statistics computed from mini-batches
+    \item During inference: running averages are used
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical effect.}
+\begin{itemize}
+    \item Allows larger learning rates
+    \item Reduces dependence on initialization
+\end{itemize}
+
+\section{Layer and Instance Normalization}
+
+While BatchNorm relies on batch statistics, alternative normalization methods operate independently of the batch.
+
+\subsection{Layer Normalization}
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+Layer normalization normalizes across features within a single data point:
+\[
+\hat{z} = \frac{z - \mu_{\text{layer}}}{\sqrt{\sigma_{\text{layer}}^2 + \varepsilon}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item Independent of batch size
+    \item Suitable for sequence models (e.g., transformers)
+\end{itemize}
+
+\subsection{Instance Normalization}
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+Instance normalization normalizes each sample independently, often across spatial dimensions in vision tasks.
+
+\medskip
+
+\noindent
+\textbf{Applications.}
+\begin{itemize}
+    \item Image generation
+    \item Style transfer
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Comparison of methods.}
+
+\begin{itemize}
+    \item BatchNorm: uses batch statistics
+    \item LayerNorm: uses feature statistics per sample
+    \item InstanceNorm: uses spatial statistics per sample
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Different normalization methods reflect different assumptions about the structure of the data.
+
+\section{Stabilization of Training}
+
+Normalization methods improve the stability and efficiency of training.
+
+\medskip
+
+\noindent
+\textbf{Effect on optimization.}
+\begin{itemize}
+    \item Smooths the loss landscape
+    \item Reduces sensitivity to parameter scaling
+    \item Improves conditioning
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Gradient flow.}
+\begin{itemize}
+    \item Prevents vanishing and exploding gradients
+    \item Maintains consistent signal propagation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Internal covariate shift (informal).}  
+As parameters change during training, the distribution of activations shifts. Normalization reduces this effect.
+
+\medskip
+
+\noindent
+\textbf{Regularization effect.}
+\begin{itemize}
+    \item BatchNorm introduces noise through batch statistics
+    \item Can improve generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Learning rate interaction.}
+\begin{itemize}
+    \item Enables use of larger learning rates
+    \item Leads to faster convergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalization reshapes the optimization problem, making it easier to solve.
+
+\section{Theoretical and Practical Insights}
+
+Although normalization methods are widely used, their theoretical understanding is still evolving.
+
+\medskip
+
+\noindent
+\textbf{Scale invariance.}  
+Normalization makes the network less sensitive to scaling of parameters.
+
+\medskip
+
+\noindent
+\textbf{Reparameterization.}  
+Normalization can be viewed as changing the parameterization of the model, which affects optimization dynamics.
+
+\medskip
+
+\noindent
+\textbf{Geometry of optimization.}  
+Normalization effectively modifies the geometry of the loss landscape, often making it more well-conditioned.
+
+\medskip
+
+\noindent
+\textbf{Empirical observations.}
+\begin{itemize}
+    \item Improves training speed
+    \item Enhances stability across architectures
+    \item Essential in many modern deep networks
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item BatchNorm depends on batch size
+    \item May behave poorly with very small batches
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Design considerations.}
+\begin{itemize}
+    \item Choice of normalization depends on architecture and data
+    \item Often combined with other techniques (e.g., residual connections)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalization is both a practical tool and a conceptual mechanism for improving optimization.
+
+\section{A Unifying Perspective}
+
+Normalization methods can be understood as transformations that:
+
+\begin{itemize}
+    \item standardize representations,
+    \item improve conditioning,
+    \item stabilize gradient flow,
+    \item introduce implicit regularization.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Normalization step
+    \item Learnable scaling and shifting
+    \item Interaction with optimization dynamics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Normalization plays a central role in making deep networks trainable at scale.
+
+\section{Outlook}
+
+This chapter examined normalization methods in deep learning:
+\begin{itemize}
+    \item batch normalization and its variants,
+    \item alternative normalization strategies,
+    \item their role in stabilizing training,
+    \item theoretical and practical perspectives.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study regularization techniques specific to deep learning, including dropout and data augmentation.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Well-designed transformations of intermediate representations can significantly improve both optimization and generalization.

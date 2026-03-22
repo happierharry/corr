@@ -1,0 +1,398 @@
+\section{Transformers as General-Purpose Sequence Architectures}
+
+The previous section introduced attention as a mechanism for content-based weighted aggregation.
+A transformer turns that mechanism into a full architectural template.
+Instead of treating attention as an auxiliary device attached to a recurrent model, the transformer makes attention the central structured operator of the network.
+
+\medskip
+
+This shift is conceptually important.
+A transformer layer is not merely a collection of engineering tricks.
+It is a mathematically analyzable operator on a sequence of representations:
+it mixes information across positions by learned pairwise interactions, applies nonlinear pointwise transformations, and stabilizes depth through residual connections and normalization.
+Seen this way, transformers are general-purpose sequence architectures because they provide a reusable algebraic block that can model local, global, and content-dependent interaction patterns within the same framework.
+
+\subsection*{Scaled dot-product self-attention}
+
+Let
+\[
+X \in \mathbb{R}^{T \times d}
+\]
+be a matrix of token representations, where \(T\) is the sequence length and \(d\) is the representation dimension.
+A self-attention layer constructs queries, keys, and values from the same input:
+\[
+Q = XW_Q, \qquad K = XW_K, \qquad V = XW_V,
+\]
+where
+\[
+W_Q \in \mathbb{R}^{d \times d_k},
+\qquad
+W_K \in \mathbb{R}^{d \times d_k},
+\qquad
+W_V \in \mathbb{R}^{d \times d_v}.
+\]
+
+\begin{definition}[Scaled dot-product attention]
+For matrices \(Q \in \mathbb{R}^{T \times d_k}\), \(K \in \mathbb{R}^{T \times d_k}\), and \(V \in \mathbb{R}^{T \times d_v}\), the scaled dot-product attention operator is
+\[
+\mathrm{Attn}(Q,K,V)
+=
+\mathrm{softmax}_{\mathrm{row}}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V,
+\]
+where \(\mathrm{softmax}_{\mathrm{row}}\) applies the softmax map to each row of the score matrix.
+\end{definition}
+
+The matrix
+\[
+S = \frac{QK^{\top}}{\sqrt{d_k}} \in \mathbb{R}^{T \times T}
+\]
+contains pairwise similarity scores between positions.
+After row-wise softmax one obtains an attention matrix
+\[
+A = \mathrm{softmax}_{\mathrm{row}}(S),
+\]
+whose entries satisfy \(A_{ij} \ge 0\) and \(\sum_{j=1}^T A_{ij} = 1\) for every row \(i\).
+Thus the output at position \(i\) is
+\[
+(AV)_i = \sum_{j=1}^T A_{ij} v_j,
+\]
+which is a convex combination of the value vectors.
+This makes self-attention a structured interaction operator:
+each output token is built by aggregating information from all positions, but with weights determined adaptively by content.
+
+\medskip
+
+The scaling by \(\sqrt{d_k}\) is not cosmetic.
+Without it, dot products can grow in magnitude as the key dimension increases, pushing the softmax into very sharp regimes and making optimization less stable.
+The scaling keeps score magnitudes in a more controlled range.
+
+\subsection*{Self-attention as a sequence operator}
+
+A recurrent model updates positions through a temporal chain.
+A self-attention layer instead forms an interaction graph in one step.
+Every position can communicate directly with every other position through the matrix \(A\).
+This is one reason transformers are so expressive for long-range dependence:
+if token \(i\) needs information from token \(j\), the model does not have to pass that information through \(j-i\) intermediate recurrent transitions.
+It can create a direct content-based edge immediately.
+
+\medskip
+
+In pure self-attention, however, the interaction pattern depends only on the token representations supplied to the layer.
+If no positional information is added, the layer does not intrinsically know whether one token came earlier or later in the sequence.
+This observation can be stated precisely.
+
+\begin{proposition}[Permutation equivariance of self-attention without positional information]
+Let \(P \in \mathbb{R}^{T \times T}\) be a permutation matrix, and define
+\[
+\mathrm{SA}(X)
+=
+\mathrm{Attn}(XW_Q, XW_K, XW_V).
+\]
+If no positional information is added to \(X\), then
+\[
+\mathrm{SA}(PX) = P\,\mathrm{SA}(X).
+\]
+That is, self-attention is permutation equivariant.
+\end{proposition}
+
+\paragraph{Proof sketch.}
+If \(X' = PX\), then
+\[
+Q' = X'W_Q = PQ,
+\qquad
+K' = X'W_K = PK,
+\qquad
+V' = X'W_V = PV.
+\]
+Therefore the score matrix becomes
+\[
+S' = \frac{Q'{K'}^{\top}}{\sqrt{d_k}}
+= \frac{(PQ)(PK)^{\top}}{\sqrt{d_k}}
+= \frac{P Q K^{\top} P^{\top}}{\sqrt{d_k}}
+= P S P^{\top}.
+\]
+Applying row-wise softmax simply permutes rows and columns in the same way, so
+\[
+\mathrm{softmax}_{\mathrm{row}}(S') = P\,\mathrm{softmax}_{\mathrm{row}}(S)\,P^{\top}.
+\]
+Hence
+\[
+\begin{aligned}
+\mathrm{SA}(PX)
+&=
+\mathrm{softmax}_{\mathrm{row}}(S')V' \\
+&=
+P\,\mathrm{softmax}_{\mathrm{row}}(S)P^{\top}PV \\
+&=
+P\,\mathrm{softmax}_{\mathrm{row}}(S)V \\
+&=
+P\,\mathrm{SA}(X).
+\end{aligned}
+\]
+So permuting the inputs permutes the outputs in exactly the same way.
+\qed
+
+This proposition is pedagogically valuable because it identifies a precise limitation.
+Self-attention alone is naturally suited not only to sequences but also to sets, where permutation equivariance may actually be desirable.
+For sequence modeling, however, order matters.
+Transformers therefore inject positional information explicitly, either by adding positional encodings or by using learned positional embeddings.
+Once order information is included, the architecture is no longer equivariant to arbitrary permutations of the token positions.
+
+\subsection*{Multi-head attention}
+
+A single attention map produces one interaction pattern.
+In practice, transformers use \emph{multi-head attention}, which computes several attention operations in parallel with different learned projections.
+For head \(h = 1,\dots,H\), define
+\[
+Q_h = XW_Q^{(h)},
+\qquad
+K_h = XW_K^{(h)},
+\qquad
+V_h = XW_V^{(h)},
+\]
+and then
+\[
+\mathrm{head}_h(X)
+=
+\mathrm{Attn}(Q_h,K_h,V_h).
+\]
+The head outputs are concatenated and linearly mixed:
+\[
+\mathrm{MHA}(X)
+=
+\mathrm{Concat}(\mathrm{head}_1(X),\dots,\mathrm{head}_H(X))W_O.
+\]
+
+The point is not merely to enlarge the parameter count.
+Different heads can represent different types of interactions:
+local versus long-range dependence,
+syntactic versus semantic relation,
+or one-to-one copying versus broad contextual smoothing.
+The transformer layer therefore learns not one interaction graph, but a small family of interaction graphs that are recombined into a new representation.
+
+\subsection*{The transformer block written algebraically}
+
+A transformer layer combines self-attention with a positionwise nonlinear map.
+A convenient modern form is the \emph{pre-normalization} block.
+If \(H^{(\ell)} \in \mathbb{R}^{T \times d}\) is the input to layer \(\ell\), then one writes
+\[
+U^{(\ell)} = \mathrm{LN}(H^{(\ell)}),
+\]
+\[
+\widetilde{H}^{(\ell)}
+=
+H^{(\ell)} + \mathrm{MHA}(U^{(\ell)}),
+\]
+\[
+Z^{(\ell)} = \mathrm{LN}(\widetilde{H}^{(\ell)}),
+\]
+\[
+H^{(\ell+1)}
+=
+\widetilde{H}^{(\ell)} + \mathrm{MLP}(Z^{(\ell)}).
+\]
+Here the positionwise feedforward network typically has the form
+\[
+\mathrm{MLP}(z) = W_2\,\sigma(W_1 z + b_1) + b_2,
+\]
+applied independently to each token representation.
+
+\medskip
+
+This algebra displays the essential architecture clearly.
+There are two kinds of transformation in each layer:
+\begin{itemize}
+    \item \textbf{interaction across positions}, produced by multi-head self-attention,
+    \item \textbf{nonlinear feature transformation within each position}, produced by the MLP.
+\end{itemize}
+Residual connections preserve an identity pathway through the block, which helps optimization in deep networks, while normalization controls the scale and geometry of intermediate activations.
+
+\medskip
+
+The original transformer formulation used a closely related \emph{post-normalization} arrangement.
+The difference is architectural rather than conceptual:
+both forms combine attention, nonlinear pointwise transformation, skip connections, and normalization into a repeated block.
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.88\textwidth}
+\centering
+\textbf{Transformer block (pre-normalization form)}
+
+\vspace{0.5em}
+\begin{tabular}{c}
+Input \(H^{(\ell)}\) \\
+\(\downarrow\) \\
+LayerNorm \\
+\(\downarrow\) \\
+Multi-Head Self-Attention \\
+\(\downarrow\) \\
+Add residual from \(H^{(\ell)}\) \\
+\(\downarrow\) \\
+LayerNorm \\
+\(\downarrow\) \\
+Positionwise MLP \\
+\(\downarrow\) \\
+Add residual \\
+\(\downarrow\) \\
+Output \(H^{(\ell+1)}\)
+\end{tabular}
+\end{minipage}}
+\caption{A monochrome block diagram of a transformer layer.
+Each block mixes global interaction through self-attention with per-position nonlinear processing through an MLP, and both sublayers are wrapped in residual pathways.}
+\end{figure}
+
+\subsection*{A tiny worked example}
+
+A small numerical example helps make the operator concrete.
+Consider a sequence of length \(T=3\) with one-dimensional queries and keys:
+\[
+Q = K =
+\begin{bmatrix}
+1\\
+0\\
+1
+\end{bmatrix},
+\qquad
+V = I_3.
+\]
+For simplicity, take \(d_k = 1\), so no nontrivial scaling appears.
+Then
+\[
+S = QK^{\top}
+=
+\begin{bmatrix}
+1 & 0 & 1\\
+0 & 0 & 0\\
+1 & 0 & 1
+\end{bmatrix}.
+\]
+Applying row-wise softmax gives
+\[
+A
+=
+\mathrm{softmax}_{\mathrm{row}}(S)
+\approx
+\begin{bmatrix}
+0.422 & 0.155 & 0.422\\
+0.333 & 0.333 & 0.333\\
+0.422 & 0.155 & 0.422
+\end{bmatrix}.
+\]
+Since \(V = I_3\), the attention output is simply
+\[
+AV = A.
+\]
+Thus the first and third tokens place most of their weight on positions \(1\) and \(3\), while the second token averages all positions equally.
+
+\begin{example}[Reading the tiny attention matrix]
+This matrix already illustrates several essential facts.
+First, positions \(1\) and \(3\) can interact directly in one layer even though they are not adjacent.
+Second, the rows of \(A\) sum to one, so each output is a weighted average of values.
+Third, without positional information, the first and third positions behave identically because their representations are identical.
+A positional encoding would break this symmetry and allow the model to distinguish ``first'' from ``third.'' 
+\end{example}
+
+One should not mistake this toy example for a realistic language model computation.
+Its purpose is structural.
+It shows that self-attention is an explicit matrix operator whose pattern of interaction can be inspected directly.
+In larger models the same principle survives, only with higher-dimensional features and many heads.
+
+\subsection*{Complexity and comparison with recurrence}
+
+Transformers are often contrasted with recurrent models because both are used for sequential data, but the contrast is subtler than ``new versus old.''
+They organize computation differently.
+
+\medskip
+
+For a recurrent layer with hidden width \(d\), the dependence on sequence length is typically linear:
+processing \(T\) positions requires \(T\) recurrent updates, each using matrix multiplications of size roughly \(d \times d\).
+This leads to arithmetic cost on the order of \(O(Td^2)\), with an inherently sequential computation graph.
+
+\medskip
+
+For dense self-attention, one still pays \(O(Td^2)\) for the linear projections, but the interaction matrix \(QK^{\top}\) and the multiplication by \(V\) contribute an additional \(O(T^2 d)\) term.
+Thus, with width fixed, dense self-attention has quadratic dependence on sequence length.
+The price of direct all-to-all interaction is the \(T^2\) attention matrix.
+
+\medskip
+
+Yet there is an architectural advantage.
+The pairwise interactions for all positions can be computed in parallel once the token representations for a layer are available.
+Moreover, the path length between two arbitrary positions is very short:
+one self-attention layer can connect any token directly to any other token, whereas a recurrent model may require many sequential steps for the same information to propagate.
+
+\begin{center}
+\begin{tabular}{|p{0.23\textwidth}|p{0.22\textwidth}|p{0.18\textwidth}|p{0.22\textwidth}|}
+\hline
+Architecture & Cost in \(T\) (with width fixed) & Sequential depth & Long-range path length \\
+\hline
+Recurrent layer & linear in \(T\) & \(T\) & on the order of \(T\) \\
+Dense self-attention layer & quadratic in \(T\) & essentially constant per layer & \(1\) \\
+\hline
+\end{tabular}
+\end{center}
+
+This comparison explains both the success and the limitations of transformers.
+They are powerful because they make global interaction easy and parallelizable.
+They can be expensive because unrestricted interaction across all token pairs scales poorly for very long sequences.
+Many later architectural refinements can be understood as attempts to preserve the expressive advantages of attention while reducing this quadratic cost.
+
+\subsection*{Why transformers became general-purpose}
+
+The transformer block is now used far beyond classical text sequences.
+It can process tokenized image patches, audio frames, multimodal streams, sets, and structured collections of objects.
+The reason is not that all such data are ``really language.''
+The reason is that the block itself is abstract and modular.
+It only assumes that we have a collection of representations together with some way of encoding whatever structural information matters --- positional, spatial, temporal, or relational.
+
+\medskip
+
+From this point of view, a transformer is a general-purpose architecture because it separates three ingredients:
+\begin{itemize}
+    \item a representation of the elements to be processed,
+    \item an interaction operator that mixes information across elements by learned relevance,
+    \item a per-element nonlinear map that enriches features after interaction.
+\end{itemize}
+That decomposition is flexible enough to be reused across many domains.
+
+\paragraph{What to remember.}
+A transformer layer is a repeated algebraic block built from multi-head self-attention, a positionwise MLP, residual connections, and normalization.
+Scaled dot-product attention computes a row-stochastic interaction matrix from learned similarities.
+Without positional information, self-attention is permutation equivariant, so explicit positional encoding is necessary for genuine sequence modeling.
+Transformers replace long sequential interaction paths with direct pairwise interaction, but dense self-attention incurs quadratic cost in sequence length.
+
+\paragraph{Common confusion.}
+It is easy to say that transformers ``remove order.''
+That is not quite right.
+The attention operator by itself is insensitive to order, but the full model can represent order once positional information is supplied.
+It is also easy to think that the transformer is ``just attention.''
+In fact, the architecture depends equally on residual structure, normalization, and the repeated alternation between cross-position interaction and per-position nonlinear transformation.
+
+\paragraph{Exercises.}
+\begin{enumerate}
+    \item Let \(X \in \mathbb{R}^{T \times d}\) and let \(P\) be a permutation matrix.
+    Write out carefully why \(QK^{\top}\) transforms as \(P(QK^{\top})P^{\top}\) under the substitution \(X \mapsto PX\).
+    \item Suppose all token representations in a self-attention layer are identical and no positional information is added.
+    Show that every row of the attention matrix is the same.
+    What does this imply about the outputs?
+    \item For the toy example in this section, replace
+    \[
+    Q = K = [1,0,1]^{\top}
+    \]
+    by
+    \[
+    Q = K = [2,0,-2]^{\top}.
+    \]
+    Compute the new attention matrix and explain how the sharper score differences change the interaction pattern.
+    \item Compare a recurrent layer and a self-attention layer as mechanisms for modeling a dependency between the first and last token of a long sequence.
+    Which architecture has the shorter interaction path, and which has the cheaper asymptotic dependence on sequence length?
+    \item Derive the output dimensions of a multi-head attention block with \(H\) heads, model width \(d\), per-head key dimension \(d_k\), and per-head value dimension \(d_v\).
+\end{enumerate}
+
+\paragraph{Notes and references.}
+The transformer architecture was introduced by Vaswani and collaborators in \emph{Attention Is All You Need}.
+Its attention mechanism builds on earlier encoder--decoder attention ideas, especially the work of Bahdanau, Cho, and Bengio on neural machine translation.
+For pedagogical development, it is useful to view the transformer not as a historical slogan but as a structured operator composed of attention, residual pathways, normalization, and per-position nonlinear maps.
+That viewpoint also clarifies why positional encoding is essential and why complexity in sequence length became a central issue in later transformer variants.

@@ -1,0 +1,369 @@
+\section{Scaling Transformer Architectures and Multimodal Extensions}
+
+The previous section treated the transformer as a structured operator on a sequence of representations.
+The natural next question is what happens when that operator is enlarged, specialized, or connected to non-text modalities.
+This section studies that question at three levels.
+First, there is a fairly clean \emph{theoretical} layer: one can write down the algebra of encoder-only, decoder-only, and encoder--decoder blocks, and one can analyze how computational cost depends on depth, width, and context length.
+Second, there is a large \emph{empirical} layer: many scaling trends are observed reliably in practice, but they are not consequences of a single theorem.
+Third, there is a broad region of \emph{design practice}: tokenization choices, multimodal interfaces, and long-context approximations are often guided by engineering tradeoffs more than by settled theory.
+
+\medskip
+
+That distinction matters pedagogically.
+Students often hear that modern transformer systems became powerful simply by ``scaling up.''
+But scaling is not a magic word.
+It means enlarging specific architectural axes, paying specific computational costs, and making specific modeling decisions about how representations are formed and how information is allowed to interact.
+
+\subsection*{Scaling axes: depth, width, and context length}
+
+Let a transformer have:
+\begin{itemize}
+    \item depth \(L\), meaning the number of repeated blocks,
+    \item model width \(d\), meaning the hidden dimension of token representations,
+    \item context length \(T\), meaning the number of tokens processed in one forward pass.
+\end{itemize}
+To first approximation, these are the three principal architectural scaling axes.
+
+\begin{definition}[Architectural scaling axes]
+For a transformer family with fixed block design, scaling means increasing one or more of the quantities \(L\), \(d\), and \(T\):
+\begin{enumerate}
+    \item \textbf{depth scaling:} increase the number of layers \(L\),
+    \item \textbf{width scaling:} increase the hidden size \(d\), the feedforward size, or the number of heads,
+    \item \textbf{context scaling:} increase the sequence length \(T\) on which attention is computed.
+\end{enumerate}
+\end{definition}
+
+These axes do not behave symmetrically.
+Depth mainly enlarges the number of repeated transformations through which information can be refined.
+Width enlarges the dimensional capacity of each representation and usually the parameter count of each block.
+Context length enlarges the set of positions that may interact, and in dense attention it is the most computationally expensive axis.
+
+To make this precise, recall from the previous section that one transformer block applies linear projections to obtain \(Q\), \(K\), and \(V\), forms an attention matrix of size \(T \times T\), applies that matrix to values, and then applies a positionwise multilayer perceptron.
+If the width is \(d\) and the feedforward dimension is proportional to \(d\), then for one layer the dominant arithmetic cost is approximately
+\[
+O(Td^2) + O(T^2 d).
+\]
+The first term comes from linear maps and pointwise MLP transformations.
+The second term comes from all-pairs attention interactions.
+Across \(L\) layers this becomes approximately
+\[
+O\bigl(LTd^2 + LT^2 d\bigr).
+\]
+Likewise, with fixed feedforward ratio, the parameter count grows roughly like
+\[
+O(Ld^2).
+\]
+
+\begin{remark}[How the scaling axes differ]
+At fixed \(T\), increasing depth by a factor of two roughly doubles the blockwise computation.
+At fixed \(L\) and \(T\), increasing width by a factor of two typically multiplies parameters and much of the arithmetic cost by roughly four.
+At fixed \(L\) and \(d\), increasing context length by a factor of two roughly doubles the projection cost but multiplies the dense attention interaction term by roughly four.
+This is why long-context modeling is often the first place where naive scaling becomes prohibitive.
+\end{remark}
+
+These asymptotics are theoretical bookkeeping statements.
+They tell us how costs scale when architectural dimensions increase.
+They do \emph{not} by themselves guarantee better learning behavior, better generalization, or better sample efficiency.
+Those are empirical questions.
+In practice, larger transformers often do perform better when data, optimization, and regularization are also scaled appropriately, but that observation is a broad empirical pattern rather than a theorem deduced from the complexity formulas above.
+
+\subsection*{Architectural variants: encoder-only, decoder-only, and encoder--decoder}
+
+Although the transformer block has a common algebraic core, different tasks organize that core differently.
+The distinctions are not superficial.
+They determine which positions are allowed to interact and what output object the network is trying to produce.
+
+\begin{definition}[Encoder-only transformer]
+An encoder-only transformer takes an input sequence
+\[
+X = (x_1,\dots,x_T)
+\]
+and maps it to contextualized representations
+\[
+H^{(L)} \in \mathbb{R}^{T \times d}
+\]
+using repeated \emph{unmasked self-attention}.
+Every position may attend to every other observed position.
+Such architectures are natural when the goal is representation learning, classification, tagging, retrieval, or any task where the full input is available at once.
+\end{definition}
+
+Formally, if \(H^{(0)}\) denotes token embeddings plus positional information, an encoder layer has the same general form as in Section 3.7:
+\[
+\widetilde{H}^{(\ell)}
+=
+H^{(\ell)} + \mathrm{MHA}(\mathrm{LN}(H^{(\ell)})),
+\]
+\[
+H^{(\ell+1)}
+=
+\widetilde{H}^{(\ell)} + \mathrm{MLP}(\mathrm{LN}(\widetilde{H}^{(\ell)})).
+\]
+No causal mask is imposed, so attention is bidirectional across the observed sequence.
+
+\begin{definition}[Decoder-only transformer]
+A decoder-only transformer also processes a sequence of token representations, but its self-attention is \emph{causally masked} so that position \(i\) can attend only to positions \(j \le i\).
+This makes the model suitable for autoregressive generation, where the next token is predicted from previous tokens.
+\end{definition}
+
+A convenient masked-attention notation is
+\[
+\mathrm{Attn}_{\mathrm{mask}}(Q,K,V;M)
+=
+\mathrm{softmax}_{\mathrm{row}}\!\left(\frac{QK^{\top}}{\sqrt{d_k}} + M\right)V,
+\]
+where the mask \(M \in \mathbb{R}^{T \times T}\) satisfies
+\[
+M_{ij}=
+\begin{cases}
+0, & j \le i,\\
+-\infty, & j > i.
+\end{cases}
+\]
+Then a decoder-only block uses masked multi-head self-attention in place of bidirectional self-attention.
+The difference in formula is small, but conceptually it is large: the architecture now represents a factorization of a sequence distribution into one-step conditional predictions.
+
+\begin{definition}[Encoder--decoder transformer]
+An encoder--decoder transformer contains two streams:
+\begin{enumerate}
+    \item an encoder producing source-side representations from an observed input sequence,
+    \item a decoder producing target-side representations by combining masked self-attention on the partial target with \emph{cross-attention} to the encoder outputs.
+\end{enumerate}
+This structure is natural for transduction problems such as translation, summarization, or speech-to-text mapping.
+\end{definition}
+
+The encoder builds a memory of the source sequence.
+The decoder then generates a target sequence while consulting that memory.
+This division of labor is mathematically clean and architecturally important.
+The encoder is typically bidirectional over the source.
+The decoder is causal over the target.
+Cross-attention links the two.
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.95\textwidth}
+\centering
+\textbf{Architectural roles of common transformer variants}
+
+\vspace{0.6em}
+\begin{tabular}{|p{0.2\textwidth}|p{0.21\textwidth}|p{0.2\textwidth}|p{0.27\textwidth}|}
+\hline
+Variant & Self-attention pattern & Typical output role & Canonical use case \\
+\hline
+Encoder-only & bidirectional over observed input & contextual representations of all input tokens & classification, tagging, retrieval, representation learning \\
+\hline
+Decoder-only & causal over prefix tokens & next-token distribution or generated continuation & language modeling and autoregressive generation \\
+\hline
+Encoder--decoder & bidirectional encoder, causal decoder, plus cross-attention & output sequence conditioned on source sequence & translation, summarization, conditional generation \\
+\hline
+\end{tabular}
+\end{minipage}}
+\caption{A comparison figure emphasizing that the three major transformer organizations differ primarily in which interactions are permitted and in what object the network is designed to produce.}
+\end{figure}
+
+\subsection*{Cross-attention written formally}
+
+Cross-attention is the algebraic device that lets one representation stream query another.
+Suppose the decoder has hidden states
+\[
+Y \in \mathbb{R}^{T_y \times d}
+\]
+and the encoder has produced memory states
+\[
+Z \in \mathbb{R}^{T_x \times d}.
+\]
+Then cross-attention forms queries from \(Y\), but keys and values from \(Z\):
+\[
+Q = YW_Q,
+\qquad
+K = ZW_K,
+\qquad
+V = ZW_V.
+\]
+The resulting attention operator is
+\[
+\mathrm{CrossAttn}(Y,Z)
+=
+\mathrm{softmax}_{\mathrm{row}}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V.
+\]
+Since \(Q\) has \(T_y\) rows and \(K\) has \(T_x\) rows, the attention matrix has shape
+\[
+T_y \times T_x.
+\]
+Thus each target position forms a content-based weighted average over source-side value vectors.
+
+In a pre-normalization encoder--decoder block one may write:
+\[
+U^{(\ell)} = \mathrm{LN}(H^{(\ell)}),
+\]
+\[
+\widehat{H}^{(\ell)}
+=
+H^{(\ell)} + \mathrm{MaskedMHA}(U^{(\ell)}),
+\]
+\[
+V^{(\ell)} = \mathrm{LN}(\widehat{H}^{(\ell)}),
+\]
+\[
+\widetilde{H}^{(\ell)}
+=
+\widehat{H}^{(\ell)} + \mathrm{CrossMHA}(V^{(\ell)}, E),
+\]
+\[
+H^{(\ell+1)}
+=
+\widetilde{H}^{(\ell)} + \mathrm{MLP}(\mathrm{LN}(\widetilde{H}^{(\ell)})),
+\]
+where \(E\) denotes the final encoder memory.
+This equation makes the architectural role of cross-attention explicit:
+self-attention organizes target-side interactions, whereas cross-attention injects source-conditioned information.
+
+\begin{example}[Why cross-attention is different from concatenation]
+Suppose the source sentence has length \(T_x=5\) and the partial target has length \(T_y=3\).
+Cross-attention yields a \(3 \times 5\) matrix of alignment weights.
+The first target token may focus mostly on source token 2, the second on tokens 3 and 4, and the third on token 5.
+This is not the same as simply concatenating source and target tokens into one long sequence.
+The architectural asymmetry remains visible in the equations: target positions are the queries, while source positions provide the keys and values.
+\end{example}
+
+\subsection*{Multimodal tokenization and representation interfaces}
+
+Transformers became especially influential because their basic algebra is indifferent to the semantic meaning of a token.
+What matters is that each element of the input is represented as a vector in a shared hidden space.
+This shifts an important part of architecture design to the \emph{representation interface} between raw modality-specific data and token sequences.
+
+Let \(x^{(m)}\) denote an input from modality \(m\), for example text, image, audio, or video.
+A multimodal system introduces a modality-specific map
+\[
+\phi_m : \mathcal{X}_m \to \mathbb{R}^{T_m \times d},
+\]
+which converts the raw input into a sequence of \(d\)-dimensional token vectors.
+Typical examples include:
+\begin{itemize}
+    \item text token embeddings for discrete vocabulary items,
+    \item image patch embeddings for a grid of pixels,
+    \item audio frame or spectrogram patch embeddings,
+    \item video tubelet or frame embeddings.
+\end{itemize}
+After this stage one may add positional or spatial encodings and obtain
+\[
+Z^{(m)} = \phi_m(x^{(m)}) + P^{(m)}.
+\]
+The transformer then operates on these token sequences through either shared self-attention, cross-attention, or a hybrid of the two.
+
+Two common multimodal design patterns are worth separating.
+First, one may form a \emph{single token stream}
+\[
+Z = \mathrm{Concat}(Z^{(1)}, Z^{(2)}, \dots, Z^{(M)}),
+\]
+and run self-attention over the concatenated sequence.
+This encourages direct all-to-all interaction, but it can become expensive when the total token count is large.
+Second, one may keep modality-specific streams and use cross-attention modules to couple them.
+This preserves a clearer architectural separation and often gives more control over what information is exchanged.
+
+\begin{remark}[What is formal and what is design practice]
+The formal part is simple: each modality is mapped into vectors of common width \(d\), and attention operators are then applied to those vectors.
+What is much less canonical is how the tokenization map \(\phi_m\) should be chosen.
+Patch size, frame rate, quantization scheme, positional encoding, and fusion schedule are usually design decisions guided by empirical performance and computational budget rather than by a complete theory.
+\end{remark}
+
+This observation helps explain why multimodal transformers feel simultaneously unified and heterogeneous.
+The unification comes from the shared algebra of token interaction.
+The heterogeneity comes from the fact that raw modalities have very different local structure, sampling rates, invariances, and compression requirements.
+A text tokenizer, an image patch embedder, and an audio frontend all feed the transformer, but they solve very different preprocessing problems.
+
+\subsection*{Long-context modeling and sparse approximations}
+
+Dense self-attention is attractive because every token may interact with every other token in one layer.
+Its main weakness is the quadratic \(T^2\) dependence on context length.
+This has motivated a large family of approximations and architectural modifications for long-context modeling.
+The details vary widely, but most methods can be grouped into a few conceptual classes:
+\begin{itemize}
+    \item \textbf{local or windowed attention,} where each token interacts mainly with nearby positions,
+    \item \textbf{block-sparse or pattern-based attention,} where only selected token pairs are allowed to interact,
+    \item \textbf{low-rank or kernelized approximations,} which try to approximate dense attention more cheaply,
+    \item \textbf{memory or compression mechanisms,} which summarize distant context into a smaller set of states.
+\end{itemize}
+
+The central mathematical tradeoff is clear.
+Dense attention gives maximum interaction flexibility at cost \(O(T^2 d)\).
+Sparse or approximate attention reduces computation and memory, but it also constrains or approximates the family of interaction matrices the model can realize exactly.
+
+What is known rigorously here is limited but useful.
+One can analyze the asymptotic reduction in arithmetic or memory cost and sometimes characterize what sparsity pattern is being imposed.
+What remains largely empirical is how much modeling power is lost for a given approximation and which approximation is best for a given domain.
+In practice, long-context architecture is still heavily shaped by design experimentation.
+For some tasks local patterns are sufficient most of the time.
+For others, a few carefully chosen global tokens or retrieval-style memory mechanisms are important.
+There is no single universally optimal replacement for dense attention.
+
+\subsection*{A useful synthesis: theory, empirics, and practice}
+
+At this point it is worth separating three claims that are often blended together.
+
+\paragraph{Theoretical statements.}
+One can state precisely how encoder-only, decoder-only, and encoder--decoder forms differ.
+One can write exact equations for self-attention and cross-attention.
+One can also derive the dominant asymptotic dependence of arithmetic cost and memory use on \(L\), \(d\), and \(T\).
+These are mathematical properties of the architecture itself.
+
+\paragraph{Empirical statements.}
+Larger transformer systems often improve when model size, data, and optimization scale together.
+Shared token-space architectures often transfer surprisingly well across modalities.
+Long-context approximations sometimes preserve much of the useful behavior of dense attention while reducing cost.
+These are broad empirical regularities, but they are not universal theorems.
+
+\paragraph{Design-practice statements.}
+How many layers should be used.
+How wide each layer should be.
+How context should be truncated or extended.
+Whether modalities should be concatenated early, fused late, or coupled by cross-attention.
+Which sparse attention pattern is best.
+These are often decisions made by architectural judgment, ablation studies, hardware constraints, and application-specific goals.
+
+Students should keep these categories distinct.
+Doing so prevents two opposite mistakes.
+The first is to treat all of modern transformer engineering as if it were already fully understood mathematically.
+The second is to conclude that because many choices are empirical, no clean theory exists at all.
+In reality, transformer architecture contains a solid algebraic core together with a large and active outer layer of empirical design.
+
+\paragraph{What to remember.}
+Transformer scaling has three principal axes: depth \(L\), width \(d\), and context length \(T\).
+With dense attention, a useful leading-order cost model is \(O(LTd^2 + LT^2 d)\), so long context is often the most expensive axis to scale.
+Encoder-only, decoder-only, and encoder--decoder transformers differ primarily in the attention constraints they impose and the output object they are designed to produce.
+Cross-attention uses queries from one stream and keys and values from another.
+Multimodal transformers rely on representation interfaces that map different raw modalities into token sequences in a common hidden space.
+Sparse and long-context variants reduce cost by restricting or approximating dense all-to-all interaction.
+
+\paragraph{Common confusion.}
+It is tempting to think that ``a transformer'' is one fixed architecture.
+In fact, the common name covers several distinct organizations of the same basic operators.
+It is also easy to confuse asymptotic complexity with learning performance.
+A model may be more expensive in \(T\) yet more effective because its interaction structure is richer.
+Finally, multimodal modeling is not obtained automatically just by concatenating heterogeneous inputs.
+A great deal of the actual modeling work lies in the interface that converts raw modality-specific data into useful token representations.
+
+\paragraph{Exercises.}
+\begin{enumerate}
+    \item Starting from the cost of one dense self-attention layer, derive the leading-order complexity \(O(LTd^2 + LT^2 d)\) for a stack of \(L\) layers.
+    State clearly which terms come from projections, attention scores, and value aggregation.
+    \item Compare an encoder-only architecture and a decoder-only architecture on the same input sequence of length \(T\).
+    Which one permits token \(i\) to depend on token \(j>i\) in a single layer?
+    Explain the modeling consequence.
+    \item Let \(Y \in \mathbb{R}^{T_y \times d}\) and \(Z \in \mathbb{R}^{T_x \times d}\).
+    Derive the dimensions of the matrices \(Q\), \(K\), \(V\), the cross-attention score matrix, and the final cross-attention output.
+    \item Consider a multimodal system with text tokens \(Z^{(t)} \in \mathbb{R}^{T_t \times d}\) and image tokens \(Z^{(i)} \in \mathbb{R}^{T_i \times d}\).
+    Compare early fusion by concatenation with fusion by cross-attention.
+    What interaction patterns are possible in each design?
+    \item Suppose the context length is doubled while depth and width are fixed.
+    How do the leading projection term and the leading dense-attention interaction term change asymptotically?
+    \item Give one advantage and one disadvantage of local-window attention compared with dense attention.
+    Your answer should distinguish computational benefit from possible representational loss.
+\end{enumerate}
+
+\paragraph{Notes and references.}
+The basic transformer framework comes from Vaswani et al.
+Encoder-only and decoder-only specializations became central in large-scale representation learning and autoregressive language modeling, while encoder--decoder designs remained especially important for conditional sequence transduction.
+Cross-attention should be viewed as a formal operator that couples two representation streams, not merely as an implementation detail.
+For multimodal extensions, the shared architectural theme is the conversion of raw inputs from different modalities into token sequences inside a common representation space, followed by self-attention or cross-attention based interaction.
+The literature on long-context and sparse attention is broad and still evolving; the cleanest unifying perspective is to treat these models as attempts to preserve the benefits of content-based interaction while weakening the quadratic cost of dense all-to-all attention.

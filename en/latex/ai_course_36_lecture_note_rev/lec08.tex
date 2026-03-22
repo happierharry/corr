@@ -1,0 +1,254 @@
+\section{Lecture 8: Logistic Regression and Classification}
+
+\subsection{Motivation}
+
+In the previous lecture, we studied linear regression, where outputs are continuous. We now turn to \emph{classification}, where outputs are discrete.
+
+\medskip
+
+\noindent
+\textbf{Goal.}  
+Given input $x \in \mathcal{X}$, predict a label:
+\[
+y \in \{0,1\}.
+\]
+
+\medskip
+
+\noindent
+A naive approach would be to apply linear regression and threshold the output. However, this lacks a probabilistic interpretation and can produce invalid predictions.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Model the probability of class membership directly.
+
+\subsection{Probabilistic Interpretation}
+
+We model the conditional probability:
+\[
+p(y = 1 \mid x) = \sigma(w^\top x),
+\]
+where $\sigma$ is the sigmoid function:
+\[
+\sigma(z) = \frac{1}{1 + e^{-z}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item $\sigma(z) \in (0,1)$
+    \item Monotonically increasing
+    \item Maps linear scores to probabilities
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Odds interpretation.}
+\[
+\frac{p(y=1 \mid x)}{p(y=0 \mid x)} = e^{w^\top x}.
+\]
+
+\medskip
+
+\noindent
+Taking logarithms:
+\[
+\log \frac{p(y=1 \mid x)}{p(y=0 \mid x)} = w^\top x.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Logistic regression models the log-odds as a linear function of the input.
+
+\subsection{Cross-Entropy Loss}
+
+Given predictions $p_i = \sigma(w^\top x_i)$, we define the loss:
+\[
+\ell(w) = - \sum_{i=1}^n \left[
+y_i \log p_i + (1 - y_i)\log(1 - p_i)
+\right].
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Penalizes confident incorrect predictions
+    \item Encourages correct probability estimates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Gradient.}
+\[
+\nabla_w \ell(w) = \sum_{i=1}^n (p_i - y_i)x_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item Convex objective
+    \item No closed-form solution
+    \item Solved using iterative methods
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Cross-entropy aligns optimization with probabilistic modeling.
+
+\subsection{Maximum Likelihood Perspective}
+
+We assume:
+\[
+y_i \sim \text{Bernoulli}(p_i), \quad p_i = \sigma(w^\top x_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Likelihood.}
+\[
+p(y_i \mid x_i, w) = p_i^{y_i}(1 - p_i)^{1 - y_i}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Log-likelihood.}
+\[
+\sum_{i=1}^n \left[
+y_i \log p_i + (1 - y_i)\log(1 - p_i)
+\right].
+\]
+
+\medskip
+
+\noindent
+\textbf{Result.}  
+Maximizing likelihood is equivalent to minimizing cross-entropy loss.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Learning corresponds to estimating model parameters under a probabilistic model
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Logistic regression arises naturally from maximum likelihood estimation.
+
+\subsection{Decision Boundaries}
+
+The predicted class is:
+\[
+\hat{y} =
+\begin{cases}
+1 & \text{if } p(y=1 \mid x) \geq 0.5 \\
+0 & \text{otherwise}
+\end{cases}
+\]
+
+\medskip
+
+\noindent
+Since $\sigma(z) \geq 0.5$ when $z \geq 0$, this becomes:
+\[
+w^\top x = 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Decision boundary.}
+\begin{itemize}
+    \item A hyperplane in $\mathbb{R}^d$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometry.}
+\begin{itemize}
+    \item Points are classified based on which side of the hyperplane they lie
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Extension.}
+\begin{itemize}
+    \item Nonlinear boundaries can be obtained using feature maps $\phi(x)$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Logistic regression produces linear decision boundaries in feature space.
+
+\subsection{A Unifying Perspective}
+
+Logistic regression integrates key ideas from previous lectures:
+
+\begin{itemize}
+    \item \textbf{Function approximation:} linear model in feature space
+    \item \textbf{Probability:} modeling conditional distributions
+    \item \textbf{Optimization:} minimizing cross-entropy
+    \item \textbf{Geometry:} linear decision boundaries
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Classification can be framed as probabilistic modeling combined with optimization.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Logistic regression is a bridge between linear models and more complex classification methods.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item probabilistic modeling of classification,
+    \item cross-entropy loss,
+    \item maximum likelihood estimation,
+    \item geometric interpretation via decision boundaries.
+\end{itemize}
+
+\medskip
+
+\noindent
+However, linear models are limited in their expressivity.
+
+\medskip
+
+\noindent
+In the next lecture, we introduce feature maps and kernel methods, which enable nonlinear modeling while retaining linear structure.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+By combining representations with linear models, we can capture complex patterns in data.

@@ -1,0 +1,65 @@
+\section{Scaling, Efficiency, and Practical Constraints}
+
+Understanding deep learning is not only about theory and prediction.
+It is also about resources.
+Modern systems are shaped by data, memory, energy, and computation.
+
+\subsection*{Data, compute, and memory as limiting resources}
+
+Large models often improve performance, but they demand:
+\begin{itemize}
+    \item more training data,
+    \item more computation,
+    \item more memory,
+    \item more engineering effort.
+\end{itemize}
+
+Thus the practical success of a method is never independent of the infrastructure required to support it.
+
+\subsection*{Efficiency versus performance}
+
+A model that is slightly more accurate but vastly more expensive may not be preferable in many applications.
+Practical deployment depends on:
+\begin{itemize}
+    \item latency,
+    \item throughput,
+    \item memory footprint,
+    \item energy use,
+    \item reliability under hardware constraints.
+\end{itemize}
+
+Hence there is often a tradeoff between raw predictive performance and usable efficiency.
+
+\subsection*{Compression, distillation, and quantization}
+
+Several broad strategies aim to make models more efficient.
+
+\paragraph{Compression.}
+Reduce redundancy in parameters or activations.
+
+\paragraph{Distillation.}
+Train a smaller student model to imitate a larger teacher.
+
+\paragraph{Quantization.}
+Represent parameters or activations with reduced numerical precision.
+
+\medskip
+
+These strategies are important because they show that modeling success is not only about scale, but also about how scale can be made usable.
+
+\subsection*{Why this matters scientifically}
+
+Efficiency constraints are not merely engineering details.
+They influence which ideas become practically dominant.
+They also shape what kinds of models can be deployed safely and widely.
+
+\medskip
+
+Thus the history of deep learning is driven not only by mathematical ideas, but also by the interaction between algorithms and computational resources.
+
+\subsection*{A balanced view}
+
+Scaling has been extraordinarily powerful.
+But scaling alone is not a full scientific explanation of intelligence, nor is it a free resource.
+It operates under real economic, physical, and design constraints.
+

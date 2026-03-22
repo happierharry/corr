@@ -1,0 +1,288 @@
+\chapter{Logistic Regression and Classification}
+
+\section{Probabilistic Interpretation}
+
+In contrast to regression, where outputs are real-valued, classification problems involve predicting discrete labels. A natural approach is to model the \emph{probability} of each class given the input.
+
+\medskip
+
+\noindent
+\textbf{Binary classification.}  
+Let $\mathcal{Y} = \{0,1\}$. Instead of predicting labels directly, we model
+\[
+P(y = 1 \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Logistic model.}  
+We assume
+\[
+P(y = 1 \mid x) = \sigma(\langle w, x \rangle),
+\]
+where $\sigma$ is the sigmoid function
+\[
+\sigma(z) = \frac{1}{1 + e^{-z}}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Properties of the sigmoid.}
+\begin{itemize}
+    \item Maps $\mathbb{R}$ to $(0,1)$
+    \item Smooth and monotonic
+    \item Interpretable as probability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Log-odds interpretation.}  
+The model implies
+\[
+\log \frac{P(y=1 \mid x)}{P(y=0 \mid x)} = \langle w, x \rangle.
+\]
+
+\medskip
+
+\noindent
+Thus, logistic regression models the log-odds as a linear function of the input.
+
+\medskip
+
+\noindent
+\textbf{Multiclass extension.}  
+For $K$ classes, we use the softmax function:
+\[
+P(y = k \mid x) = \frac{\exp(\langle w_k, x \rangle)}{\sum_{j=1}^K \exp(\langle w_j, x \rangle)}.
+\]
+
+\medskip
+
+\noindent
+This formulation ensures that probabilities are positive and sum to one.
+
+\section{Cross-Entropy Loss}
+
+To train the model, we need a loss function that reflects probabilistic accuracy.
+
+\medskip
+
+\noindent
+\textbf{Binary cross-entropy loss.}
+\[
+\ell(f(x), y) = -\big( y \log p(x) + (1-y)\log(1 - p(x)) \big),
+\]
+where $p(x) = P(y=1 \mid x)$.
+
+\medskip
+
+\noindent
+\textbf{Multiclass cross-entropy.}
+\[
+\ell(f(x), y) = -\log P(y \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Penalizes confident but incorrect predictions heavily
+    \item Encourages calibrated probabilities
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric insight.}  
+Cross-entropy measures the discrepancy between the predicted distribution and the true label distribution.
+
+\medskip
+
+\noindent
+\textbf{Practical advantage.}  
+Unlike squared loss, cross-entropy leads to well-behaved gradients for classification tasks.
+
+\section{Maximum Likelihood Perspective}
+
+Logistic regression can be derived from the principle of maximum likelihood.
+
+\medskip
+
+\noindent
+\textbf{Likelihood function.}
+\[
+L(w) = \prod_{i=1}^n P(y_i \mid x_i; w).
+\]
+
+\medskip
+
+\noindent
+\textbf{Log-likelihood.}
+\[
+\ell(w) = \sum_{i=1}^n \log P(y_i \mid x_i; w).
+\]
+
+\medskip
+
+\noindent
+Maximizing the log-likelihood is equivalent to minimizing the empirical cross-entropy loss:
+\[
+\min_w \; -\sum_{i=1}^n \log P(y_i \mid x_i; w).
+\]
+
+\medskip
+
+\noindent
+\textbf{Binary case.}  
+Substituting the sigmoid model yields a convex optimization problem.
+
+\medskip
+
+\noindent
+\textbf{Gradient.}  
+For binary classification,
+\[
+\nabla_w \ell(w) = \sum_{i=1}^n ( \sigma(\langle w, x_i \rangle) - y_i ) x_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+\begin{itemize}
+    \item The gradient reflects prediction error weighted by input features
+    \item Training adjusts parameters to reduce discrepancies between predicted probabilities and labels
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Regularization.}  
+As in linear regression, one often adds an $\ell_2$ penalty:
+\[
+\min_w \; -\sum_{i=1}^n \log P(y_i \mid x_i; w) + \lambda \|w\|_2^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+This corresponds to maximum a posteriori (MAP) estimation under a Gaussian prior.
+
+\section{Decision Boundaries}
+
+Although logistic regression models probabilities, it ultimately produces decisions.
+
+\medskip
+
+\noindent
+\textbf{Binary decision rule.}
+\[
+\hat{y} =
+\begin{cases}
+1 & \text{if } P(y=1 \mid x) \geq \tfrac{1}{2}, \\
+0 & \text{otherwise}.
+\end{cases}
+\]
+
+\medskip
+
+\noindent
+\textbf{Equivalent condition.}
+\[
+\langle w, x \rangle \geq 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Decision boundary.}  
+The set of points satisfying
+\[
+\langle w, x \rangle = 0
+\]
+defines a hyperplane in $\mathbb{R}^d$.
+
+\medskip
+
+\noindent
+\textbf{Geometric interpretation.}
+\begin{itemize}
+    \item The input space is divided into two half-spaces
+    \item The normal vector $w$ determines orientation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Multiclass case.}  
+Decision boundaries are determined by comparing linear scores:
+\[
+\langle w_k, x \rangle = \langle w_j, x \rangle.
+\]
+
+\medskip
+
+\noindent
+\textbf{Limitation.}  
+Logistic regression produces \emph{linear decision boundaries}. It cannot capture nonlinear structure without feature transformations.
+
+\medskip
+
+\noindent
+\textbf{Extension.}  
+Nonlinear decision boundaries can be obtained by:
+\begin{itemize}
+    \item feature mappings,
+    \item kernel methods,
+    \item neural networks.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Logistic regression connects several key ideas:
+
+\begin{itemize}
+    \item \textbf{Probabilistic modeling:} predicting conditional probabilities
+    \item \textbf{Optimization:} minimizing cross-entropy loss
+    \item \textbf{Geometry:} linear decision boundaries
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Comparison with linear regression.}
+\begin{itemize}
+    \item Linear regression predicts values
+    \item Logistic regression predicts probabilities
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Classification can be viewed as modeling uncertainty about discrete outcomes.
+
+\section{Outlook}
+
+This chapter introduced logistic regression as a fundamental classification model:
+\begin{itemize}
+    \item probabilistic interpretation,
+    \item cross-entropy loss,
+    \item maximum likelihood estimation,
+    \item geometric structure of decision boundaries.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we extend linear models using feature maps and kernels, enabling them to capture nonlinear relationships.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective classification requires both expressive models and appropriate probabilistic formulations.

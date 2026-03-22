@@ -1,0 +1,372 @@
+\section{Worked Examples and Comparative Case Studies}
+
+This section is meant to consolidate the whole chapter.
+Up to this point, convolution, recurrence, gating, attention, and transformers have been introduced as different architectural responses to different kinds of structure.
+The most useful final step is to see these ideas operating on small, concrete examples.
+A worked example forces us to ask the right question: what structural assumption is the model making, what operator is it applying, and why is that operator well matched --- or badly matched --- to the task?
+
+\medskip
+
+The examples below are deliberately small.
+Their purpose is not to impress by scale, but to reveal the logic of the architecture.
+In each case, one should pay attention not only to the numerical computation, but also to the inductive bias that computation expresses.
+
+\subsection*{A mini CNN example: detecting a vertical edge}
+
+Consider the following toy grayscale image:
+\[
+X=
+\begin{bmatrix}
+1 & 1 & 0 & 0\\
+1 & 1 & 0 & 0\\
+1 & 1 & 0 & 0\\
+1 & 1 & 0 & 0
+\end{bmatrix}.
+\]
+The image is bright on the left and dark on the right, so it contains a vertical transition near the middle columns.
+A natural convolutional filter for this kind of pattern is
+\[
+K=
+\begin{bmatrix}
+1 & -1\\
+1 & -1
+\end{bmatrix}.
+\]
+This filter compares the left and right parts of a small patch.
+If both sides of the patch are similar, the output is small.
+If the left side is bright and the right side is dark, the output is large and positive.
+
+Using stride $1$ and no padding, the convolution output has size $3 \times 3$.
+Each entry is obtained by placing the filter on a $2 \times 2$ patch and taking the inner product.
+For the first row of patches we obtain
+\[
+\langle K, X_{1:2,1:2}\rangle
+=
+\left\langle
+\begin{bmatrix}1 & -1\\ 1 & -1\end{bmatrix},
+\begin{bmatrix}1 & 1\\ 1 & 1\end{bmatrix}
+\right\rangle
+=1-1+1-1=0,
+\]
+\[
+\langle K, X_{1:2,2:3}\rangle
+=
+\left\langle
+\begin{bmatrix}1 & -1\\ 1 & -1\end{bmatrix},
+\begin{bmatrix}1 & 0\\ 1 & 0\end{bmatrix}
+\right\rangle
+=1+0+1+0=2,
+\]
+\[
+\langle K, X_{1:2,3:4}\rangle
+=
+\left\langle
+\begin{bmatrix}1 & -1\\ 1 & -1\end{bmatrix},
+\begin{bmatrix}0 & 0\\ 0 & 0\end{bmatrix}
+\right\rangle
+=0.
+\]
+By the same reasoning for the remaining rows, the full feature map is
+\[
+X * K=
+\begin{bmatrix}
+0 & 2 & 0\\
+0 & 2 & 0\\
+0 & 2 & 0
+\end{bmatrix}.
+\]
+After a ReLU nonlinearity, nothing changes because all entries are already nonnegative.
+A max-pooling or global-max step would then return the value $2$, signaling that the image contains the desired vertical edge pattern somewhere in the field of view.
+
+\begin{example}[What this example shows]
+The important point is not the specific number $2$.
+The important point is that the \emph{same} filter was applied at every location.
+The model did not need one parameter set for the top edge, another for the middle edge, and another for the bottom edge.
+That is the inductive bias of convolution: local pattern detectors are shared across space.
+If the same kind of edge appears in another location, the same filter can detect it there too.
+\end{example}
+
+A dense fully connected layer could also learn to detect this image pattern, but it would not build translation sensitivity and parameter sharing into the operator itself.
+The CNN does so directly.
+This is why convolution is especially natural for images: the operator already encodes locality and repeated spatial motifs.
+
+\subsection*{Recurrence versus attention on a toy sequence memory task}
+
+Now consider a toy sequence problem.
+A sequence consists of symbols from the set $\{A,B\}$, and the target at the final position is: \emph{repeat the first symbol of the sequence}.
+For example,
+\[
+(A,B,B,A,\, ?)
+\longmapsto A.
+\]
+This is a deliberately simple task, but it separates two architectural ideas very clearly.
+The model must preserve or recover information from the beginning of the sequence when it reaches the end.
+
+\paragraph{Recurrent solution.}
+A recurrent model computes
+\[
+h_t = \phi(W_h h_{t-1} + W_x x_t),
+\]
+where $x_t$ is the embedding of the current token and $h_t$ is the hidden state.
+To solve the task, the network must somehow store the information contained in $x_1$ inside the evolving state and prevent later updates from destroying it.
+For a short sequence this is possible.
+For a long sequence it becomes harder, because the hidden state must continuously compress the past into a single vector while still processing new inputs.
+The required information travels through the chain
+\[
+x_1 \to h_1 \to h_2 \to h_3 \to \cdots \to h_T.
+\]
+Thus the relevant interaction path from the first token to the last output has length on the order of $T$.
+
+\paragraph{Attention-based solution.}
+A decoder-style or self-attention model can treat the same task differently.
+At the final position, it may compute
+\[
+y_T = \sum_{j=1}^{T} a_{Tj} v_j,
+\qquad
+\sum_{j=1}^{T} a_{Tj}=1,
+\]
+where $v_j$ is the value vector for token $j$.
+If the model learns that the final query should focus on the first position, then one possible attention pattern is
+\[
+(a_{T1},a_{T2},a_{T3},a_{T4},a_{T5})
+=(0.92,0.03,0.02,0.02,0.01).
+\]
+Then
+\[
+y_T \approx 0.92 v_1 + 0.03 v_2 + 0.02 v_3 + 0.02 v_4 + 0.01 v_5,
+\]
+so the output is dominated by the representation of the first symbol.
+The relevant information need not survive repeated state updates; it can be retrieved directly.
+
+\begin{example}[Same task, different operator]
+For this toy task, the recurrent architecture behaves like a running memory state, while self-attention behaves like a content-based retrieval rule.
+The RNN says: ``compress the past into a state and carry it forward.''
+Attention says: ``when the final query is formed, look back and pull the needed representation directly.''
+Neither statement is universally better in every setting, but they represent sharply different inductive biases.
+\end{example}
+
+This example also clarifies why gated recurrence was historically important.
+An LSTM or GRU modifies the recurrent update so that important information can be preserved more selectively, partially narrowing the gap between plain recurrence and attention-based access.
+Still, the underlying logic remains different: recurrence transports information through state evolution, while attention creates direct interaction edges.
+
+\subsection*{A toy machine-translation alignment example}
+
+Machine translation is a particularly instructive case because it requires both representation and alignment.
+Suppose the source sentence is
+\[
+x=(\text{le},\text{chat},\text{dort})
+\]
+and the target sentence is
+\[
+y=(\text{the},\text{cat},\text{sleeps}).
+\]
+Let the encoder produce source representations
+\[
+H=
+\begin{bmatrix}
+h_1\\ h_2\\ h_3
+\end{bmatrix}
+\in \mathbb{R}^{3 \times d},
+\]
+corresponding to the three source words.
+At target step $i$, the decoder forms a query $q_i$ and computes cross-attention weights
+\[
+\alpha_i = \mathrm{softmax}\!\left(\frac{q_i K^{\top}}{\sqrt{d_k}}\right),
+\qquad K=HW_K,
+\qquad V=HW_V.
+\]
+Equivalently, for all target positions at once,
+\[
+C = \mathrm{softmax}_{\mathrm{row}}\!\left(\frac{QK^{\top}}{\sqrt{d_k}}\right)V,
+\]
+where the rows of $Q$ come from target-side decoder states.
+
+To make this concrete, suppose the decoder produces the following score matrix before softmax:
+\[
+S=
+\begin{bmatrix}
+3 & 1 & 0\\
+0 & 4 & 0\\
+0 & 0 & 4
+\end{bmatrix}.
+\]
+Applying row-wise softmax gives approximately
+\[
+A=\mathrm{softmax}_{\mathrm{row}}(S)
+\approx
+\begin{bmatrix}
+0.84 & 0.11 & 0.05\\
+0.02 & 0.96 & 0.02\\
+0.02 & 0.02 & 0.96
+\end{bmatrix}.
+\]
+The interpretation is immediate:
+\begin{itemize}
+    \item when producing \emph{the}, the decoder attends mostly to \emph{le},
+    \item when producing \emph{cat}, it attends overwhelmingly to \emph{chat},
+    \item when producing \emph{sleeps}, it attends overwhelmingly to \emph{dort}.
+\end{itemize}
+The corresponding context vectors are
+\[
+c_1 = 0.84v_1+0.11v_2+0.05v_3,
+\]
+\[
+c_2 = 0.02v_1+0.96v_2+0.02v_3,
+\]
+\[
+c_3 = 0.02v_1+0.02v_2+0.96v_3.
+\]
+These are not hard dictionary lookups.
+They are soft weighted combinations of encoded source representations.
+That softness matters because translation is rarely a one-word-at-a-time substitution rule.
+Sometimes multiple source words contribute jointly, and sometimes word order differs between languages.
+
+\begin{example}[Why attention solved a real bottleneck]
+In a classical encoder--decoder model without attention, the entire source sentence had to be compressed into a single fixed-size vector before decoding began.
+For longer or more complex sentences, this creates an information bottleneck.
+Cross-attention removes much of that bottleneck by allowing each target token to consult the full source representation sequence directly.
+Thus attention is not just a convenience for visualization; it solves a precise architectural problem.
+\end{example}
+
+This machine-translation example also shows why alignment matrices became such powerful pedagogical objects.
+They let us inspect, at least approximately, which source positions influenced which target outputs.
+That makes the operator visible in a way that a hidden recurrent state often is not.
+
+\subsection*{A time-series forecasting example}
+
+Consider a one-step-ahead forecasting problem for a short noisy time series:
+\[
+(20,22,21,23).
+\]
+Suppose we believe the underlying signal evolves through a slowly changing latent level and that short-term noise should be smoothed.
+A very simple recurrent state model for this idea is
+\[
+h_t = 0.7 h_{t-1} + 0.3 x_t,
+\qquad \hat{x}_{t+1}=h_t,
+\]
+with initial state $h_1=x_1=20$.
+Then
+\[
+h_2 = 0.7\cdot 20 + 0.3\cdot 22 = 20.6,
+\]
+\[
+h_3 = 0.7\cdot 20.6 + 0.3\cdot 21 = 20.72,
+\]
+\[
+h_4 = 0.7\cdot 20.72 + 0.3\cdot 23 \approx 21.40.
+\]
+So the one-step-ahead forecast is
+\[
+\hat{x}_5 = h_4 \approx 21.40.
+\]
+
+This forecast does not simply copy the last observation $23$.
+Instead it forms a smoothed state that reflects the recent history.
+That is precisely the inductive bias of recurrent or state-space style forecasting: observations are treated as partial evidence about an evolving hidden state.
+
+Now compare this with a causal convolutional rule such as
+\[
+\hat{x}_{t+1} = 0.5x_t + 0.5x_{t-1}.
+\]
+Applied at $t=4$, this gives
+\[
+\hat{x}_5 = 0.5\cdot 23 + 0.5\cdot 21 = 22.
+\]
+This rule is also reasonable, but it encodes a different assumption.
+It says that the next value depends mainly on a local window of recent observations, not on a hidden state that is updated over time.
+An attention-based forecaster would express yet another assumption: the next value may depend on selected past times, perhaps even distant ones, if their patterns are relevant.
+
+\begin{example}[What the forecasting example teaches]
+There is no unique ``time-series architecture.''
+If the series is governed by a slowly evolving latent state, recurrence is very natural.
+If short local motifs dominate, causal convolution may be simpler and more effective.
+If irregular long-range interactions matter --- for example, if today should be compared with the same day in earlier cycles --- attention can be very attractive.
+The architecture should follow the dependence structure one expects in the data.
+\end{example}
+
+\subsection*{Final comparison across the chapter}
+
+The worked examples point toward one central lesson.
+Architectural names are secondary.
+What matters is the structural claim each architecture makes about the data and the operator by which it uses that claim.
+Table~\ref{tab:arch-compare} summarizes the chapter in that language.
+
+\begin{table}[ht]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|p{0.14\textwidth}|p{0.16\textwidth}|p{0.16\textwidth}|p{0.14\textwidth}|p{0.14\textwidth}|p{0.11\textwidth}|}
+\hline
+\textbf{Architecture} & \textbf{Assumption} & \textbf{Operator} & \textbf{Strength} & \textbf{Weakness} & \textbf{Natural domain} \\
+\hline
+CNN & Local spatial structure and repeated patterns across location & Shared local convolution filters, often followed by pooling & Parameter sharing; strong locality prior; translation-friendly features & Less natural for arbitrary long-range dependence without added mechanisms & Images, spatial signals \\
+\hline
+RNN & Sequence is processed through evolving state & Recurrent update $h_t=\phi(W_hh_{t-1}+W_xx_t)$ & Natural state evolution; compact online processing & Long-range information must survive many updates; sequential computation & Time series, streaming sequences \\
+\hline
+LSTM / GRU & Important state information should be selectively preserved or overwritten & Gated recurrent state transitions & Better memory control than plain RNNs; robust on many sequential tasks & Still fundamentally sequential; state bottleneck remains & Language, speech, temporal data \\
+\hline
+Attention / encoder--decoder attention & Relevance should be computed content-dependently between positions or streams & Weighted aggregation from learned similarity scores & Explicit alignment; direct access to relevant source information & Dense interaction can be expensive; needs careful representation design & Translation, retrieval, cross-modal fusion \\
+\hline
+Transformer & Rich sequence behavior can be built from repeated attention blocks plus MLPs, residuals, and normalization & Multi-head self-attention and feedforward blocks & Parallelizable global interaction; flexible across many modalities & Dense attention scales quadratically in context length; positional structure must be supplied & Language, vision patches, multimodal token streams \\
+\hline
+\end{tabular}
+\caption{A comparative summary of the main architectures in this chapter. The key comparison is not historical order, but the relation between structural assumption and operator.}
+\label{tab:arch-compare}
+\end{table}
+
+The table should not be read as a ranking.
+It is a map.
+Each row describes a way of embedding prior assumptions into a learnable system.
+The central unifying message of the chapter is therefore the following: architecture is the mechanism by which inductive bias becomes operational.
+
+\paragraph{What to remember.}
+Convolution, recurrence, gating, attention, and transformers should be compared through the structures they assume and the operators they apply.
+A CNN uses shared local filters and is naturally suited to repeated spatial patterns.
+A recurrent model uses an evolving state and is naturally suited to temporal evolution.
+Attention uses content-dependent weighted aggregation and is naturally suited to alignment and selective retrieval.
+A transformer turns attention into a full repeated architectural block that supports flexible global interaction.
+The best architecture is not the most fashionable one, but the one whose operator matches the dependence structure of the task.
+
+\paragraph{Common confusion.}
+Students often ask which architecture is ``best.''
+That question is usually too vague.
+A better question is: what does the task require the model to preserve, compare, or aggregate?
+It is also easy to confuse representational power in principle with suitability in practice.
+A dense network can represent many of the same functions as a CNN or transformer, but it may do so with a much weaker built-in prior and much less efficient learning.
+Finally, one should not confuse a worked toy example with a full empirical benchmark.
+The role of a toy example is to reveal the structural logic of the operator.
+
+\paragraph{Exercises.}
+\begin{enumerate}
+    \item In the CNN example, replace the filter
+    \[
+    \begin{bmatrix}1 & -1\\ 1 & -1\end{bmatrix}
+    \]
+    by
+    \[
+    \begin{bmatrix}1 & 1\\ -1 & -1\end{bmatrix}.
+    \]
+    Compute the new feature map and explain what pattern this second filter is designed to detect.
+    \item For the toy memory task, explain from first principles why the information path from the first token to the last output has length on the order of $T$ in a recurrent model but length $1$ in a self-attention layer.
+    \item In the translation example, verify numerically that each row of the alignment matrix $A$ sums to one.
+    Then explain why this implies that each context vector is a convex combination of value vectors.
+    \item Compare the recurrent forecasting rule
+    \[
+    h_t=0.7h_{t-1}+0.3x_t
+    \]
+    with the causal convolutional rule
+    \[
+    \hat{x}_{t+1}=0.5x_t+0.5x_{t-1}.
+    \]
+    What hidden assumption about temporal structure is built into each method?
+    \item Give one task for which a CNN is likely to be more natural than a transformer, and one task for which a transformer is likely to be more natural than a plain RNN.
+    Justify both answers in terms of inductive bias rather than popularity.
+    \item Choose any two rows from Table~\ref{tab:arch-compare} and write a short proof-style argument explaining why their operators impose genuinely different constraints on how information can move through the network.
+\end{enumerate}
+
+\paragraph{Notes and references.}
+The convolutional viewpoint developed in this chapter traces back to the early CNN literature associated with LeCun and collaborators.
+The recurrent and gated examples are closely connected to the RNN, LSTM, and GRU traditions developed by Elman, Hochreiter and Schmidhuber, and Cho and collaborators.
+The translation alignment example reflects the conceptual importance of attention in neural machine translation, especially in the work of Bahdanau, Cho, and Bengio.
+The transformer synthesis inherits the operator viewpoint of Vaswani and collaborators and later general-purpose sequence modeling work.
+Pedagogically, these examples are best read not as historical trophies, but as comparative demonstrations of how architectural assumptions become computational operators.

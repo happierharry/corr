@@ -1,0 +1,311 @@
+\section{A Mathematical Formulation of Learning}
+
+The previous section described learning at a conceptual level. We now introduce the mathematical language that makes the subject precise: spaces of inputs and outputs, probability distributions, hypothesis classes, loss functions, risk, and data-dependent learning rules. This section is the mathematical backbone of the chapter. Its goal is to formalize what it means to learn from a finite sample while keeping in view the deeper question that will guide the rest of the book: how does performance on observed data relate to performance on future data?
+
+\subsection*{Input space, output space, and data distribution}
+
+Let $\mathcal X$ denote the input space and $\mathcal Y$ the output space. A supervised example is a pair $(X,Y)$ taking values in $\mathcal X\times \mathcal Y$. We assume that examples are generated according to an unknown probability distribution $P$ on this product space.
+
+A dataset of size $n$ is then modeled as
+\[
+\mathcal D = \{(X_i,Y_i)\}_{i=1}^n,
+\]
+where the pairs are typically assumed to be independent draws from $P$.
+
+\begin{definition}[Joint, marginal, and conditional laws]
+The distribution of $(X,Y)$ is the \emph{joint law}. The distributions of $X$ and $Y$ alone are the \emph{marginals}. A \emph{conditional law} describes the distribution of $Y$ given $X=x$ and is denoted by $P(Y\mid X=x)$ or $P(Y\in\cdot\mid X=x)$.
+\end{definition}
+
+The conditional law is the mathematically precise object behind the idea that the input contains information about the output.
+
+\subsection*{Bayes' formula and conditional inference}
+
+When conditional probabilities or densities are well defined, Bayes' formula states that
+\[
+P(Y\mid X)=\frac{P(X\mid Y)P(Y)}{P(X)}.
+\]
+In density notation this becomes
+\[
+p(y\mid x)=\frac{p(x\mid y)p(y)}{p(x)}.
+\]
+
+Bayes' formula is not merely a computational identity. It expresses a central structural fact: prediction depends on the relation between prior information, evidence supplied by the observation, and the conditional mechanism connecting them.
+
+\commonconfusion{Bayes' formula does not mean that every learning algorithm must explicitly compute a posterior distribution. Its role here is conceptual: it shows that learning is fundamentally about conditional structure. Many practical algorithms never evaluate Bayes' formula directly, yet they still aim to approximate the same relation between input and output.}
+
+\subsection*{Predictors, hypothesis classes, and inductive bias}
+
+A predictive model is usually a function
+\[
+f:\mathcal X\to\mathcal Y.
+\]
+In parametric families we often write
+\[
+f_\theta:\mathcal X\to\mathcal Y,
+\qquad \theta\in\Theta.
+\]
+
+\begin{definition}[Hypothesis class]
+A \emph{hypothesis class} is a set $\mathcal H$ of candidate predictors from $\mathcal X$ to $\mathcal Y$. In parametric models,
+\[
+\mathcal H=\{f_\theta:\theta\in\Theta\}.
+\]
+\end{definition}
+
+\begin{definition}[Inductive bias]
+The \emph{inductive bias} of a learning method is the collection of assumptions that make learning from finite data possible. At a formal level, one source of inductive bias is the restriction of attention to a particular hypothesis class $\mathcal H$ rather than to all conceivable functions from $\mathcal X$ to $\mathcal Y$.
+\end{definition}
+
+Choosing $\mathcal H$ is already a substantive modeling decision. A linear hypothesis class favors linear relations, a convolutional class favors locality and translation structure, and a recurrent or attention-based class favors sequential dependence. Learning never starts from nowhere; it starts from a constrained family of possibilities.
+
+\subsection*{Loss functions}
+
+To compare a prediction $\hat y$ with a true target $y$, we introduce a loss function
+\[
+\ell(\hat y,y)\ge 0.
+\]
+Equivalently, for a predictor $f$ we write the loss on an example $(x,y)$ as $\ell(f(x),y)$.
+
+Common examples include
+\[
+\ell(\hat y,y)=(\hat y-y)^2
+\qquad\text{(squared loss)},
+\]
+\[
+\ell(\hat y,y)=|\hat y-y|
+\qquad\text{(absolute loss)},
+\]
+\[
+\ell(\hat y,y)=\mathbf 1\{\hat y\neq y\}
+\qquad\text{(zero--one loss)}.
+\]
+
+Different losses define different notions of error, and different notions of error lead to different optimal predictors.
+
+\subsection*{Expected risk and empirical risk}
+
+The quality of a predictor $f$ under the data-generating distribution is measured by its \emph{expected risk}
+\[
+R(f)=\mathbb E[\ell(f(X),Y)].
+\]
+Because the distribution $P$ is unknown, the population risk is usually not directly computable. What we can compute from data is the \emph{empirical risk}
+\[
+\widehat R_n(f)=\frac1n\sum_{i=1}^n \ell(f(X_i),Y_i).
+\]
+
+\begin{example}[Empirical risk of a constant predictor]
+Suppose $\mathcal Y=\mathbb R$ and the loss is squared error. Consider the constant predictor
+\[
+f_c(x)=c.
+\]
+Its empirical risk on a dataset $\{(x_i,y_i)\}_{i=1}^n$ is
+\[
+\widehat R_n(f_c)=\frac1n\sum_{i=1}^n (c-y_i)^2.
+\]
+Expanding the square gives
+\[
+\widehat R_n(f_c)=c^2-\frac{2c}{n}\sum_{i=1}^n y_i+\frac1n\sum_{i=1}^n y_i^2.
+\]
+Differentiating with respect to $c$ and setting the derivative equal to zero yields
+\[
+2c-\frac{2}{n}\sum_{i=1}^n y_i=0,
+\]
+so the minimizing constant is
+\[
+c=\frac1n\sum_{i=1}^n y_i.
+\]
+Thus, under squared loss, the best constant predictor on the sample is the sample mean.
+\end{example}
+
+\begin{proposition}[Empirical risk is unbiased for fixed $f$]
+Assume $(X_1,Y_1),\dots,(X_n,Y_n)$ are i.i.d.\ from $P$ and $\mathbb E|\ell(f(X),Y)|<\infty$. Then
+\[
+\mathbb E[\widehat R_n(f)] = R(f).
+\]
+\end{proposition}
+
+\begin{proof}
+By linearity of expectation and identical distribution of the samples,
+\[
+\mathbb E[\widehat R_n(f)]
+=
+\frac1n\sum_{i=1}^n \mathbb E[\ell(f(X_i),Y_i)]
+=
+\frac1n\sum_{i=1}^n R(f)
+=
+R(f).
+\]
+\end{proof}
+
+This proposition explains why empirical averages are natural surrogates for population quantities. But it does \emph{not} yet solve the learning problem, because learning chooses the predictor using the same data on which the empirical risk is measured.
+
+\subsection*{Learning rules and empirical risk minimization}
+
+\begin{definition}[Learning rule]
+A \emph{learning rule} is a map
+\[
+A:\mathfrak D \to \mathcal H,
+\qquad
+\mathcal D \mapsto \hat f=A(\mathcal D),
+\]
+where $\mathfrak D$ denotes a class of admissible datasets and $\mathcal H$ is the hypothesis class. In words, a learning rule takes a dataset as input and returns a predictor.
+\end{definition}
+
+Thus the output of learning is not a single fixed function, but a \emph{data-dependent} function. Before the sample is observed, $\hat f$ is a random object because it depends on the random dataset $\mathcal D$.
+
+A central principle of machine learning is \emph{empirical risk minimization} (ERM): choose a predictor in $\mathcal H$ that minimizes empirical risk,
+\[
+\hat f_n \in \arg\min_{f\in\mathcal H}\widehat R_n(f).
+\]
+If the class is parameterized by $\theta$, this becomes
+\[
+\hat\theta_n \in \arg\min_{\theta\in\Theta}
+\frac1n\sum_{i=1}^n \ell(f_\theta(X_i),Y_i).
+\]
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm,
+    every node/.style={align=center},
+    box/.style={draw, rounded corners, fill=gray!10, inner sep=6pt, minimum width=2.7cm, minimum height=1.1cm},
+    arrow/.style={-{Latex[length=2.2mm]}, thick}
+]
+\node[box] (dist) {Unknown distribution\\$P$ on $\mathcal X\times\mathcal Y$};
+\node[box, right=of dist] (sample) {Sample\\$\mathcal D=\{(X_i,Y_i)\}_{i=1}^n$};
+\node[box, right=of sample] (obj) {Empirical objective\\$\widehat R_n(f)$ or $\widehat R_n(\theta)$};
+\node[box, right=of obj] (opt) {Optimization\\$\arg\min$ over $\mathcal H$ or $\Theta$};
+\node[box, right=of opt] (pred) {Predictor\\$\hat f=A(\mathcal D)$};
+
+\draw[arrow] (dist) -- (sample);
+\draw[arrow] (sample) -- (obj);
+\draw[arrow] (obj) -- (opt);
+\draw[arrow] (opt) -- (pred);
+
+\node[below=0.55cm of obj] {\small learning turns an unknown population problem into a data-dependent optimization problem};
+\end{tikzpicture}
+\caption{A summary of the risk-minimization viewpoint: an unknown distribution generates a sample; the sample defines an empirical objective; optimization over a hypothesis class produces a predictor.}
+\end{figure}
+
+\begin{proposition}[ERM is data-dependent]
+Let
+\[
+\hat f_n \in \arg\min_{f\in\mathcal H}\widehat R_n(f).
+\]
+Then $\hat f_n$ is a random predictor determined by the sample $\mathcal D$. Moreover, for every fixed $f\in\mathcal H$,
+\[
+\widehat R_n(\hat f_n)\le \widehat R_n(f)
+\]
+for every realization of the data, and therefore
+\[
+\mathbb E[\widehat R_n(\hat f_n)]\le R(f).
+\]
+In particular,
+\[
+\mathbb E[\widehat R_n(\hat f_n)]\le \inf_{f\in\mathcal H} R(f).
+\]
+\end{proposition}
+
+\begin{proof}
+By definition of $\hat f_n$ as an empirical risk minimizer,
+\[
+\widehat R_n(\hat f_n)\le \widehat R_n(f)
+\]
+for every fixed $f\in\mathcal H$ and every dataset. Taking expectations and using the unbiasedness proposition for fixed $f$ gives
+\[
+\mathbb E[\widehat R_n(\hat f_n)]
+\le
+\mathbb E[\widehat R_n(f)]
+=
+R(f).
+\]
+Since this holds for every fixed $f\in\mathcal H$, it follows that
+\[
+\mathbb E[\widehat R_n(\hat f_n)]\le \inf_{f\in\mathcal H}R(f).
+\]
+\end{proof}
+
+This proposition captures an important subtlety. The empirical risk of a fixed predictor is unbiased for its true risk, but the empirical risk of the predictor \emph{selected from the data} is typically optimistic. This is why training error alone is not a reliable measure of future performance.
+
+\subsection*{Learning as approximate risk minimization}
+
+The ideal population problem is
+\[
+\min_{f\in\mathcal H} R(f),
+\]
+or more ambitiously,
+\[
+\min_{f} R(f)
+\]
+over a much larger universe of predictors. In practice we only observe finitely many samples and often solve an optimization problem approximately. This gives rise to three distinct sources of error.
+
+\begin{proposition}[Approximation, estimation, and optimization]
+Assume the following predictors exist:
+\[
+f^\star \in \arg\min_f R(f),
+\qquad
+f_{\mathcal H}^\star \in \arg\min_{f\in\mathcal H} R(f),
+\qquad
+f_n^\star \in \arg\min_{f\in\mathcal H}\widehat R_n(f).
+\]
+Let $\hat f_n$ denote the predictor actually returned by a learning algorithm. Then
+\[
+R(\hat f_n)-R(f^\star)
+=
+\underbrace{\bigl(R(f_{\mathcal H}^\star)-R(f^\star)\bigr)}_{\text{approximation}}
++
+\underbrace{\bigl(R(f_n^\star)-R(f_{\mathcal H}^\star)\bigr)}_{\text{estimation}}
++
+\underbrace{\bigl(R(\hat f_n)-R(f_n^\star)\bigr)}_{\text{optimization}}.
+\]
+\end{proposition}
+
+\begin{proof}
+Add and subtract the two intermediate risks $R(f_{\mathcal H}^\star)$ and $R(f_n^\star)$:
+\[
+R(\hat f_n)-R(f^\star)
+=
+\bigl(R(\hat f_n)-R(f_n^\star)\bigr)
++
+\bigl(R(f_n^\star)-R(f_{\mathcal H}^\star)\bigr)
++
+\bigl(R(f_{\mathcal H}^\star)-R(f^\star)\bigr).
+\]
+Reordering the terms gives the stated decomposition.
+\end{proof}
+
+The decomposition should not be overinterpreted as a final theorem of learning, but it is a powerful organizing principle. A model class may be too restrictive, the data may be too limited to identify a good model reliably, or the optimization algorithm may fail to find the empirical minimizer.
+
+\whattoremember{The mathematical formulation of learning begins with a distribution $P$ on input-output pairs, a hypothesis class $\mathcal H$, a loss function $\ell$, and a learning rule $A$ that maps a dataset to a predictor. The population objective is expected risk $R(f)$; the observable surrogate is empirical risk $\widehat R_n(f)$. Empirical risk is unbiased for a fixed predictor, but once the predictor is chosen from the data, that fixed-function argument no longer suffices. This is why learning theory must study data-dependent selection and generalization, not training error alone.}
+
+\commonconfusion{Because empirical risk is unbiased for a fixed predictor, it is tempting to think that the training error of the learned predictor must also be an unbiased estimate of test error. This is false. The learned predictor is itself chosen using the sample, so it is no longer fixed in advance. The sample has been used twice: once to construct the predictor and again to evaluate it. That is exactly why generalization requires more than the law of large numbers applied naively.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Give one example of a learning problem in which the output space $\mathcal Y$ is discrete and one in which it is continuous. Suggest a natural loss function in each case.
+\end{exercise}
+
+\begin{exercise}
+Let $\ell(\hat y,y)=(\hat y-y)^2$. Compute the empirical risk of the constant predictor $f_c(x)=c$ on a dataset $\{(x_i,y_i)\}_{i=1}^n$ and verify directly that the minimizing value of $c$ is the sample mean.
+\end{exercise}
+
+\begin{exercise}
+Explain in words why the proposition on unbiasedness for fixed $f$ does not imply that the training error of the empirical risk minimizer is an unbiased estimate of its test error.
+\end{exercise}
+
+\begin{exercise}
+Describe how inductive bias enters through the choice of hypothesis class $\mathcal H$ even before any data are observed.
+\end{exercise}
+
+\begin{exercise}
+Consider a classification problem with zero--one loss. Write down the expected risk and empirical risk of a predictor $f:\mathcal X\to\{0,1\}$. What does minimizing each quantity mean in plain language?
+\end{exercise}
+
+\begin{exercise}
+In the approximation--estimation--optimization decomposition, describe a concrete situation in which each of the three terms could be large.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+The risk-minimization viewpoint is one of the central organizing ideas of modern machine learning. The language of distributions, loss functions, and empirical objectives will reappear throughout the book in different forms: in Bayesian inference, in kernel methods, in large-margin classification, in neural-network training, and in generative modeling. The present section is deliberately foundational. Its main purpose is not to settle the learning problem, but to state it precisely enough that later questions about Bayes rules, generalization, optimization, and representation learning can be asked in mathematical form.

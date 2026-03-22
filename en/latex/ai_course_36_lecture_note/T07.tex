@@ -1,0 +1,306 @@
+\section{Tutorial 7: Building an MLP and Backpropagation}
+
+\subsection{Objectives}
+
+This tutorial introduces neural networks as concrete computational systems:
+
+\begin{itemize}
+    \item Construct a simple multi-layer perceptron (MLP)
+    \item Perform forward computation step by step
+    \item Derive gradients manually for a small network
+    \item Understand the need for backpropagation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Understand how neural networks compute and how gradients flow through them.
+
+\subsection{Exercise 1: A Simple Neural Network}
+
+Consider a two-layer neural network:
+
+\[
+h = \sigma(W_1 x + b_1), \quad
+\hat{y} = W_2 h + b_2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Specify the dimensions of all variables.
+    \item Describe the forward pass.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+Let:
+\begin{itemize}
+    \item $x \in \mathbb{R}^d$
+    \item $W_1 \in \mathbb{R}^{m \times d}$, $b_1 \in \mathbb{R}^m$
+    \item $h \in \mathbb{R}^m$
+    \item $W_2 \in \mathbb{R}^{1 \times m}$, $b_2 \in \mathbb{R}$
+\end{itemize}
+
+\medskip
+
+\noindent
+Forward pass:
+\begin{itemize}
+    \item Linear transformation: $z_1 = W_1 x + b_1$
+    \item Nonlinearity: $h = \sigma(z_1)$
+    \item Output: $\hat{y} = W_2 h + b_2$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Neural networks alternate between linear transformations and nonlinearities.
+
+\subsection{Exercise 2: Forward Computation (Concrete Example)}
+
+Let:
+\[
+x = \begin{pmatrix}1 \\ 2\end{pmatrix}, \quad
+W_1 =
+\begin{pmatrix}
+1 & -1 \\
+0 & 2
+\end{pmatrix}, \quad
+b_1 = \begin{pmatrix}0 \\ 1\end{pmatrix}.
+\]
+
+Use ReLU activation: $\sigma(z) = \max(0,z)$.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute $z_1$
+    \item Compute $h$
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\[
+z_1 =
+\begin{pmatrix}
+1\cdot1 + (-1)\cdot2 \\
+0\cdot1 + 2\cdot2
+\end{pmatrix}
++
+\begin{pmatrix}0 \\ 1\end{pmatrix}
+=
+\begin{pmatrix}-1 \\ 5\end{pmatrix}.
+\]
+
+\[
+h = \begin{pmatrix}0 \\ 5\end{pmatrix}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Nonlinearity introduces piecewise behavior.
+
+\subsection{Exercise 3: Loss Function}
+
+Let the target be $y$ and define squared loss:
+\[
+L = \frac{1}{2} (\hat{y} - y)^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Task.}
+\begin{enumerate}
+    \item Express $L$ in terms of network parameters.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\[
+L = \frac{1}{2} \left(W_2 \sigma(W_1 x + b_1) + b_2 - y\right)^2.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The loss is a nested composition of functions.
+
+\subsection{Exercise 4: Gradient with Respect to Output Layer}
+
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute $\frac{\partial L}{\partial W_2}$
+    \item Compute $\frac{\partial L}{\partial b_2}$
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+Let $\hat{y} = W_2 h + b_2$.
+
+\[
+\frac{\partial L}{\partial \hat{y}} = \hat{y} - y.
+\]
+
+\[
+\frac{\partial L}{\partial W_2} = (\hat{y} - y) h^\top.
+\]
+
+\[
+\frac{\partial L}{\partial b_2} = \hat{y} - y.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradients at the output layer are straightforward.
+
+\subsection{Exercise 5: Backpropagation to Hidden Layer}
+
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute $\frac{\partial L}{\partial h}$
+    \item Compute $\frac{\partial L}{\partial z_1}$
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\[
+\frac{\partial L}{\partial h} = (\hat{y} - y) W_2^\top.
+\]
+
+\medskip
+
+\noindent
+For ReLU:
+\[
+\frac{\partial h}{\partial z_1} =
+\begin{cases}
+1 & z_1 > 0 \\
+0 & z_1 \leq 0
+\end{cases}
+\]
+
+\[
+\frac{\partial L}{\partial z_1} =
+\frac{\partial L}{\partial h} \odot \sigma'(z_1).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradients are modulated by activation derivatives.
+
+\subsection{Exercise 6: Gradients for First Layer}
+
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Compute $\frac{\partial L}{\partial W_1}$
+    \item Compute $\frac{\partial L}{\partial b_1}$
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\[
+\frac{\partial L}{\partial W_1} =
+\frac{\partial L}{\partial z_1} x^\top.
+\]
+
+\[
+\frac{\partial L}{\partial b_1} =
+\frac{\partial L}{\partial z_1}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradients propagate backward through layers via the chain rule.
+
+\subsection{Exercise 7: Computational Perspective}
+
+\textbf{Question.}  
+Why is naive differentiation inefficient for deep networks?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item Repeated computation of intermediate derivatives
+    \item Exponential growth in computation if not reused
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Backpropagation reuses intermediate results efficiently.
+
+\subsection{Exercise 8 (Discussion): What Backpropagation Does}
+
+\textbf{Question.}  
+What is the core idea of backpropagation?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Apply chain rule systematically
+    \item Propagate gradients from output to input
+    \item Reuse computations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Backpropagation is dynamic programming for gradient computation.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Neural networks compute via layered transformations
+    \item Gradients are computed using the chain rule
+    \item Backpropagation efficiently propagates gradients
+    \item Training neural networks requires structured gradient computation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now formalize backpropagation and automatic differentiation, enabling efficient training of deep networks.

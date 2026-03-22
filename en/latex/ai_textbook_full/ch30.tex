@@ -1,0 +1,215 @@
+\chapter{Diffusion Models: Intuition}
+
+\section{Introduction}
+
+Diffusion models generate data by reversing a gradual corruption process. Instead of producing a sample in a single step, they start from noise and iteratively refine it into a structured output.
+
+This chapter develops an intuitive understanding of diffusion models. We explain progressive noising, denoising, and the idea of score-based learning, and connect diffusion to iterative refinement.
+
+\section{Why Generate by Denoising?}
+
+Directly generating complex data (e.g., images) in one step is difficult. Diffusion models take a different approach:
+\begin{itemize}
+    \item start from simple noise,
+    \item gradually transform it into structured data,
+    \item learn each small transformation.
+\end{itemize}
+
+This breaks a difficult problem into many simpler steps.
+
+\section{Forward Diffusion as Gradual Corruption}
+
+The forward process adds noise step by step:
+\[
+x_0 \to x_1 \to x_2 \to \cdots \to x_T.
+\]
+
+Each step adds small Gaussian noise:
+\[
+x_t = \sqrt{1 - \beta_t} \, x_{t-1} + \sqrt{\beta_t} \, \epsilon_t,
+\quad \epsilon_t \sim \mathcal{N}(0,I).
+\]
+
+\subsection{Interpretation}
+
+\begin{itemize}
+    \item early steps: slightly corrupted data,
+    \item later steps: heavily corrupted,
+    \item final state: nearly pure Gaussian noise.
+\end{itemize}
+
+Thus the forward process gradually destroys structure.
+
+\subsection{Gaussian Corruption Sequence (Example)}
+
+Starting from an image:
+\begin{itemize}
+    \item $x_0$: clean image,
+    \item $x_1$: slightly noisy,
+    \item $x_{10}$: visibly corrupted,
+    \item $x_T$: indistinguishable from noise.
+\end{itemize}
+
+\section{Reverse Denoising as Learned Reconstruction}
+
+The generative process reverses this corruption:
+\[
+x_T \to x_{T-1} \to \cdots \to x_0.
+\]
+
+A neural network learns to remove noise at each step:
+\[
+p_\theta(x_{t-1} \mid x_t).
+\]
+
+\subsection{Interpretation}
+
+Each step performs:
+\begin{itemize}
+    \item a small denoising operation,
+    \item a refinement of structure,
+    \item a move toward the data distribution.
+\end{itemize}
+
+Thus generation is iterative reconstruction.
+
+\section{Noise Prediction and Score Intuition}
+
+Instead of directly predicting $x_{t-1}$, diffusion models often predict the noise $\epsilon$ added at each step.
+
+\subsection{Noise Prediction}
+
+Given $x_t$, the model predicts $\epsilon_t$ such that:
+\[
+x_0 \approx \frac{x_t - \sqrt{\beta_t}\,\epsilon_t}{\sqrt{1-\beta_t}}.
+\]
+
+\subsection{Score Interpretation}
+
+The model implicitly learns the \emph{score function}:
+\[
+\nabla_x \log p(x),
+\]
+which points toward regions of higher probability.
+
+\begin{itemize}
+    \item denoising corresponds to moving toward higher-density regions,
+    \item each step nudges samples toward realistic configurations.
+\end{itemize}
+
+Thus diffusion can be viewed as gradient ascent in probability space with noise.
+
+\section{Iterative Refinement View}
+
+Diffusion models generate by repeated small corrections:
+\[
+x_{t-1} = x_t + \text{small update}.
+\]
+
+This resembles:
+\begin{itemize}
+    \item residual refinement,
+    \item gradient-based optimization,
+    \item iterative reconstruction algorithms.
+\end{itemize}
+
+\subsection{Thought Experiment}
+
+Imagine starting from random pixels:
+\begin{itemize}
+    \item each step removes a bit of noise,
+    \item patterns begin to emerge,
+    \item structure gradually sharpens,
+    \item final result resembles real data.
+\end{itemize}
+
+This incremental process is easier to learn than direct generation.
+
+\section{Why Diffusion Models Work Well in Practice}
+
+Several factors contribute to their success:
+
+\begin{itemize}
+    \item \textbf{Stable training:} objective resembles supervised denoising,
+    \item \textbf{Well-behaved gradients:} avoids adversarial instability,
+    \item \textbf{Iterative refinement:} decomposes complex generation,
+    \item \textbf{Flexibility:} can model diverse data distributions.
+\end{itemize}
+
+Compared to GANs:
+\begin{itemize}
+    \item more stable,
+    \item less prone to mode collapse,
+    \item but slower at sampling.
+\end{itemize}
+
+\section{Worked Example: Small-Step Denoising}
+
+Suppose:
+\[
+x_t = x_0 + \epsilon,
+\quad \epsilon \sim \mathcal{N}(0, \sigma^2 I).
+\]
+
+If $\sigma$ is small:
+\begin{itemize}
+    \item $x_t$ is close to $x_0$,
+    \item predicting $\epsilon$ is easy,
+    \item recovering $x_0$ is accurate.
+\end{itemize}
+
+Thus learning small denoising steps is easier than large jumps.
+
+\section{Comparison with Other Generative Models}
+
+\begin{itemize}
+    \item \textbf{Autoencoders:} reconstruct inputs in one step,
+    \item \textbf{GANs:} generate samples via adversarial training,
+    \item \textbf{Diffusion:} generate via many small denoising steps.
+\end{itemize}
+
+Diffusion trades speed for stability and quality.
+
+\section{A Unifying Perspective}
+
+Diffusion models view generation as reversing noise. The forward process simplifies data into noise; the reverse process reconstructs structure step by step.
+
+This connects to:
+\begin{itemize}
+    \item score matching (learning gradients of log-density),
+    \item iterative optimization,
+    \item dynamical systems.
+\end{itemize}
+
+Thus diffusion provides a conceptually simple and powerful generative paradigm.
+
+\section{Summary}
+
+In this chapter we developed an intuitive understanding of diffusion models. We described progressive noising, reverse denoising, and noise prediction. We connected these ideas to score functions and iterative refinement.
+
+Diffusion models succeed by decomposing generation into many small, learnable steps, providing stability and high-quality outputs.
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item Explain why small-step denoising is easier to learn than direct generation.
+
+    \item Consider a Gaussian corruption process. Show how variance increases over steps.
+
+    \item Compare diffusion models and autoencoders in terms of reconstruction.
+
+    \item Compare diffusion models and GANs in terms of:
+    \begin{enumerate}
+        \item training stability,
+        \item sample quality,
+        \item computational cost.
+    \end{enumerate}
+
+    \item Describe how iterative refinement improves generation quality.
+
+    \item Explain the role of noise prediction in diffusion models.
+
+    \item Give an intuitive explanation of the score function $\nabla_x \log p(x)$.
+
+    \item Why do diffusion models avoid mode collapse more easily than GANs?
+\end{enumerate}

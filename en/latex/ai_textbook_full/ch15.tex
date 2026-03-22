@@ -1,0 +1,189 @@
+\chapter{Neural Networks as Compositional Models}
+
+\section{Introduction}
+
+A neural network is not merely a nonlinear predictor. Its defining structural idea is \emph{composition}. Instead of mapping an input directly to an output in one step, a network applies a sequence of affine maps and nonlinearities, building intermediate representations along the way. This compositional structure is one of the main reasons neural networks can represent complicated functions efficiently.
+
+This chapter develops feedforward neural networks as compositional models. We define the basic architecture, discuss expressivity, compare depth and width, and state the universal approximation theorem in its proper limited role. We also emphasize an important distinction: a class may be highly expressive without being easy to learn from data.
+
+\section{Feedforward Networks as Compositions of Maps}
+
+A feedforward neural network is built by alternating affine maps and nonlinear activation functions.
+
+\begin{definition}[Feedforward Neural Network]
+A feedforward neural network of depth $L$ is a function of the form
+\[
+f(x)=W^{(L)}h^{(L-1)}+b^{(L)},
+\]
+where
+\[
+h^{(0)}=x,
+\qquad
+h^{(\ell)}=\sigma\!\big(W^{(\ell)}h^{(\ell-1)}+b^{(\ell)}\big),
+\quad \ell=1,\dots,L-1.
+\]
+Here each $W^{(\ell)}$ is a weight matrix, each $b^{(\ell)}$ is a bias vector, and $\sigma$ is an activation function applied componentwise.
+\end{definition}
+
+Thus the network is a composition
+\[
+f = f^{(L)} \circ f^{(L-1)} \circ \cdots \circ f^{(1)},
+\]
+with each hidden layer performing an affine transformation followed by a nonlinearity.
+
+\subsection{Why Nonlinearity Matters}
+
+If $\sigma$ were the identity, then the composition of affine maps would still be affine. So depth alone would add no expressive power. The activation function is what allows the network to represent nonlinear structure.
+
+Common choices include:
+\[
+\sigma(z)=\max(0,z)\quad\text{(ReLU)},
+\qquad
+\sigma(z)=\frac{1}{1+e^{-z}}\quad\text{(sigmoid)}.
+\]
+
+\section{Width, Depth, and Expressive Power}
+
+Two basic architectural quantities are:
+\begin{itemize}
+    \item \textbf{width:} the number of units in a layer,
+    \item \textbf{depth:} the number of successive layers.
+\end{itemize}
+
+Both affect expressivity, but in different ways.
+
+\subsection{Width as Parallel Representation}
+
+A wider layer can represent more features at the same stage of computation. For example, a one-hidden-layer network
+\[
+f(x)=\sum_{j=1}^m a_j\,\sigma(w_j^\top x+b_j)
+\]
+builds a linear combination of $m$ nonlinear units. Increasing $m$ gives more basis-like components.
+
+\subsection{Depth as Sequential Composition}
+
+Greater depth allows the network to reuse intermediate computations. Instead of representing a complicated function in one step, the model can build it hierarchically. This can be much more efficient when the target function itself has compositional structure.
+
+\subsection{Piecewise Linear Region Intuition}
+
+For ReLU networks, the represented function is piecewise linear. Each hidden unit introduces a threshold
+\[
+w^\top x+b=0
+\]
+that divides the input space into regions. As layers are stacked, these regions are repeatedly transformed and recombined. Deeper networks can therefore create highly intricate piecewise linear structures with relatively few parameters.
+
+The key intuition is that depth does not just add more units; it allows repeated partitioning and recombination of the input space.
+
+\section{Universal Approximation: What It Says and What It Does Not Say}
+
+One of the most famous theoretical results about neural networks is the universal approximation theorem.
+
+\begin{theorem}[Universal Approximation, Informal Statement]
+Let $K\subset\mathbb R^d$ be compact, and let $\sigma$ be a suitable non-polynomial activation function. Then for every continuous function $f:K\to\mathbb R$ and every $\varepsilon>0$, there exists a neural network with a single hidden layer such that
+\[
+\sup_{x\in K}|f(x)-f_{\theta}(x)|<\varepsilon.
+\]
+\end{theorem}
+
+This theorem is important because it shows that shallow neural networks are, in principle, extremely expressive.
+
+\subsection{What the Theorem Says}
+
+It says that one hidden layer can approximate any continuous function on a compact domain arbitrarily well, provided the hidden layer is allowed to be sufficiently wide.
+
+\subsection{What the Theorem Does Not Say}
+
+It does \emph{not} say:
+\begin{itemize}
+    \item that approximation is parameter-efficient,
+    \item that the required width is reasonable,
+    \item that the network can be learned efficiently from data,
+    \item that generalization will be good,
+    \item that depth is unimportant.
+\end{itemize}
+
+Thus universal approximation is a foundational theorem, but not a full explanation of why deep learning works well in practice.
+
+\section{Hierarchical Structure and Reuse}
+
+Many real-world functions are naturally compositional. A target function may be built from simpler subfunctions that are reused.
+
+For example, a function of four variables may have the form
+\[
+f(x_1,x_2,x_3,x_4)=g\big(h_1(x_1,x_2),\,h_2(x_3,x_4)\big).
+\]
+A deep architecture can represent this naturally:
+\begin{itemize}
+    \item first compute $h_1$ and $h_2$,
+    \item then combine them through $g$.
+\end{itemize}
+
+A shallow model can also represent such a function in principle, but often less efficiently.
+
+\subsection{Hierarchical Feature Construction}
+
+This reuse principle appears across domains:
+\begin{itemize}
+    \item in vision: edges $\to$ motifs $\to$ parts $\to$ objects,
+    \item in language: tokens $\to$ phrases $\to$ larger semantic structure,
+    \item in control and reasoning: small subroutines composed into larger computations.
+\end{itemize}
+
+This is one of the main motivations for deep models: they align with hierarchical structure in the world.
+
+\section{Depth Efficiency}
+
+A major modern insight is that depth may give not only expressive power, but \emph{expressive efficiency}. Some functions can be represented compactly by deep networks but require much larger shallow networks.
+
+\begin{statement}[Depth Efficiency, Informal]
+There exist function families that can be represented by deep networks with polynomial size, but for which shallow networks require exponentially larger width to achieve comparable approximation.
+\end{statement}
+
+This statement should be understood as a qualitative theorem pattern rather than a single universal theorem. Its meaning is that depth can matter not only quantitatively, but qualitatively.
+
+The idea is that compositional structure is efficiently matched by compositional architectures. A shallow network may flatten the whole computation into one stage, losing the advantage of reuse.
+
+\section{Expressivity vs Learnability}
+
+A model class may be highly expressive without being easy to train or statistically efficient.
+
+\subsection{Expressivity}
+
+Expressivity concerns what functions can be represented at all, or approximated well, by the architecture.
+
+\subsection{Learnability}
+
+Learnability concerns whether a good representation can be found from finite data and practical optimization. These are different questions.
+
+For example:
+\begin{itemize}
+    \item a network class may contain an excellent predictor,
+    \item but optimization may not find it,
+    \item or finite data may not be enough to identify it reliably.
+\end{itemize}
+
+This distinction is crucial. Universal approximation and depth-efficiency results concern expressivity, not necessarily trainability or generalization.
+
+\subsection{Why This Matters}
+
+The success of deep learning cannot be explained by expressivity alone. It also depends on:
+\begin{itemize}
+    \item optimization dynamics,
+    \item regularization,
+    \item architecture-task alignment,
+    \item data scale.
+\end{itemize}
+
+So one should not confuse ``can represent'' with ``can learn well.''
+
+\section{A Unifying Perspective}
+
+Neural networks are compositional models built from affine maps and nonlinearities. Their power comes not merely from nonlinearity, but from repeated nonlinear composition. Width allows many features in parallel; depth allows hierarchical reuse and structured computation.
+
+The universal approximation theorem shows that even shallow networks are expressive in principle. But the deeper lesson is that depth can make representation more efficient when the target function itself is compositional. This helps explain why deep architectures often outperform shallow alternatives on complex tasks.
+
+\section{Summary}
+
+In this chapter we defined feedforward neural networks as compositions of affine maps and nonlinear activation functions. We discussed how width and depth contribute differently to expressivity, and gave piecewise linear intuition for ReLU networks. We stated the universal approximation theorem and emphasized its limitations: representability does not imply efficiency, learnability, or good generalization.
+
+We then explained why hierarchical structure and reuse favor deep models, and introduced the idea of depth efficiency. This chapter provides the theoretical motivation for studying training dynamics, backpropagation, and architectural design in the chapters that follow.

@@ -1,0 +1,279 @@
+\section{Tutorial 10: Training Ablations (BatchNorm, Dropout, Residuals)}
+
+\subsection{Objectives}
+
+This tutorial studies how architectural and training choices affect learning:
+
+\begin{itemize}
+    \item Understand the role of normalization, regularization, and residual connections
+    \item Compare training dynamics under different configurations
+    \item Develop intuition through controlled ablation experiments
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Identify which components make deep networks trainable and generalize well.
+
+\subsection{Exercise 1: What is an Ablation Study?}
+
+\textbf{Question.}  
+What is the purpose of an ablation study in machine learning?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item Systematically remove or modify components
+    \item Measure their effect on performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Ablation reveals causal contributions of design choices.
+
+\subsection{Exercise 2: Baseline Model}
+
+Consider a deep fully connected network:
+
+\begin{itemize}
+    \item depth: $L = 10$
+    \item activation: ReLU
+    \item optimizer: SGD
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Task.}  
+Predict training behavior without:
+\begin{itemize}
+    \item normalization
+    \item residual connections
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Expected outcome.}
+
+\begin{itemize}
+    \item unstable gradients
+    \item slow or failed convergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Depth alone does not guarantee learnability.
+
+\subsection{Exercise 3: Effect of Batch Normalization}
+
+Modify the baseline:
+
+\begin{itemize}
+    \item add batch normalization after each layer
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Predict changes in training speed
+    \item Predict effect on gradient stability
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Expected outcome.}
+
+\begin{itemize}
+    \item faster convergence
+    \item more stable gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Normalization stabilizes optimization.
+
+\subsection{Exercise 4: Effect of Dropout}
+
+Modify the baseline:
+
+\begin{itemize}
+    \item add dropout with rate $p$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Predict effect on training loss
+    \item Predict effect on test performance
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Expected outcome.}
+
+\begin{itemize}
+    \item slower training (higher training loss)
+    \item improved generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Regularization trades training performance for robustness.
+
+\subsection{Exercise 5: Effect of Residual Connections}
+
+Modify the baseline:
+
+\begin{itemize}
+    \item replace layers with residual blocks:
+    \[
+    h_{k+1} = h_k + F(h_k)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Predict training behavior
+    \item Compare to plain deep network
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Expected outcome.}
+
+\begin{itemize}
+    \item easier optimization
+    \item deeper networks become trainable
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Residual connections improve gradient flow structurally.
+
+\subsection{Exercise 6: Combined Model}
+
+Consider a model with:
+
+\begin{itemize}
+    \item ReLU activation
+    \item batch normalization
+    \item residual connections
+    \item optional dropout
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Predict overall training behavior
+    \item Explain why this combination is effective
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Expected outcome.}
+
+\begin{itemize}
+    \item fast convergence
+    \item stable gradients
+    \item good generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Modern deep learning relies on combining multiple techniques.
+
+\subsection{Exercise 7: Comparative Table}
+
+Fill in the following table:
+
+\[
+\begin{array}{c|c|c|c}
+\text{Model} & \text{Training Stability} & \text{Speed} & \text{Generalization} \\
+\hline
+\text{Baseline} & & & \\
+\text{+ BN} & & & \\
+\text{+ Dropout} & & & \\
+\text{+ Residual} & & & \\
+\text{Combined} & & & \\
+\end{array}
+\]
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+Students should observe:
+
+\begin{itemize}
+    \item BN $\rightarrow$ stability + speed
+    \item Dropout $\rightarrow$ generalization
+    \item Residual $\rightarrow$ depth scalability
+\end{itemize}
+
+\subsection{Exercise 8 (Discussion): Design Principles}
+
+\textbf{Question.}  
+What general principles can we extract from these experiments?
+
+\medskip
+
+\noindent
+\textbf{Discussion points.}
+
+\begin{itemize}
+    \item Control signal propagation (BN, residuals)
+    \item Prevent overfitting (dropout)
+    \item Combine techniques for best performance
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Successful deep learning is the result of carefully engineered systems.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Batch normalization stabilizes training
+    \item Dropout improves generalization
+    \item Residual connections enable depth
+    \item Combined techniques yield robust models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for next lecture.}  
+We now study convolutional neural networks, which incorporate structural assumptions about data into architecture design.

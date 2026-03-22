@@ -1,0 +1,216 @@
+\chapter{Model Evaluation and Selection}
+
+\section{Introduction}
+
+A learning algorithm produces a model, but a crucial question remains: how do we know whether the model is good? Evaluation is not merely a technical detail; it determines how we compare models, choose hyperparameters, and report results. Poor evaluation practices can lead to misleading conclusions, over-optimistic performance estimates, and models that fail in real use.
+
+This chapter develops a principled approach to model evaluation and selection. We discuss appropriate performance metrics, validation strategies such as cross-validation, hyperparameter tuning, and common pitfalls including data leakage and improper reuse of test data.
+
+\section{What Counts as Good Performance?}
+
+Let $(X,Y)\sim P$ and let $\ell$ be a loss function. The true performance of a predictor $f$ is measured by its population risk
+\[
+R(f)=\mathbb{E}[\ell(f(X),Y)].
+\]
+
+In practice, $P$ is unknown, so we estimate $R(f)$ using data. The goal of evaluation is therefore:
+\begin{itemize}
+    \item to estimate $R(f)$ reliably,
+    \item to compare models based on these estimates,
+    \item to select hyperparameters that minimize true risk.
+\end{itemize}
+
+\begin{definition}[Risk Estimate]
+Given a test sample $(x_i,y_i)_{i=1}^m$ independent of training data, the empirical test risk is
+\[
+\widehat R_{\mathrm{test}}(f)=\frac1m\sum_{i=1}^m \ell(f(x_i),y_i).
+\]
+\end{definition}
+
+A good evaluation procedure produces an estimate that is:
+\begin{itemize}
+    \item unbiased or nearly unbiased,
+    \item stable across samples,
+    \item aligned with the task objective.
+\end{itemize}
+
+\section{Regression and Classification Metrics}
+
+Different tasks require different metrics.
+
+\subsection{Regression Metrics}
+
+Common regression losses include:
+\begin{itemize}
+    \item Mean squared error (MSE):
+    \[
+    \frac1n\sum_{i=1}^n (f(x_i)-y_i)^2,
+    \]
+    \item Mean absolute error (MAE):
+    \[
+    \frac1n\sum_{i=1}^n |f(x_i)-y_i|.
+    \]
+\end{itemize}
+
+MSE penalizes large errors more strongly, while MAE is more robust to outliers.
+
+\subsection{Classification Metrics}
+
+For classification, the simplest metric is accuracy:
+\[
+\frac{1}{n}\sum_{i=1}^n \mathbf{1}\{f(x_i)=y_i\}.
+\]
+
+However, accuracy may be misleading in imbalanced settings. Alternative metrics include:
+\begin{itemize}
+    \item precision and recall,
+    \item F1-score,
+    \item area under the ROC curve (AUC),
+    \item log-loss (cross-entropy).
+\end{itemize}
+
+\subsection{Worked Example: Imbalanced Classification}
+
+Suppose $95\%$ of examples belong to class $0$. A classifier that always predicts $0$ achieves $95\%$ accuracy but is useless for detecting class $1$. In such cases:
+\begin{itemize}
+    \item recall measures detection of the minority class,
+    \item precision measures reliability of positive predictions,
+    \item F1 balances the two.
+\end{itemize}
+
+\subsection{ROC vs Precision--Recall}
+
+ROC curves plot true positive rate vs false positive rate. Precision--recall curves focus on performance for the positive class.
+
+In imbalanced settings:
+\begin{itemize}
+    \item ROC curves may appear overly optimistic,
+    \item precision--recall curves give a more informative view.
+\end{itemize}
+
+\section{Validation Strategies and Cross-Validation}
+
+To estimate generalization performance and select models, data are typically split into:
+\begin{itemize}
+    \item training set,
+    \item validation set,
+    \item test set.
+\end{itemize}
+
+\subsection{Hold-Out Validation}
+
+A simple strategy is to reserve part of the data as a validation set. The model is trained on the training set and evaluated on the validation set.
+
+\subsection{Cross-Validation}
+
+When data are limited, one uses $K$-fold cross-validation:
+\begin{itemize}
+    \item split data into $K$ folds,
+    \item train on $K-1$ folds,
+    \item evaluate on the remaining fold,
+    \item repeat for each fold and average results.
+\end{itemize}
+
+This gives a more stable estimate of performance.
+
+\subsection{Test Set Usage}
+
+The test set should be used only once, after model selection, to estimate final performance. Repeated use of the test set introduces bias.
+
+\begin{proposition}[Bias from Test Reuse]
+If the test set is used repeatedly to select among models, the reported test performance becomes optimistically biased.
+\end{proposition}
+
+\section{Hyperparameter Search}
+
+Most models depend on hyperparameters, such as:
+\begin{itemize}
+    \item regularization strength,
+    \item model complexity,
+    \item learning rate,
+    \item architecture choices.
+\end{itemize}
+
+Hyperparameters are chosen by minimizing validation error.
+
+\subsection{Search Strategies}
+
+Common approaches include:
+\begin{itemize}
+    \item grid search,
+    \item random search,
+    \item more advanced adaptive methods.
+\end{itemize}
+
+\subsection{Worked Example: Tuning Workflow}
+
+A typical workflow:
+\begin{enumerate}
+    \item split data into training and validation sets,
+    \item train models with different hyperparameters,
+    \item evaluate on validation set,
+    \item select the best hyperparameters,
+    \item retrain on combined training+validation data,
+    \item evaluate once on the test set.
+\end{enumerate}
+
+This separation prevents optimistic bias.
+
+\section{Data Leakage, Confounding, and Reproducibility}
+
+\subsection{Data Leakage}
+
+Data leakage occurs when information from outside the training set is used improperly during training. Examples include:
+\begin{itemize}
+    \item using test data during feature normalization,
+    \item selecting features based on the full dataset,
+    \item leaking future information in time-series tasks.
+\end{itemize}
+
+Leakage leads to overly optimistic performance estimates.
+
+\subsection{Confounding}
+
+Confounding occurs when models exploit spurious correlations rather than causal structure. For example, a model might learn to detect background artifacts instead of the intended signal.
+
+\subsection{Reproducibility}
+
+Reliable evaluation requires:
+\begin{itemize}
+    \item clear data splits,
+    \item fixed random seeds where appropriate,
+    \item reporting of variance or confidence intervals,
+    \item transparent experimental procedures.
+\end{itemize}
+
+\subsection{Confidence Interval Intuition}
+
+A test error estimate is itself random. If repeated on different samples, it would vary. Confidence intervals quantify this uncertainty:
+\begin{itemize}
+    \item larger test sets give narrower intervals,
+    \item high-variance models produce more variable estimates.
+\end{itemize}
+
+Even without formal derivation, it is important to interpret reported performance as an estimate with uncertainty, not an exact value.
+
+\section{A Unifying Perspective}
+
+Model evaluation connects statistical theory with practical methodology. It answers:
+\begin{itemize}
+    \item how to estimate performance,
+    \item how to compare models,
+    \item how to choose hyperparameters,
+    \item how to avoid misleading conclusions.
+\end{itemize}
+
+The guiding principle is separation of roles:
+\[
+\text{training data} \;\neq\; \text{validation data} \;\neq\; \text{test data}.
+\]
+Violating this separation undermines the reliability of evaluation.
+
+\section{Summary}
+
+In this chapter we studied model evaluation and selection as a methodological discipline. We defined risk estimation, reviewed regression and classification metrics, and explained why different tasks require different evaluation criteria. We introduced validation strategies including cross-validation and emphasized proper use of test data.
+
+We also discussed hyperparameter search, data leakage, confounding effects, and reproducibility. Finally, we noted that performance estimates are subject to uncertainty and should be interpreted accordingly. These principles are essential for trustworthy machine learning practice.

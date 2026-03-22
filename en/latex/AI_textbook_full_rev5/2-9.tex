@@ -1,0 +1,422 @@
+\section{Case Studies and Worked Examples}
+\markright{2.9.\ Case Studies and Worked Examples}
+\thispagestyle{plain}
+
+The chapter has now developed the main conceptual pieces of deep learning:
+linear models and their limits,
+hidden representations,
+backpropagation,
+optimization difficulty,
+stabilization mechanisms,
+and residual architecture.
+A final section should not merely repeat those ideas.
+It should force them to act on small problems where every step can be inspected.
+
+\medskip
+
+For that reason, this section is best understood as the chapter's \emph{consolidation lab}.
+The examples are deliberately tiny.
+They are not meant to impress by scale.
+They are meant to make the chapter operational.
+By the end of the section, students should be able to:
+\begin{itemize}
+    \item identify when a linear model is sufficient and when it is not,
+    \item explain why hidden layers become necessary on problems such as XOR,
+    \item carry out a full forward and backward pass by hand on a tiny network,
+    \item compare plain and residual parameterizations on a near-identity task,
+    \item explain the difference between fixed nonlinear features and learned representations.
+\end{itemize}
+
+\subsection*{Perceptron on linearly separable data}
+
+We begin with the simplest successful case.
+Consider points in $\mathbb R^2$ labeled by the sign of
+\[
+ x_1+x_2-1.
+\]
+For example,
+\[
+(0,0)\mapsto 0,
+\qquad
+(1,0)\mapsto 0,
+\qquad
+(0,1)\mapsto 0,
+\qquad
+(1,1)\mapsto 1,
+\]
+and any point with $x_1+x_2>1$ belongs to class $1$.
+This dataset is linearly separable because the line
+\[
+ x_1+x_2=1
+\]
+separates the two classes.
+
+\medskip
+
+A perceptron with score
+\[
+ f(x)=w^\top x+b
+\]
+and prediction given by thresholding at zero can solve the task exactly.
+For instance,
+\[
+ w=\begin{pmatrix}1\\1\end{pmatrix},
+ \qquad
+ b=-1
+\]
+works immediately.
+
+\medskip
+
+This is the right first reminder for the chapter.
+Deep learning does not replace the linear viewpoint when the geometry is already linear.
+On linearly separable data, the simplest model class is already appropriate.
+The point of depth is not to abandon linear ideas, but to go beyond them when the data demand richer coordinates.
+
+\subsection*{XOR and the necessity of hidden layers}
+
+The XOR problem is the smallest example showing that a linear separator can fail for structural rather than optimization reasons.
+Let
+\[
+ y=x_1\oplus x_2,
+\]
+so the four input-output pairs are
+\[
+(0,0)\mapsto 0,
+\qquad
+(1,0)\mapsto 1,
+\qquad
+(0,1)\mapsto 1,
+\qquad
+(1,1)\mapsto 0.
+\]
+The positive points are the off-diagonal corners of the unit square, while the negative points are the diagonal corners.
+No single affine decision boundary separates them.
+
+\medskip
+
+So the failure of a linear model on XOR is not due to poor training.
+It is due to the geometry of the model class itself.
+A hidden layer becomes necessary because the representation must change.
+
+\medskip
+
+A small ReLU construction makes this concrete.
+Define
+\[
+ h_1(x)=\mathrm{ReLU}(x_1+x_2),
+ \qquad
+ h_2(x)=\mathrm{ReLU}(x_1+x_2-1),
+\]
+and then define the output
+\[
+ f(x)=h_1(x)-2h_2(x).
+\]
+Direct evaluation gives
+\[
+ f(0,0)=0,
+ \qquad
+ f(1,0)=1,
+ \qquad
+ f(0,1)=1,
+ \qquad
+ f(1,1)=0.
+\]
+Thus a one-hidden-layer network can represent XOR exactly.
+
+\medskip
+
+The important lesson is not the specific formula.
+It is the mechanism.
+The hidden layer creates new intermediate coordinates, and the output layer becomes simple in those learned coordinates.
+That is representation learning in miniature.
+
+\subsection*{A tiny backpropagation example}
+
+The next example is the computational core of the chapter.
+We will perform one full forward pass and one backward pass by hand on a tiny network.
+Consider a network with two inputs, two hidden units, and one scalar output:
+\[
+ z^{(1)} = W^{(1)}x+b^{(1)},
+ \qquad
+ h=\sigma\bigl(z^{(1)}\bigr),
+ \qquad
+ \hat y = W^{(2)}h+b^{(2)}.
+\]
+Take
+\[
+ x=\begin{pmatrix}1\\0\end{pmatrix},
+ \qquad
+ y=1,
+\]
+choose sigmoid hidden units,
+\[
+ \sigma(t)=\frac{1}{1+e^{-t}},
+\]
+and use the parameter values
+\[
+ W^{(1)}=
+ \begin{pmatrix}
+ 1 & -1\\
+ 0 & 1
+ \end{pmatrix},
+ \qquad
+ b^{(1)}=
+ \begin{pmatrix}
+ 0\\0
+ \end{pmatrix},
+ \qquad
+ W^{(2)}=
+ \begin{pmatrix}1 & -1\end{pmatrix},
+ \qquad
+ b^{(2)}=0.
+\]
+Let the loss be the squared error
+\[
+ L=\frac12(\hat y-y)^2.
+\]
+
+\paragraph{Forward pass.}
+First compute the hidden preactivation:
+\[
+ z^{(1)}=W^{(1)}x+b^{(1)}
+ =
+ \begin{pmatrix}
+ 1 & -1\\
+ 0 & 1
+ \end{pmatrix}
+ \begin{pmatrix}1\\0\end{pmatrix}
+ =
+ \begin{pmatrix}1\\0\end{pmatrix}.
+\]
+Therefore
+\[
+ h=
+ \begin{pmatrix}
+ \sigma(1)\\
+ \sigma(0)
+ \end{pmatrix}
+ =
+ \begin{pmatrix}
+ 0.7311\\
+ 0.5
+ \end{pmatrix}
+ \quad\text{approximately.}
+\]
+Now compute the output:
+\[
+ \hat y = W^{(2)}h+b^{(2)} = 1\cdot 0.7311-1\cdot 0.5 = 0.2311.
+\]
+So the loss is
+\[
+ L=\frac12(0.2311-1)^2 \approx 0.2956.
+\]
+
+\paragraph{Backward pass.}
+The derivative of the loss with respect to the scalar output is
+\[
+ \frac{\partial L}{\partial \hat y}=\hat y-y=0.2311-1=-0.7689.
+\]
+Hence the gradients at the second layer are
+\[
+ \frac{\partial L}{\partial W^{(2)}}
+ =
+ \frac{\partial L}{\partial \hat y}\, h^\top
+ =
+ -0.7689
+ \begin{pmatrix}
+ 0.7311 & 0.5
+ \end{pmatrix}
+ =
+ \begin{pmatrix}
+ -0.5621 & -0.3845
+ \end{pmatrix},
+\]
+and
+\[
+ \frac{\partial L}{\partial b^{(2)}}=-0.7689.
+\]
+
+Next backpropagate into the hidden units:
+\[
+ \frac{\partial L}{\partial h}
+ =
+ \left(W^{(2)}\right)^\top
+ \frac{\partial L}{\partial \hat y}
+ =
+ \begin{pmatrix}1\\-1\end{pmatrix}(-0.7689)
+ =
+ \begin{pmatrix}-0.7689\\0.7689\end{pmatrix}.
+\]
+For sigmoid units,
+\[
+ \sigma'(t)=\sigma(t)(1-\sigma(t)).
+\]
+Thus
+\[
+ \sigma'(1)=0.7311(1-0.7311)\approx 0.1966,
+ \qquad
+ \sigma'(0)=0.25.
+\]
+So
+\[
+ \frac{\partial L}{\partial z^{(1)}}
+ =
+ \frac{\partial L}{\partial h}\odot \sigma'\bigl(z^{(1)}\bigr)
+ =
+ \begin{pmatrix}-0.7689\\0.7689\end{pmatrix}
+ \odot
+ \begin{pmatrix}0.1966\\0.25\end{pmatrix}
+ =
+ \begin{pmatrix}-0.1512\\0.1922\end{pmatrix}
+ \quad\text{approximately.}
+\]
+Finally,
+\[
+ \frac{\partial L}{\partial W^{(1)}}
+ =
+ \frac{\partial L}{\partial z^{(1)}}x^\top
+ =
+ \begin{pmatrix}-0.1512\\0.1922\end{pmatrix}
+ \begin{pmatrix}1 & 0\end{pmatrix}
+ =
+ \begin{pmatrix}
+ -0.1512 & 0\\
+ 0.1922 & 0
+ \end{pmatrix},
+\]
+and
+\[
+ \frac{\partial L}{\partial b^{(1)}}
+ =
+ \begin{pmatrix}-0.1512\\0.1922\end{pmatrix}.
+\]
+
+\medskip
+
+This small calculation is worth doing slowly.
+It shows exactly what backpropagation is: not magic, but systematic reuse of intermediate derivatives through the chain rule.
+
+\subsection*{Plain versus residual parameterization on a near-identity task}
+
+Now consider a task where the desired map is very close to the identity, such as
+\[
+ H(x)=x+0.1\sin(x)
+\]
+in one dimension.
+A plain block is asked to learn the entire map $H$ directly.
+A residual block instead writes
+\[
+ H(x)=x+F(x)
+\]
+with
+\[
+ F(x)=0.1\sin(x).
+\]
+
+\medskip
+
+The representational content is the same, but the parameterization is different.
+In the plain parameterization, the model must simultaneously preserve the input and learn the correction.
+In the residual parameterization, preservation is built in and the model needs only to learn the small change.
+
+\medskip
+
+This is exactly why residual connections help optimization.
+When the useful transformation is close to identity, the residual branch can stay small and the shortcut carries the main signal directly.
+The network is therefore biased toward stable information flow rather than repeated reconstruction.
+
+\subsection*{Kernel versus neural representation on a toy nonlinear dataset}
+
+Consider a nonlinear dataset such as concentric circles in $\mathbb R^2$.
+A linear classifier in the raw input coordinates fails because its decision boundaries are lines rather than circles.
+A classical remedy is to introduce a handcrafted nonlinear feature such as the squared radius:
+\[
+ \phi(x)=x_1^2+x_2^2.
+\]
+Then classification can be done by a linear rule in the lifted coordinate $\phi(x)$.
+This is the kernel or fixed-feature viewpoint.
+
+\medskip
+
+A neural network approaches the same problem differently.
+Instead of specifying the right nonlinear feature in advance, it learns hidden coordinates from data:
+\[
+ x \mapsto h(x) \mapsto \hat y.
+\]
+The final predictor may again be simple, but the hidden representation is learned rather than prescribed.
+
+\medskip
+
+So the difference is not merely that both methods are nonlinear.
+The difference is \emph{where the representation comes from}:
+\begin{itemize}
+    \item a kernel or feature-engineering approach uses a fixed lifting chosen before seeing the task in full,
+    \item a neural-network approach learns the lifting from the training process itself.
+\end{itemize}
+
+\medskip
+
+This comparison helps consolidate one of the chapter's main messages.
+Deep learning did not abolish the classical idea of feature maps.
+It made feature construction adaptive.
+
+\commonconfusion{A worked example is not only for checking arithmetic. Its main value is conceptual. When students compute one full forward and backward pass by hand, they see where each derivative comes from, why the chain rule is organized layer by layer, and why hidden representations matter. The goal is understanding, not clerical repetition.}
+
+\whattoremember{This section is the chapter's consolidation lab. A perceptron succeeds on linearly separable data because the geometry already matches the model class. XOR shows that hidden layers can be necessary, not optional. A tiny backpropagation calculation reveals the actual mechanics of gradient computation. Residual parameterization explains why learning a correction can be easier than learning a full map. The kernel-versus-neural comparison shows the conceptual move from fixed nonlinear features to learned representations.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Consider the linearly separable dataset
+\[
+(0,0)\mapsto 0,
+\quad
+(1,0)\mapsto 0,
+\quad
+(0,1)\mapsto 0,
+\quad
+(1,1)\mapsto 1.
+\]
+Find one choice of perceptron parameters $w\in\mathbb R^2$ and $b\in\mathbb R$ that classifies all four points correctly.
+Then explain geometrically why the same task does not require a hidden layer.
+\end{exercise}
+
+\begin{exercise}
+Show that XOR is not linearly separable.
+Your argument may be geometric or algebraic, but it should make clear why no affine decision boundary can place the two off-diagonal points on one side and the two diagonal points on the other.
+\end{exercise}
+
+\begin{exercise}
+Repeat the tiny backpropagation example in this section, but replace the target value $y=1$ by $y=0$.
+Compute the new forward pass, the loss, and all gradients by hand.
+Which signs change, and why?
+\end{exercise}
+
+\begin{exercise}
+Perform one gradient-descent update step on the tiny network using learning rate $\eta=0.1$ and the gradients computed in the worked example.
+Then recompute the output $\hat y$ on the same input.
+Did the prediction move closer to the target?
+\end{exercise}
+
+\begin{exercise}
+Explain informally why a residual parameterization may be easier to optimize than a plain parameterization on a task close to the identity.
+Your answer should refer to both signal preservation and the size of the learned correction.
+\end{exercise}
+
+\begin{exercise}
+On a toy nonlinear classification problem such as concentric circles, compare the following three viewpoints:
+\begin{enumerate}
+    \item linear prediction in the raw coordinates,
+    \item linear prediction after a fixed nonlinear feature map,
+    \item linear prediction after a learned hidden representation.
+\end{enumerate}
+What does each viewpoint assume about where useful coordinates come from?
+\end{exercise}
+
+\subsection*{Notes and references}
+
+This section is designed to consolidate the chapter rather than add new theory.
+The perceptron example reminds students that deep methods are not always necessary, while XOR remains the canonical miniature example showing why hidden layers can qualitatively enlarge representational power.
+The tiny backpropagation calculation is pedagogically central: students should leave the chapter able to execute a complete forward and backward pass by hand on a very small network.
+The plain-versus-residual comparison connects the worked examples back to the architecture story, and the kernel-versus-neural comparison closes the loop between classical feature design and learned representation.

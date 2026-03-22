@@ -1,0 +1,163 @@
+\documentclass[11pt]{book}
+
+% ---------- Encoding, fonts, and page quality ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% ---------- Page layout ----------
+\usepackage[margin=1in]{geometry}
+
+% ---------- Mathematics ----------
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{bm}
+
+% ---------- Graphics, figures, and tables ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{tikz-cd}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta, calc, positioning, decorations.pathreplacing, patterns, matrix, fit, backgrounds}
+
+% ---------- Lists and quotations ----------
+\usepackage{enumitem}
+\setlist[itemize]{topsep=4pt,itemsep=2pt,parsep=0pt}
+\setlist[enumerate]{topsep=4pt,itemsep=2pt,parsep=0pt}
+\usepackage{csquotes}
+
+% ---------- Hyperlinks and cross-references ----------
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+% ---------- Optional bibliography support ----------
+\IfFileExists{references.bib}{%
+  \usepackage[backend=biber,style=alphabetic,maxbibnames=99]{biblatex}
+  \addbibresource{references.bib}
+}{}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{statement}[theorem]{Statement}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\chapterroadmap}[1]{%
+\begin{quote}\small\noindent\textbf{Chapter roadmap.} #1\end{quote}}
+\newcommand{\whattoremember}[1]{\paragraph{What to remember.} #1}
+\newcommand{\commonconfusion}[1]{\paragraph{Common confusion.} #1}
+\newcommand{\historicalnote}[1]{\paragraph{Historical note.} #1}
+\newcommand{\chaptersummary}{\section*{Chapter Summary}\addcontentsline{toc}{section}{Chapter Summary}}
+\newcommand{\chapterexercises}{\section*{Exercises}\addcontentsline{toc}{section}{Exercises}}
+\newcommand{\notesandreferences}{\section*{Notes and References}\addcontentsline{toc}{section}{Notes and References}}
+\newcommand{\sectionnotes}[1]{%
+\paragraph{Notes and references.} #1}
+
+\newcommand{\placeholderfigure}[2]{%
+\begin{figure}[tbp]
+\centering
+\fbox{\parbox{0.85\textwidth}{\textbf{Figure placeholder:} #1\\[4pt]\emph{Designer note:} #2}}
+\caption{#1}
+\end{figure}}
+
+\title{Artificial Intelligence: A Mathematical and Engineering Perspective}
+\author{}
+\date{March 2026}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+\mainmatter
+
+\chapter{Learning from Data: Models, Prediction, and Generalization}
+\include{1-1}
+\include{1-2}
+\include{1-3}
+\include{1-4}
+\include{1-5}
+\include{1-6}
+\include{1-7}
+
+\chapter{Neural Networks and the Rise of Deep Learning}
+\include{2-1}
+\include{2-2}
+\include{2-3}
+\include{2-4}
+\include{2-5}
+\include{2-6}
+\include{2-7}
+\include{2-8}
+\include{2-9}
+\include{2-10}
+
+\chapter{Architecture and Inductive Bias in Deep Learning}
+\include{3-1}
+\include{3-2}
+\include{3-3}
+\include{3-4}
+\include{3-5}
+\include{3-6}
+\include{3-7}
+\include{3-8}
+\include{3-9}
+\include{3-10}
+
+\chapter{Representation Learning, Transfer, and Foundation Models}
+\include{4-1}
+\include{4-2}
+\include{4-3}
+\include{4-4}
+\include{4-5}
+\include{4-6}
+\include{4-7}
+\include{4-8}
+\include{4-9}
+
+\chapter{Generative Modeling and Generative AI}
+\include{5-1}
+\include{5-2}
+\include{5-3}
+\include{5-4}
+\include{5-5}
+\include{5-6}
+\include{5-7}
+\include{5-8}
+\include{5-9}
+\include{5-10}
+
+\chapter{Understanding Deep Learning: Generalization, Reliability, and Open Questions}
+\include{6-1}
+\include{6-2}
+\include{6-3}
+\include{6-4}
+\include{6-5}
+\include{6-6}
+\include{6-7}
+
+\backmatter
+\IfFileExists{references.bib}{\printbibliography}{}
+
+\end{document}
+

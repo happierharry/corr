@@ -1,0 +1,298 @@
+\section{From Task-Specific Prediction to Reusable Representation}
+
+Chapters 1 and 2 introduced learning as function approximation and deep learning as the practice of learning representations rather than hand-crafting features.
+Chapter 3 then emphasized that architecture matters because it imposes inductive bias.
+This chapter studies a further modern shift:
+we increasingly train models not only to solve a single task, but to acquire internal structure that can be reused across many tasks.
+
+\medskip
+
+The central thesis of the chapter is simple but important.
+Modern machine learning increasingly learns \emph{reusable internal coordinates}.
+A good representation organizes raw inputs into a space in which many downstream tasks become easier to express, learn, and adapt.
+This is the conceptual core of pretraining, transfer learning, self-supervision, and foundation models.
+
+\subsection*{From a single predictor to a representation-plus-head decomposition}
+
+In the most classical supervised-learning picture, one trains a predictor
+\[
+f : X \to Y
+\]
+directly for one specified task.
+Given training examples \((x_i,y_i)\), the objective is to choose a function from a hypothesis class that minimizes empirical risk and hopefully generalizes.
+This perspective remains correct, but it hides an important internal factorization.
+Many modern systems are better viewed as
+\[
+f = g \circ \phi,
+\]
+where
+\[
+\phi : X \to Z
+\]
+is a representation map and
+\[
+g : Z \to Y
+\]
+is a downstream predictor.
+
+\begin{definition}[Representation]
+Let \(X\) be an input space and \(Z\) a feature or latent space.
+A \emph{representation} is a map
+\[
+\phi : X \to Z
+\]
+that assigns to each input \(x \in X\) a coded description \(z = \phi(x)\).
+The representation is useful for a task if a predictor acting on \(z\) can solve that task more simply, more robustly, or with less labeled data than a predictor acting directly on raw inputs.
+\end{definition}
+
+This definition is deliberately broad.
+The representation might be a hidden layer of a neural network, an embedding vector, a sequence of token features, a set of patch embeddings, or a learned state summarizing a time series.
+The key point is that the representation is not itself the final answer.
+It is an intermediate coordinate system in which answers become easier to extract.
+
+\medskip
+
+Once we write \(f = g \circ \phi\), the learning problem splits into two conceptual parts:
+\begin{itemize}
+    \item \(\phi\) learns how to organize the input space,
+    \item \(g\) learns how to read out the information needed for a particular task.
+\end{itemize}
+This decomposition is one of the deepest structural ideas in modern machine learning.
+It says that part of what is learned should be \emph{reusable}.
+
+\subsection*{Task-specific features versus transferable features}
+
+A feature is \emph{task-specific} if it is useful mainly for one narrowly defined prediction problem.
+For example, if one trains a classifier only to distinguish cats from dogs, the internal representation may organize the data in a way highly tuned to that distinction.
+That can work well for the original task while being of limited use for retrieval, captioning, segmentation, or medical anomaly detection.
+
+By contrast, a feature is \emph{transferable} if it participates in many tasks.
+Edges, shapes, object parts, syntax, semantic relations, speaker characteristics, and latent dynamical state are all examples of structure that can be useful beyond one label space.
+A representation is therefore more transferable when it captures regularities of the data-generating process rather than merely memorizing the decision boundary of one benchmark.
+
+A useful formal way to express this is through a family of tasks.
+Let \(\mathcal{T}\) index tasks, with each task \(t \in \mathcal{T}\) having target space \(Y_t\), distribution \(P_t\) over \(X \times Y_t\), and downstream predictor class \(\mathcal{G}_t\) acting on \(Z\).
+The same representation \(\phi\) is used for all tasks, while the readout \(g_t\) may vary with the task.
+
+\begin{definition}[Transferable representation relative to a task family]
+Let \(\{(P_t,\mathcal{G}_t): t \in \mathcal{T}\}\) be a family of downstream learning problems.
+A representation \(\phi : X \to Z\) is \emph{transferable} relative to this family if, for many tasks \(t\), there exists a comparatively simple predictor \(g_t \in \mathcal{G}_t\) such that
+\[
+R_t(g_t \circ \phi)
+\]
+is small, where \(R_t\) denotes the population risk on task \(t\).
+\end{definition}
+
+This definition is intentionally qualitative in one place: what counts as ``simple'' depends on context.
+Sometimes simplicity means linear probes.
+Sometimes it means small sample complexity, shallow heads, or minimal fine-tuning.
+The main idea is stable: a good representation turns many tasks into easy readout problems.
+
+\subsection*{A fixed representation induces a new hypothesis class}
+
+Once \(\phi\) is fixed, the downstream learner no longer searches over arbitrary functions on \(X\).
+Instead it searches over functions on \(Z\), then composes them with \(\phi\).
+This induces a precise new hypothesis class.
+
+\begin{proposition}[A fixed representation induces a hypothesis class over \(X\)]
+Let \(\phi : X \to Z\) be fixed, and let \(\mathcal{G}\) be a class of predictors \(g : Z \to Y\).
+Define
+\[
+\mathcal{H}_{\phi}
+=
+\{g \circ \phi : g \in \mathcal{G}\}.
+\]
+Then \(\mathcal{H}_{\phi}\) is a hypothesis class on \(X\).
+Moreover, empirical risk minimization over \(\mathcal{G}\) on transformed examples \((\phi(x_i),y_i)\) is exactly empirical risk minimization over \(\mathcal{H}_{\phi}\) on the original examples \((x_i,y_i)\).
+\end{proposition}
+
+\paragraph{Proof sketch.}
+For every \(g \in \mathcal{G}\), the composition \(g \circ \phi\) is a function from \(X\) to \(Y\), so \(\mathcal{H}_{\phi}\) is a valid hypothesis class on \(X\).
+Now consider the empirical objective
+\[
+\frac{1}{n}\sum_{i=1}^n \ell(g(\phi(x_i)),y_i).
+\]
+This is numerically identical to
+\[
+\frac{1}{n}\sum_{i=1}^n \ell(h(x_i),y_i)
+\quad\text{with}\quad h = g \circ \phi.
+\]
+Thus minimizing over \(g \in \mathcal{G}\) on transformed data is the same optimization problem as minimizing over \(h \in \mathcal{H}_{\phi}\) on the original data.
+\qed
+
+This proposition may look obvious, but it is conceptually powerful.
+A representation is not just a convenient hidden layer.
+It changes the effective hypothesis class available to the learner.
+When \(\phi\) is well chosen, difficult nonlinear structure in \(X\) may become easy linear or low-complexity structure in \(Z\).
+When \(\phi\) is poorly chosen, even simple downstream tasks may remain hard.
+
+\begin{example}[Linear probes as a restricted readout class]
+If \(\mathcal{G}\) is the class of affine maps on \(Z = \mathbb{R}^m\), then
+\[
+\mathcal{H}_{\phi}
+=
+\{x \mapsto w^{\top}\phi(x) + b : w \in \mathbb{R}^m,\; b \in \mathbb{R}\}.
+\]
+This is the hypothesis class induced by \emph{linear probing}.
+The probe is linear in representation space even if the resulting predictor is highly nonlinear as a function of the original input \(x\).
+\end{example}
+
+So linear probing is not a contradiction.
+It is simple in \(Z\), but it can correspond to a sophisticated decision rule in \(X\) because the nonlinearity has been delegated to the representation map.
+
+\subsection*{Why reusable representations are valuable}
+
+The task-specific paradigm asks us to collect labeled data and solve each task separately.
+That strategy becomes expensive when tasks are numerous or labels are costly.
+In many realistic domains, however, unlabeled or weakly labeled data are abundant.
+Language is everywhere.
+Images and video are easy to collect.
+Sensor streams, scientific measurements, and interaction traces can be massive.
+What is scarce is often not data itself but task-specific supervision.
+
+This asymmetry motivates pretraining.
+One first learns a representation on broad data, often using a generic objective such as prediction, masking, contrast, reconstruction, or next-token modeling.
+One then adapts the model to a downstream task by training a small head, fine-tuning part of the model, or fine-tuning all of it.
+The reusable component is the representation.
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.93\textwidth}
+\centering
+\textbf{Pretrain--then--adapt pipeline}
+
+\vspace{0.6em}
+\begin{tabular}{c}
+Large raw dataset \(\{x\}\) \\
+\(\downarrow\) pretraining objective \\
+Learn shared representation map \(\phi_{\theta} : X \to Z\) \\
+\(\downarrow\) reuse across tasks \\
+\begin{tabular}{ccc}
+Task A head \(g_A\) & Task B head \(g_B\) & Task C head \(g_C\)
+\end{tabular} \\
+\(\downarrow\) \\
+Predictors \(g_A \circ \phi_{\theta}\), \(g_B \circ \phi_{\theta}\), \(g_C \circ \phi_{\theta}\)
+\end{tabular}
+\end{minipage}}
+\caption{A schematic picture of the modern pipeline.
+The shared representation is learned first and then adapted or probed for multiple downstream tasks.
+The central claim of representation learning is that the same internal coordinates can support many different predictors.}
+\end{figure}
+
+The pipeline can be realized in different ways.
+Sometimes the representation is frozen and only a probe is trained.
+Sometimes the whole model is fine-tuned.
+Sometimes adaptation is done by prompts, low-rank updates, or small inserted modules.
+The engineering details differ, but the conceptual structure is the same:
+learn reusable internal organization first, specialize later.
+
+\subsection*{A worked example: linear probing after representation learning}
+
+A toy example makes the geometry explicit.
+Suppose our input space is \(X = \mathbb{R}^2\), and the classification problem is to distinguish points on an inner circle of radius \(1\) from points on an outer circle of radius \(2\).
+In the original space \(X\), these classes are not linearly separable by a straight line.
+No affine function
+\[
+x \mapsto a^{\top}x + b
+\]
+can separate one circle from the other.
+
+Now define the representation
+\[
+\phi(x) = \|x\|^2.
+\]
+This maps each point in \(\mathbb{R}^2\) to a scalar in \(Z = \mathbb{R}\).
+For points on the inner circle,
+\[
+\phi(x) = 1,
+\]
+and for points on the outer circle,
+\[
+\phi(x) = 4.
+\]
+A linear probe on \(Z\) takes the form
+\[
+g(z) = wz + b.
+\]
+Choose \(w = 1\) and \(b = -\tfrac52\).
+Then
+\[
+g(1) = -\tfrac32 < 0,
+\qquad
+ g(4) = \tfrac32 > 0.
+\]
+Thus the classifier
+\[
+\hat y = \mathrm{sign}(g(\phi(x)))
+\]
+perfectly separates the two classes.
+
+\begin{example}[What the probe is really telling us]
+The downstream classifier is linear only in the representation space \(Z\), not in the original input space \(X\).
+The nonlinear geometric work was done by \(\phi\), which collapsed radial information into a one-dimensional coordinate.
+This is why linear probes are informative.
+If a simple probe succeeds, it suggests that the representation has already organized the relevant task information into an accessible form.
+\end{example}
+
+This example is intentionally small, but it captures a general pattern.
+A representation can convert a hard decision boundary in raw input space into a simple separator in latent space.
+Modern deep learning uses very high-dimensional and learned versions of the same idea.
+Instead of hand-defining \(\phi(x)=\|x\|^2\), the model learns a representation from data.
+A linear or shallow downstream head then tests what information has become explicit.
+
+\subsection*{What is modern about this picture}
+
+It is tempting to think that representation learning is merely an implementation detail inside neural networks.
+That would miss the historical shift.
+Earlier machine learning often treated features as external to the learner: one engineered them first and then trained a predictor.
+Deep learning already changed this by learning internal features jointly with the task.
+The more recent development goes further still:
+large-scale pretraining seeks features that are not tied to one task at all.
+The representation becomes a reusable computational resource.
+
+This is why the language of ``foundation models'' emerged.
+A foundation model is not defined only by parameter count or benchmark accuracy.
+Its defining ambition is to provide a broadly reusable representational substrate from which many downstream capabilities can be adapted.
+That ambition raises scientific questions as well as engineering ones.
+What kinds of pretraining objectives induce transferable structure?
+How should one measure transferability?
+When does a representation support linear probing, and when does it require deeper adaptation?
+What parts of a learned representation are robust, spurious, or task-dependent?
+These are central themes of the rest of the chapter.
+
+\paragraph{What to remember.}
+A representation is a map \(\phi : X \to Z\) that organizes raw data into a space where downstream prediction becomes easier.
+Modern predictors are often best understood as compositions \(g \circ \phi\).
+Once \(\phi\) is fixed, the downstream learner operates in an induced hypothesis class \(\mathcal{H}_{\phi} = \{g \circ \phi : g \in \mathcal{G}\}\).
+Transferable representations are those that allow many tasks to be solved by relatively simple readouts.
+The pretrain--then--adapt paradigm is built on the claim that reusable internal coordinates can be learned once and reused many times.
+
+\paragraph{Common confusion.}
+A reusable representation is not the same thing as a universally optimal representation.
+Transfer is always relative to a family of tasks and a notion of downstream simplicity.
+It is also easy to think that linear probing means the original problem was linear.
+That is false:
+a problem can be highly nonlinear in \(X\) while becoming linearly separable after a learned map into \(Z\).
+Finally, pretraining does not guarantee transfer.
+A representation can be excellent for one distribution or objective and poor for another.
+
+\paragraph{Exercises.}
+\begin{enumerate}
+    \item Let \(\phi : X \to Z\) be fixed and let \(\mathcal{G}\) be a downstream hypothesis class on \(Z\).
+    Prove carefully that empirical risk minimization over \(\mathcal{G}\) on transformed data is equivalent to empirical risk minimization over \(\mathcal{H}_{\phi} = \{g \circ \phi : g \in \mathcal{G}\}\) on the original data.
+    \item Give an example of a feature that is useful for one classification task but unlikely to transfer well to a broader family of tasks.
+    Explain why it is task-specific rather than reusable.
+    \item In the concentric-circle example, verify that no affine classifier on \(\mathbb{R}^2\) can separate the inner circle from the outer circle, but that a threshold on \(\|x\|^2\) can.
+    \item Suppose \(\phi : \mathbb{R}^d \to \mathbb{R}^m\) is learned and a downstream task uses a linear probe.
+    Write the resulting predictor explicitly and explain why it may still define a nonlinear decision boundary in the original input space.
+    \item Compare two adaptation strategies after pretraining: freezing \(\phi\) and training only \(g\), versus fine-tuning both \(\phi\) and \(g\).
+    What are the likely advantages and risks of each?
+\end{enumerate}
+
+\paragraph{Notes and references.}
+For broad perspectives on representation learning, see Bengio, Courville, and Vincent on representation learning and Goodfellow, Bengio, and Courville on deep learning.
+For transfer learning as a general paradigm, Pan and Yang remain a standard reference.
+The diagnostic use of linear classifiers on top of learned features appears throughout the modern literature on probing and representation evaluation.
+Historically, the conceptual shift in this section leads directly to self-supervised learning, large-scale pretraining, and foundation-model thinking:
+the common thread is the attempt to learn internal coordinates that outlive any one benchmark task.

@@ -1,0 +1,419 @@
+\section{Gating and the Control of Memory}
+
+The analysis of the previous section revealed the central weakness of naive recurrence.
+A simple recurrent update stores the past only by repeatedly rewriting one hidden state through a nonlinear map.
+That mechanism is expressive, but it makes long-range memory fragile.
+If useful information must survive for many time steps, then gradients must also survive for many time steps, and in a plain RNN both are transported through long products of Jacobians.
+This is why recurrence is not merely a modeling idea but also an optimization problem.
+
+\medskip
+
+Gated recurrent architectures were designed as a structural answer to this difficulty.
+The main insight is that memory should not be updated in one homogeneous way.
+A model should be able to decide when to write new information, when to preserve existing information, when to erase obsolete information, and when to expose internal state to the output.
+In other words, information flow should itself be learnable.
+This is the meaning of gating.
+
+\medskip
+
+The purpose of this section is to treat gating as a formal mechanism for memory control.
+We will write the full LSTM and GRU equations, define the gates precisely, explain why additive memory pathways help preserve gradients, and compare naive RNNs, LSTMs, and GRUs from the viewpoint of discrete-time dynamical systems.
+The main thesis is that gating is not cosmetic.
+It changes the geometry of optimization and the way information is transported through time.
+
+\subsection*{From homogeneous recurrence to controlled recurrence}
+
+In a plain RNN one typically writes
+\[
+ h_t = \sigma(W_h h_{t-1} + W_x x_t + b).
+\]
+Every coordinate of the hidden state is updated by the same broad mechanism at every time step.
+The model may learn to use that hidden state well, but it has no explicit structural distinction between at least four logically different operations:
+\begin{itemize}
+    \item storing new information,
+    \item preserving old information,
+    \item forgetting information that is no longer relevant,
+    \item exposing only part of the internal state to the outside.
+\end{itemize}
+A single recurrent map can in principle approximate such behavior, but the burden is placed entirely on the learned weights and nonlinearity.
+Gated architectures instead build these roles into the architecture itself.
+
+\medskip
+
+This is an instance of the general chapter theme.
+Architecture injects prior structural assumptions into learning.
+For sequence problems, one useful assumption is that memory management should be decomposed into distinct, learnable channels.
+The resulting inductive bias does not specify \emph{what} should be remembered; it specifies \emph{how} remembering and forgetting may occur.
+
+\subsection*{Core definitions}
+
+\begin{definition}[Gate]
+A \emph{gate} is a learnable multiplicative control variable, usually taking values in $[0,1]$ coordinatewise, that modulates the flow of information through a recurrent architecture.
+If $g_t \in [0,1]^d$ is a gate and $u_t \in \mathbb{R}^d$ is a vector of candidate information, then the gated signal is often represented coordinatewise by $g_t \odot u_t$, where $\odot$ denotes the Hadamard product.
+Coordinates of $g_t$ near $1$ tend to pass information through, whereas coordinates near $0$ tend to suppress it.
+\end{definition}
+
+\begin{definition}[Input, forget, and output gates]
+In an LSTM, the \emph{input gate} controls how much newly proposed information is written into memory, the \emph{forget gate} controls how much of the old cell state is retained, and the \emph{output gate} controls how much of the internal cell state is revealed to the exposed hidden state.
+These gates are vectors in $[0,1]^d$ computed from the current input and the previous hidden state.
+\end{definition}
+
+\begin{definition}[Additive memory pathway]
+An \emph{additive memory pathway} is a recurrence in which part of the new memory state is obtained by adding a gated version of the old memory state to a gated candidate update, rather than by applying one fully nonlinear transformation to the entire previous state.
+Such pathways create routes along which information may persist with less repeated distortion.
+\end{definition}
+
+\begin{definition}[Controlled recurrent dynamical system]
+A gated recurrent network is a \emph{controlled recurrent dynamical system} whose state update depends not only on the previous state and the input but also on internal control variables (the gates) that determine how information is written, preserved, or exposed.
+\end{definition}
+
+\subsection*{Long short-term memory}
+
+The long short-term memory (LSTM) architecture introduces two state variables at each time step:
+\begin{itemize}
+    \item the \emph{cell state} $c_t \in \mathbb{R}^d$, which acts as internal memory,
+    \item the \emph{hidden state} $h_t \in \mathbb{R}^d$, which is the exposed state used for communication with the rest of the network.
+\end{itemize}
+Given an input $x_t \in \mathbb{R}^m$, the standard LSTM equations are
+\begin{align*}
+ i_t &= \sigma(W_i x_t + U_i h_{t-1} + b_i),\\
+ f_t &= \sigma(W_f x_t + U_f h_{t-1} + b_f),\\
+ o_t &= \sigma(W_o x_t + U_o h_{t-1} + b_o),\\
+ \widetilde{c}_t &= \tanh(W_c x_t + U_c h_{t-1} + b_c),\\
+ c_t &= f_t \odot c_{t-1} + i_t \odot \widetilde{c}_t,\\
+ h_t &= o_t \odot \tanh(c_t).
+\end{align*}
+Here:
+\begin{itemize}
+    \item $i_t$ is the \emph{input gate},
+    \item $f_t$ is the \emph{forget gate},
+    \item $o_t$ is the \emph{output gate},
+    \item $\widetilde{c}_t$ is the \emph{candidate cell update}.
+\end{itemize}
+
+\medskip
+
+The key equation is the cell-state update
+\[
+ c_t = f_t \odot c_{t-1} + i_t \odot \widetilde{c}_t.
+\]
+Unlike the hidden-state update of a plain RNN, this rule has an explicit additive structure.
+Part of the previous memory is carried forward directly, coordinate by coordinate, and only then combined with new candidate content.
+That is the mechanism by which an LSTM can preserve information over longer horizons.
+
+\subsection*{Gated recurrent unit}
+
+The gated recurrent unit (GRU) simplifies the LSTM while preserving the central idea of controlled memory transport.
+A common form of the GRU equations is
+\begin{align*}
+ z_t &= \sigma(W_z x_t + U_z h_{t-1} + b_z),\\
+ r_t &= \sigma(W_r x_t + U_r h_{t-1} + b_r),\\
+ \widetilde{h}_t &= \tanh(W_h x_t + U_h(r_t \odot h_{t-1}) + b_h),\\
+ h_t &= (1-z_t) \odot h_{t-1} + z_t \odot \widetilde{h}_t.
+\end{align*}
+Here:
+\begin{itemize}
+    \item $z_t$ is often called the \emph{update gate}; it determines how much of the candidate state replaces the previous state,
+    \item $r_t$ is the \emph{reset gate}; it determines how strongly the previous hidden state contributes when constructing the candidate update.
+\end{itemize}
+
+\medskip
+
+The GRU has no separate cell state $c_t$.
+Instead, the exposed hidden state itself plays the role of memory.
+Nevertheless, the same essential structural feature remains:
+\[
+ h_t = (1-z_t) \odot h_{t-1} + z_t \odot \widetilde{h}_t,
+\]
+which is again an additive mixture of old state and new proposal.
+
+\subsection*{Gated memory transport and gradient preservation}
+
+The reason gating matters can be seen by differentiating the additive memory pathway.
+In an LSTM,
+\[
+ c_t = f_t \odot c_{t-1} + i_t \odot \widetilde{c}_t.
+\]
+If we focus on the dependence of $c_t$ on $c_{t-1}$ while treating the gates and candidate update as temporarily fixed, then
+\[
+ \frac{\partial c_t}{\partial c_{t-1}} = \operatorname{Diag}(f_t).
+\]
+Thus the backward transport of gradients through the cell state is controlled directly by the forget gate, rather than by an arbitrary dense Jacobian multiplied by a saturating nonlinearity at every step.
+This is the mathematical core of the LSTM idea.
+
+\begin{proposition}[Additive memory pathways improve gradient transport]
+Consider a recurrence of the form
+\[
+ m_t = g_t \odot m_{t-1} + u_t,
+\]
+where $m_t \in \mathbb{R}^d$, the gate $g_t \in [0,1]^d$, and $u_t$ does not depend directly on $m_{t-1}$.
+Then
+\[
+ \frac{\partial m_t}{\partial m_{t-1}} = \operatorname{Diag}(g_t),
+\]
+and for $s>t$,
+\[
+ \frac{\partial m_s}{\partial m_t}
+= \operatorname{Diag}(g_s)\operatorname{Diag}(g_{s-1})\cdots \operatorname{Diag}(g_{t+1}).
+\]
+In particular, if the gate coordinates remain near $1$ on a relevant time interval, then gradients along the memory pathway are preserved far better than in a generic recurrent update involving repeated multiplication by unrelated dense Jacobians.
+\end{proposition}
+
+\begin{proof}
+Differentiate the recurrence coordinatewise.
+Since $u_t$ does not depend directly on $m_{t-1}$,
+\[
+ \frac{\partial m_t}{\partial m_{t-1}}
+ = \frac{\partial (g_t \odot m_{t-1})}{\partial m_{t-1}}
+ = \operatorname{Diag}(g_t).
+\]
+Applying the chain rule repeatedly gives
+\[
+ \frac{\partial m_s}{\partial m_t}
+= \frac{\partial m_s}{\partial m_{s-1}}
+  \frac{\partial m_{s-1}}{\partial m_{s-2}}
+  \cdots
+  \frac{\partial m_{t+1}}{\partial m_t}
+= \operatorname{Diag}(g_s)\operatorname{Diag}(g_{s-1})\cdots \operatorname{Diag}(g_{t+1}).
+\]
+If the relevant gate coordinates are close to $1$, then the corresponding diagonal entries in this product remain close to $1$ rather than being repeatedly multiplied by arbitrary dense transformations.
+Thus the gradient transport can remain stable over much longer horizons.
+\end{proof}
+
+\medskip
+
+This proposition should be compared with the Jacobian-product formula of the previous section.
+A naive RNN transports gradients through matrices of the form
+\[
+A_t = \operatorname{Diag}(\sigma'(\cdot)) W_h,
+\]
+whose repeated products may distort, contract, or expand signals unpredictably.
+An LSTM or GRU instead creates a distinguished pathway along which memory can move additively under coordinatewise gates.
+The architecture does not guarantee perfect long-term memory, but it makes long-term memory \emph{possible} in a way that plain recurrence often does not.
+
+\subsection*{A dynamical-systems comparison: plain RNN, LSTM, and GRU}
+
+From the viewpoint of dynamical systems, these architectures differ in the type of state transition they implement.
+
+\begin{itemize}
+    \item \textbf{Plain RNN.}
+    The entire state is rewritten at every step by one nonlinear map:
+    \[
+    h_t = \sigma(W_h h_{t-1} + W_x x_t + b).
+    \]
+    Memory is implicit and must survive repeated nonlinear transformation.
+
+    \item \textbf{LSTM.}
+    The system separates internal memory $c_t$ from exposed state $h_t$.
+    The memory itself evolves additively, with the forget and input gates controlling retention and writing:
+    \[
+    c_t = f_t \odot c_{t-1} + i_t \odot \widetilde{c}_t.
+    \]
+    Information may therefore travel internally without being fully rewritten at every step.
+
+    \item \textbf{GRU.}
+    The hidden state plays both roles, but the update still explicitly interpolates between the old state and a new candidate:
+    \[
+    h_t = (1-z_t) \odot h_{t-1} + z_t \odot \widetilde{h}_t.
+    \]
+    This is structurally simpler than the LSTM but preserves the key additive transport idea.
+\end{itemize}
+
+\medskip
+
+The difference is not only descriptive.
+In a plain RNN, one asks a single transformation to simultaneously preserve memory, react to new inputs, and create useful nonlinear features.
+In an LSTM or GRU, these roles are partially disentangled.
+That architectural decomposition changes the state-space geometry and the backpropagation geometry.
+Some directions of state are allowed to persist under near-identity transport, while others may be actively overwritten.
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}[t]{0.48\textwidth}
+\centering
+\begin{tikzpicture}[>=Latex, node distance=0.95cm and 1.0cm]
+\tikzstyle{op}=[draw, rounded corners, minimum width=1.3cm, minimum height=0.75cm, align=center]
+\tikzstyle{circ}=[draw, circle, minimum size=0.58cm, inner sep=0pt]
+\node (ctm) at (0,2.2) {$c_{t-1}$};
+\node[op] (fg) at (0,1.2) {forget\\$f_t$};
+\node[circ] (plus) at (1.9,0.2) {$+$};
+\node[op] (ig) at (3.8,1.2) {input\\$i_t$};
+\node[op] (cand) at (3.8,2.2) {candidate\\$\widetilde c_t$};
+\node (ct) at (1.9,-1.0) {$c_t$};
+\node[op] (og) at (5.8,0.2) {output\\$o_t$};
+\node (ht) at (7.5,0.2) {$h_t$};
+\draw[->, thick] (ctm) -- (fg);
+\draw[->, thick] (fg) -- node[above left] {$f_t\odot c_{t-1}$} (plus);
+\draw[->, thick] (cand) -- (ig);
+\draw[->, thick] (ig) -- node[above right] {$i_t\odot \widetilde c_t$} (plus);
+\draw[->, thick] (plus) -- (ct);
+\draw[->, thick] (ct) -- node[below] {$\tanh(c_t)$} (og);
+\draw[->, thick] (og) -- (ht);
+\node[align=center] at (1.8,-1.9) {additive memory path};
+\end{tikzpicture}
+\caption{LSTM information flow.}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.48\textwidth}
+\centering
+\begin{tikzpicture}[>=Latex, node distance=1.0cm and 1.0cm]
+\tikzstyle{op}=[draw, rounded corners, minimum width=1.4cm, minimum height=0.78cm, align=center]
+\tikzstyle{circ}=[draw, circle, minimum size=0.58cm, inner sep=0pt]
+\node (hm) at (0,1.9) {$h_{t-1}$};
+\node[op] (keep) at (1.7,1.9) {keep\\$1-z_t$};
+\node[op] (cand) at (1.7,0.2) {candidate\\$\widetilde h_t$};
+\node[op] (up) at (0,-0.8) {update\\$z_t$};
+\node[circ] (plus) at (4.2,1.05) {$+$};
+\node (ht) at (5.8,1.05) {$h_t$};
+\draw[->, thick] (hm) -- (keep);
+\draw[->, thick] (keep) -- node[above] {$(1-z_t)\odot h_{t-1}$} (plus);
+\draw[->, thick] (cand) -- node[below] {$z_t\odot \widetilde h_t$} (plus);
+\draw[->, thick] (up) -- (cand);
+\draw[->, thick] (plus) -- (ht);
+\node[align=center] at (2.8,-1.65) {state is a gated interpolation\\between old memory\\and new proposal};
+\end{tikzpicture}
+\caption{GRU information flow.}
+\end{subfigure}
+\caption{Gated architectures replace homogeneous recurrence by controlled information flow.
+The central structural change is the appearance of additive state transport modulated by learnable gates.}
+\label{fig:gated-information-flow}
+\end{figure}
+
+\Cref{fig:gated-information-flow} highlights the essential difference.
+In both the LSTM and the GRU, the old state does not disappear into one opaque nonlinear transformation.
+It travels along an explicit pathway, and the gates determine how much of it should persist.
+This is the architectural reason gated models often train better on longer dependencies.
+
+\subsection*{A worked memory-trace example}
+
+The following scalar example isolates the mechanism of controlled memory transport.
+It is deliberately simple, but it shows clearly why gates matter.
+
+\begin{example}[Tracing one memory coordinate through time]
+Consider a one-dimensional LSTM-like memory update
+\[
+ c_t = f_t c_{t-1} + i_t \widetilde c_t,
+\]
+with initial value $c_0=0$.
+Suppose that at time $t=1$ the model observes a relevant event and writes it into memory by taking
+\[
+ i_1 = 1,
+ \qquad
+ \widetilde c_1 = 2,
+ \qquad
+ f_1 = 0,
+\]
+so that $c_1=2$.
+For the next four time steps suppose the model wants to preserve that memory, so it chooses
+\[
+ f_2=f_3=f_4=f_5=0.98,
+ \qquad
+ i_2=i_3=i_4=i_5=0.
+\]
+Then
+\[
+ c_2 = 0.98\cdot 2 = 1.96,
+ \qquad
+ c_3 = 0.98^2\cdot 2,
+ \qquad
+ c_4 = 0.98^3\cdot 2,
+ \qquad
+ c_5 = 0.98^4\cdot 2 \approx 1.8447.
+\]
+Thus the stored information persists with only slow decay.
+Moreover,
+\[
+ \frac{\partial c_5}{\partial c_1} = f_5 f_4 f_3 f_2 = 0.98^4 \approx 0.9224,
+\]
+so the gradient traveling backward from time $5$ to time $1$ remains large.
+If, by contrast, a plain scalar RNN had local multiplier $0.5$ at each step, then the corresponding backward factor over four steps would be $0.5^4=0.0625$, which is far smaller.
+\end{example}
+
+\medskip
+
+The point is not that LSTMs always keep gates near $1$.
+Rather, they \emph{can} choose to do so when the task demands memory preservation.
+That option does not exist in the same explicit way in a naive RNN.
+Gating therefore changes not merely the representation class but the available memory dynamics.
+
+\subsection*{Why gating is a structural rather than cosmetic change}
+
+It is tempting to think of gates as extra engineering detail layered on top of recurrence.
+That interpretation misses the main mathematical point.
+Gates alter the class of admissible state transitions.
+In a plain RNN, the old state is repeatedly transformed by one map.
+In a gated model, some directions of memory may instead follow near-identity transport, others may be erased, and still others may be rewritten.
+This is a qualitatively different family of dynamical systems.
+
+\medskip
+
+Equally important, gating changes the optimization landscape seen during training.
+Because important gradients can travel through additive memory paths, long-range credit assignment becomes more stable.
+The architecture therefore incorporates an inductive bias not only about sequence structure but also about trainable sequence structure.
+It says that temporal information should sometimes be preserved rather than constantly remixed.
+This is why gated recurrence was historically so important.
+It provided a workable route to sequence learning before attention-based methods became dominant in many domains.
+
+\medskip
+
+At the same time, gating does not solve every problem.
+Very long contexts may still be difficult, and recurrent computation remains sequential in time, which limits parallelism.
+These limitations help explain why the field later moved toward attention.
+But conceptually, gating remains one of the clearest examples of how an architectural modification can reshape both representation and optimization.
+
+\whattoremember{LSTMs and GRUs are recurrent dynamical systems with learnable gates that control writing, forgetting, and exposing information.
+Their key structural innovation is the additive transport of memory, for example $c_t=f_t\odot c_{t-1}+i_t\odot \widetilde c_t$ in an LSTM.
+Because gradients along this pathway are governed by gate values rather than generic dense Jacobians, gated models can preserve information over longer horizons far better than naive RNNs.}
+
+\commonconfusion{The benefit of gating is not merely that it adds more parameters.
+Its real value is structural.
+A plain RNN and an LSTM with similar hidden width do not belong to the same effective family of dynamical systems, because the LSTM has explicit additive memory pathways and separate control of retention, writing, and exposure.
+Also, gates do not guarantee perfect memory; they create the possibility of stable memory transport when learning discovers that such transport is useful.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Write the LSTM cell-state update in coordinate form.
+For a fixed coordinate $j$, explain in words what happens when $(f_t)_j$ is close to $1$ and $(i_t)_j$ is close to $0$.
+What happens when $(f_t)_j$ is close to $0$ and $(i_t)_j$ is large?
+\end{exercise}
+
+\begin{exercise}
+Consider the recurrence $m_t=g_t m_{t-1}+u_t$ in one dimension.
+Show that
+\[
+ m_t = \Bigl(\prod_{k=1}^{t} g_k\Bigr)m_0 + \sum_{s=1}^{t}\Bigl(\prod_{k=s+1}^{t} g_k\Bigr)u_s.
+\]
+Interpret this formula as a weighted memory of past updates.
+\end{exercise}
+
+\begin{exercise}
+In a GRU, the update equation is $h_t=(1-z_t)\odot h_{t-1}+z_t\odot \widetilde h_t$.
+Describe the behavior of the model when $z_t$ is close to $0$ coordinatewise.
+Describe the behavior when $z_t$ is close to $1$.
+How does this compare to the role of the forget and input gates in an LSTM?
+\end{exercise}
+
+\begin{exercise}
+Suppose a one-dimensional LSTM-like memory satisfies
+\[
+ c_t = 0.99 c_{t-1}
+\]
+for $t=2,\dots,101$ after writing a signal at time $1$.
+Compute $\partial c_{101}/\partial c_1$.
+Repeat the same calculation for a plain scalar recurrence whose local derivative is constantly $0.8$.
+Compare the two values.
+\end{exercise}
+
+\begin{exercise}
+From the viewpoint of discrete-time dynamical systems, explain one important difference between a plain RNN and an LSTM, and one important difference between an LSTM and a GRU.
+Your answer should refer explicitly to the structure of the state update rather than to historical popularity or benchmark performance.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+The long short-term memory architecture was introduced by Hochreiter and Schmidhuber as a structural answer to the difficulty of learning long-range dependencies with naive recurrence.
+The gated recurrent unit was later proposed by Cho and collaborators as a simpler gated alternative.
+The mathematical motivation for gating is closely tied to the vanishing-gradient analyses of recurrent learning developed in the 1990s.
+From a broader perspective, gated recurrence is an important example of architectural design as inductive bias: one encodes the prior belief that sequence models should be able to preserve, overwrite, and reveal information through distinct learnable mechanisms.
+This idea of controlled information flow will reappear in a different form when we turn from recurrence to attention in the next sections.

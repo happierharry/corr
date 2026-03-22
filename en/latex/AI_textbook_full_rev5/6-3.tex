@@ -1,0 +1,107 @@
+\section{Reliability Under Real-World Conditions}
+
+Generalization on a held-out test set is important, but it is not the same as real-world reliability.
+A system may perform well on benchmark data and still fail in ways that matter greatly in deployment.
+
+\subsection*{Distribution shift}
+
+Most learning theory assumes that training and test data come from the same distribution.
+In reality, this assumption often fails.
+
+\medskip
+
+The environment may change because of:
+\begin{itemize}
+    \item new populations,
+    \item new sensors,
+    \item new contexts,
+    \item changing behavior,
+    \item altered feedback loops,
+    \item rare events not represented in the training set.
+\end{itemize}
+
+This is called \emph{distribution shift}.
+
+\medskip
+
+A model trained under one distribution \(P_{\mathrm{train}}\) may behave quite differently under another distribution \(P_{\mathrm{test}}\).
+
+\subsection*{Why shift is difficult}
+
+A powerful model can only generalize well to structure it has learned or can reasonably infer.
+When the environment changes, learned regularities may no longer be sufficient.
+
+\medskip
+
+For example:
+\begin{itemize}
+    \item visual models may fail under new lighting or viewpoint conditions,
+    \item language models may behave differently under unfamiliar domains or instructions,
+    \item medical predictors may degrade when moved between hospitals or populations.
+\end{itemize}
+
+Thus robustness to shift is a stronger requirement than ordinary in-distribution test accuracy.
+
+\subsection*{Adversarial vulnerability}
+
+Another major reliability issue is adversarial perturbation.
+A small, carefully chosen change to an input can sometimes alter a model's prediction dramatically even when the perturbation is nearly imperceptible to a human observer.
+
+\medskip
+
+This reveals that high average accuracy does not imply local stability in input space.
+
+\medskip
+
+Adversarial examples are important not only as a security concern, but also as a scientific clue:
+they show that modern classifiers may rely on brittle decision boundaries or subtle non-robust features.
+
+\subsection*{Uncertainty and calibration}
+
+A reliable system should not only predict; it should also express appropriate uncertainty.
+
+\paragraph{Aleatoric uncertainty.}
+This is uncertainty arising from inherent noise or ambiguity in the data.
+
+\paragraph{Epistemic uncertainty.}
+This is uncertainty arising from lack of knowledge, such as unfamiliar inputs or insufficient training coverage.
+
+\medskip
+
+In practice, many models are overconfident.
+They may produce highly certain scores even when wrong or when facing unusual inputs.
+
+\medskip
+
+A related concept is \emph{calibration}.
+A predictor is well calibrated if, roughly speaking, events predicted with confidence \(0.8\) actually occur about \(80\%\) of the time.
+
+\subsection*{Benchmark success versus trustworthy deployment}
+
+Benchmarks are useful because they provide shared evaluation tasks.
+But benchmark success is not the same as trustworthy deployment.
+
+\medskip
+
+Real deployment often requires:
+\begin{itemize}
+    \item robustness to shift,
+    \item uncertainty awareness,
+    \item calibration,
+    \item monitoring,
+    \item safety constraints,
+    \item resistance to manipulation or failure cascades.
+\end{itemize}
+
+Thus reliability is a broader notion than accuracy.
+
+\subsection*{The central lesson}
+
+A strong machine-learning system should be judged on at least two levels:
+\begin{itemize}
+    \item how well it performs under benchmark-like conditions,
+    \item how reliably it behaves under realistic and changing conditions.
+\end{itemize}
+
+These are related, but they are not the same.
+

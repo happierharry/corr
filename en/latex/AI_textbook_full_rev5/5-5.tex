@@ -1,0 +1,328 @@
+\section{Exact Density Modeling Through Invertible Maps}
+
+A third major route to generative modeling is based on exact transformation of probability distributions.
+This leads to \emph{normalizing flows}: models that transport a simple base distribution into a more complex data distribution through an invertible map.
+
+\medskip
+
+Compared with adversarial models, flows retain exact density evaluation.
+Compared with latent-variable models such as VAEs, they avoid variational approximation in the likelihood itself.
+Their main burden is architectural: the map must be expressive, invertible, and accompanied by a tractable Jacobian determinant.
+
+\subsection*{Invertibility as a modeling strategy}
+
+Let $z\in\mathbb{R}^d$ be drawn from a simple base density $p_Z$, for example a standard Gaussian, and let
+\[
+x = f_\theta(z),
+\]
+where $f_\theta:\mathbb{R}^d\to\mathbb{R}^d$ is bijective and differentiable with differentiable inverse.
+Then sampling is straightforward:
+\[
+z\sim p_Z, \qquad x=f_\theta(z).
+\]
+
+Because $f_\theta$ is invertible, one may also map a data point $x$ back to latent coordinates
+\[
+z=f_\theta^{-1}(x),
+\]
+and evaluate its density exactly by accounting for local volume distortion.
+This is the central mathematical idea behind flows.
+
+\subsection*{The finite-dimensional change-of-variables theorem}
+
+\begin{theorem}[Change of variables in finite dimensions]
+Let $f:U\to V$ be a $C^1$ bijection between open sets $U,V\subset \mathbb{R}^d$, and assume that the Jacobian matrix $J_f(z)$ is nonsingular for all $z\in U$.
+If $Z$ has density $p_Z$ on $U$ and $X=f(Z)$, then $X$ has density
+\[
+p_X(x)=p_Z\bigl(f^{-1}(x)\bigr)\left|\det J_{f^{-1}}(x)\right|,
+\qquad x\in V.
+\]
+Equivalently, writing $x=f(z)$,
+\[
+p_X\bigl(f(z)\bigr)=p_Z(z)\left|\det J_f(z)\right|^{-1}.
+\]
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+For small regions in latent space, a differentiable map behaves approximately like its Jacobian matrix.
+Thus a small volume element $dz$ near $z$ is mapped to a volume element near $x=f(z)$ whose size is approximately
+\[
+\left|\det J_f(z)\right|dz.
+\]
+Probability mass is preserved under deterministic transformation, so
+\[
+p_Z(z)\,dz \approx p_X(x)\,dx = p_X(f(z))\left|\det J_f(z)\right|dz.
+\]
+Dividing by $dz$ yields
+\[
+p_X(f(z)) = p_Z(z)\left|\det J_f(z)\right|^{-1}.
+\]
+Replacing $z$ by $f^{-1}(x)$ gives the first formula.
+\end{proof}
+
+\paragraph{Interpretation.}
+The determinant measures how much the map expands or contracts local volume.
+If $|\det J_f(z)|>1$, the transformation spreads probability mass over a larger region and the resulting density decreases.
+If $|\det J_f(z)|<1$, probability mass is concentrated and the density increases.
+Thus exact density modeling is possible whenever the transport map and its local volume change are tractable.
+
+\subsection*{Likelihood under an invertible model}
+
+Given data $x\in\mathbb{R}^d$ and an invertible model $x=f_\theta(z)$ with base density $p_Z$, the log-likelihood is
+\[
+\log p_\theta(x)
+=
+\log p_Z\bigl(f_\theta^{-1}(x)\bigr)
++
+\log\left|\det J_{f_\theta^{-1}}(x)\right|.
+\]
+Equivalently, if $z=f_\theta^{-1}(x)$, then
+\[
+\log p_\theta(x)
+=
+\log p_Z(z)-\log\left|\det J_{f_\theta}(z)\right|.
+\]
+
+This is one reason flows are mathematically elegant:
+\begin{itemize}
+    \item sampling is exact,
+    \item density evaluation is exact,
+    \item training can proceed by direct maximum likelihood.
+\end{itemize}
+
+\subsection*{Composition of invertible layers}
+
+A practical flow is usually a composition of simpler invertible maps,
+\[
+f_\theta = f_L\circ f_{L-1}\circ \cdots \circ f_1.
+\]
+If we define intermediate states
+\[
+h_0=z, \qquad h_\ell=f_\ell(h_{\ell-1}), \qquad h_L=x,
+\]
+then the chain rule gives the total Jacobian
+\[
+J_{f_\theta}(z)=J_{f_L}(h_{L-1})\cdots J_{f_1}(h_0).
+\]
+
+\begin{proposition}[Composition formula for log-determinants]
+For the composition above,
+\[
+\log \left|\det J_{f_\theta}(z)\right|
+=
+\sum_{\ell=1}^L \log\left|\det J_{f_\ell}(h_{\ell-1})\right|.
+\]
+\end{proposition}
+
+\begin{proof}
+The determinant of a product of square matrices equals the product of determinants:
+\[
+\det(AB)=\det(A)\det(B).
+\]
+Applying this repeatedly to the chain-rule factorization and then taking logarithms gives the result.
+\end{proof}
+
+\paragraph{Why this matters.}
+The overall transformation may be highly nonlinear, yet exact density evaluation reduces to summing layerwise contributions.
+Thus the engineering problem becomes: design invertible layers for which the inverse and the Jacobian determinant are both cheap.
+
+\subsection*{Coupling layers and tractable Jacobians}
+
+A common flow layer splits the variable into two blocks,
+\[
+z=(z_a,z_b),
+\]
+and transforms only one block at a time using the other as context.
+An affine coupling layer has the form
+\[
+x_a = z_a,
+\qquad
+x_b = z_b \odot \exp\bigl(s(z_a)\bigr) + t(z_a),
+\]
+where $s(\cdot)$ and $t(\cdot)$ are arbitrary functions and $\odot$ denotes elementwise multiplication.
+
+\begin{proposition}[Why coupling layers are tractable]
+The Jacobian matrix of an affine coupling layer is block triangular. In particular,
+\[
+J =
+\begin{pmatrix}
+I & 0\\
+\ast & \operatorname{diag}(\exp(s(z_a)))
+\end{pmatrix},
+\]
+so that
+\[
+\det J = \exp\!\left(\sum_i s_i(z_a)\right).
+\]
+Moreover, the inverse map is explicit:
+\[
+z_a=x_a,
+\qquad
+z_b=\bigl(x_b-t(x_a)\bigr)\odot \exp\bigl(-s(x_a)\bigr).
+\]
+\end{proposition}
+
+\begin{proof}
+Because $x_a=z_a$, the derivative of $x_a$ with respect to $z_b$ is zero.
+Thus the Jacobian is block lower triangular.
+The diagonal block corresponding to $z_b\mapsto x_b$ is simply
+\[
+\operatorname{diag}(\exp(s(z_a))),
+\]
+whose determinant is the product of its diagonal entries.
+The inverse formula follows by solving the affine transformation for $z_b$.
+\end{proof}
+
+\paragraph{Interpretation.}
+Coupling layers are powerful because the functions $s$ and $t$ may be expressive neural networks, yet the determinant remains easy to compute.
+This is the basic architectural trick that makes exact density modeling feasible in high dimensions.
+
+\subsection*{A worked two-dimensional example}
+
+Consider a two-dimensional standard Gaussian base variable
+\[
+Z=(Z_1,Z_2) \sim \mathcal{N}(0,I_2),
+\]
+and define the coupling transformation
+\[
+X_1 = Z_1,
+\qquad
+X_2 = e^{a Z_1} Z_2 + b Z_1,
+\]
+where $a,b\in\mathbb{R}$ are constants.
+This is the special case
+\[
+s(z_1)=az_1, \qquad t(z_1)=bz_1.
+\]
+
+The inverse map is
+\[
+Z_1=X_1,
+\qquad
+Z_2=e^{-aX_1}(X_2-bX_1).
+\]
+The Jacobian matrix of the forward map is
+\[
+J_f(z_1,z_2)=
+\begin{pmatrix}
+1 & 0\\
+aze^{az_1} z_2 + b & e^{az_1}
+\end{pmatrix},
+\]
+so
+\[
+\det J_f(z_1,z_2)=e^{az_1}.
+\]
+Hence the model density is
+\[
+p_X(x_1,x_2)
+=
+\frac{1}{2\pi}
+\exp\!\left(-\frac{1}{2}\Bigl[x_1^2+e^{-2ax_1}(x_2-bx_1)^2\Bigr]\right)
+\cdot e^{-ax_1}.
+\]
+
+\paragraph{What the formula shows.}
+Even though the base density is Gaussian, the transformed density need not be Gaussian.
+The first coordinate controls both a translation and a scale change in the second coordinate.
+Thus the map can bend, shear, and stretch the density while keeping exact likelihood available.
+
+For example, if $a=0.5$ and $b=1$, then at the point $(x_1,x_2)=(1,2)$ we have
+\[
+z_1=1,
+\qquad
+z_2=e^{-0.5}(2-1)=e^{-0.5},
+\]
+and therefore
+\[
+\log p_X(1,2)
+=
+-\log(2\pi)
+-\frac{1}{2}\left(1+e^{-1}\right)
+-0.5.
+\]
+This gives a completely explicit likelihood calculation for a nontrivial nonlinear transport.
+
+\subsection*{A geometric view: density warping}
+
+Flows are often easiest to understand geometrically.
+One begins with a simple cloud of probability mass in latent space and applies a sequence of invertible warpings.
+Each layer preserves total probability but bends and stretches regions differently.
+This can create complex curved level sets in data space while retaining exact density evaluation.
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.88\textwidth}
+\centering
+\vspace{0.2em}
+\textbf{Density warping under invertible transport}\par\medskip
+\begin{tabular}{c c c}
+Base space $z$ & $\xrightarrow{\quad f_1 \quad}$ & Intermediate space $h$ \\
+concentric level sets &  & sheared / stretched level sets \\
+\multicolumn{3}{c}{\vspace{0.4em}$\Downarrow$ composition of further invertible layers}\\[0.4em]
+\multicolumn{3}{c}{Data space $x$: curved, anisotropic, non-Gaussian density contours}
+\end{tabular}
+\vspace{0.2em}
+\end{minipage}}
+\caption{A normalizing flow warps a simple base density into a complex target density through a sequence of invertible transformations. The important point is not only that samples are transported, but that local volume change remains exactly trackable.}
+\end{figure}
+
+\subsection*{What is elegant, and what is restrictive}
+
+Flows appeal strongly to mathematically inclined readers because they provide an unusually clean synthesis of geometry and likelihood.
+Still, this elegance comes with constraints.
+
+\medskip
+
+\noindent
+\textbf{Strengths.}
+\begin{itemize}
+    \item exact likelihood evaluation,
+    \item exact ancestral sampling,
+    \item transparent relation between architecture and density geometry,
+    \item direct maximum-likelihood training.
+\end{itemize}
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item invertibility constrains layer design,
+    \item input and latent dimensions must match unless one augments the architecture,
+    \item tractable Jacobians may restrict expressivity or efficiency,
+    \item excellent likelihood does not always coincide with best perceptual sample quality.
+\end{itemize}
+
+Thus flows occupy a distinctive position in generative modeling: they are among the most exact and mathematically transparent models, but exactness imposes architectural discipline.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item A normalizing flow models data by transporting a simple base density through an invertible map.
+    \item The change-of-variables theorem gives exact density evaluation.
+    \item Compositions turn global complexity into a sum of layerwise log-determinants.
+    \item Coupling layers work because their Jacobians are triangular.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item Invertibility does not mean linearity; highly nonlinear flows are possible.
+    \item Exact likelihood does not automatically imply the best visual samples.
+    \item The determinant term is not an arbitrary correction; it is the precise account of local volume change.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Verify directly that the inverse formula for the affine coupling layer is correct.
+    \item Let $x=Az+b$ for an invertible matrix $A$. Derive the exact density of $x$ when $z\sim\mathcal{N}(0,I)$.
+    \item For the two-dimensional example in this section, compute $p_X(x_1,x_2)$ when $a=0$ and explain why the model reduces to a simple shear transformation.
+    \item Show that if each layer in a flow is volume preserving, then the log-determinant term vanishes and likelihood depends only on the base density evaluated at the inverse image.
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+The flow viewpoint goes back to the idea of exact density modeling through invertible transformations.
+Important modern developments include NICE, RealNVP, Glow, and related architectures based on coupling layers, invertible $1\times 1$ convolutions, and other tractable Jacobian constructions.
+Conceptually, flows also connect to transport maps and, at a broader level, to geometric perspectives on probability distributions.

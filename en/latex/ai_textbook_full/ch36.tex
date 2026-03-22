@@ -1,0 +1,647 @@
+\chapter{Limits and Future Directions}
+
+\section{What Current Machine Learning Still Struggles With}
+
+Modern machine learning has achieved remarkable successes in perception, language, control, and generative modeling. Yet these successes should not be confused with a complete solution to intelligence. Current systems remain highly capable in some regimes and surprisingly fragile in others.
+
+\medskip
+
+\noindent
+\textbf{Central tension.}
+Many modern models are extremely effective at interpolation within the range of their training data, but they often struggle with robust extrapolation, causal understanding, and reliable reasoning under novel conditions.
+
+\medskip
+
+\noindent
+\textbf{Important current limitations.}
+\begin{itemize}
+    \item strong dependence on large amounts of data,
+    \item sensitivity to changes in the input distribution,
+    \item limited reliability under rare or adversarial conditions,
+    \item difficulty separating causation from correlation,
+    \item incomplete or unstable forms of reasoning,
+    \item large computational and energy requirements,
+    \item limited transparency and interpretability.
+\end{itemize}
+
+\medskip
+
+\noindent
+These limits do not negate the importance of current machine learning. Rather, they show that present paradigms are powerful but incomplete.
+
+\medskip
+
+\noindent
+\textbf{Limits of current paradigms.}
+A useful way to summarize the situation is:
+\begin{itemize}
+    \item \textbf{supervised learning} depends strongly on labeled data and benchmark design,
+    \item \textbf{self-supervised learning} captures rich statistical structure but does not automatically yield robust world models,
+    \item \textbf{deep scaling} improves many capabilities, but does not resolve all failure modes,
+    \item \textbf{generative modeling} can produce realistic outputs without guaranteeing truth, grounding, or understanding.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+The future of machine learning is shaped not only by extending current successes, but also by understanding where and why existing approaches fail.
+
+\section{Robustness, Uncertainty, and Distribution Shift}
+
+One of the clearest limitations of modern machine learning is fragility under perturbation and uncertainty.
+
+\subsection{Robustness}
+
+A model is \textbf{robust} if small or semantically irrelevant changes in input do not produce large or unjustified changes in output. Informally, one hopes that
+\[
+\|x-x'\| \text{ small}
+\quad \Longrightarrow \quad
+f(x)\approx f(x').
+\]
+
+\medskip
+
+\noindent
+This ideal is difficult to guarantee in high-dimensional settings.
+
+\medskip
+
+\noindent
+\textbf{Adversarial examples.}
+A model may be highly accurate on standard data but vulnerable to carefully designed perturbations that cause incorrect predictions. Such perturbations may be small in norm and sometimes nearly imperceptible to humans.
+
+\medskip
+
+\noindent
+\textbf{Broader robustness issues.}
+Fragility appears in many forms:
+\begin{itemize}
+    \item adversarial perturbations,
+    \item corruptions such as blur, noise, or occlusion,
+    \item rare or unusual examples,
+    \item changes in environment or measurement process.
+\end{itemize}
+
+\subsection{Uncertainty}
+
+Accurate prediction is not enough. A reliable system should also know when it is uncertain.
+
+\medskip
+
+\noindent
+\textbf{Aleatoric uncertainty.}
+This reflects irreducible noise in the data-generating process.
+
+\medskip
+
+\noindent
+\textbf{Epistemic uncertainty.}
+This reflects uncertainty due to limited data, incomplete knowledge, or model misspecification.
+
+\medskip
+
+\noindent
+\textbf{Why uncertainty matters.}
+In high-stakes tasks, a model should distinguish between:
+\begin{itemize}
+    \item confident predictions on familiar data,
+    \item uncertain predictions on rare or novel inputs.
+\end{itemize}
+
+\medskip
+
+\noindent
+Common tools include:
+\begin{itemize}
+    \item Bayesian approaches,
+    \item ensemble methods,
+    \item predictive calibration,
+    \item abstention or selective prediction.
+\end{itemize}
+
+\subsection{Distribution Shift}
+
+A major challenge is that training and deployment distributions may differ.
+
+\medskip
+
+\noindent
+\textbf{Covariate shift.}
+The input distribution changes:
+\[
+P_{\mathrm{train}}(x) \neq P_{\mathrm{test}}(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Concept or conditional shift.}
+The relationship between inputs and targets changes:
+\[
+P_{\mathrm{train}}(y \mid x) \neq P_{\mathrm{test}}(y \mid x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Out-of-distribution inputs.}
+A model may encounter inputs unlike those seen during training, in which case its confidence estimates may become unreliable.
+
+\medskip
+
+\noindent
+\textbf{Core difficulty.}
+Standard empirical risk minimization is typically designed for interpolation under approximately fixed distributions, not for arbitrary shifts in environment.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Robustness, uncertainty, and distribution shift are central because real-world intelligence requires dependable behavior outside ideal benchmark conditions.
+
+\section{Causality, Abstraction, and Reasoning}
+
+Statistical learning is powerful, but intelligence seems to require more than pattern recognition. It also involves causal structure, abstraction, and flexible reasoning.
+
+\subsection{Causality}
+
+Most standard machine learning methods are optimized to exploit correlations:
+\[
+x \mapsto y.
+\]
+But correlation does not imply causation.
+
+\medskip
+
+\noindent
+\textbf{Why causality matters.}
+A purely correlational system may:
+\begin{itemize}
+    \item rely on spurious features,
+    \item fail under interventions,
+    \item break when the environment changes,
+    \item mispredict the effects of actions.
+\end{itemize}
+
+\medskip
+
+\noindent
+Causal reasoning asks questions such as:
+\begin{itemize}
+    \item What would happen if we changed \(x\)?
+    \item Which variables are causes rather than symptoms?
+    \item Which relations remain stable across environments?
+\end{itemize}
+
+\medskip
+
+\noindent
+These questions are crucial in medicine, policy, science, and decision-making systems.
+
+\subsection{Abstraction}
+
+Intelligent systems often need to build higher-level concepts from raw data.
+
+\medskip
+
+\noindent
+\textbf{Abstraction} refers to the formation of representations that capture essential structure while ignoring irrelevant detail. It is central to:
+\begin{itemize}
+    \item transfer across tasks,
+    \item compositional generalization,
+    \item planning and symbolic reasoning,
+    \item scientific understanding.
+\end{itemize}
+
+\medskip
+
+\noindent
+Although deep networks can learn rich representations, the extent to which they discover stable abstractions remains an open question.
+
+\subsection{Reasoning}
+
+Modern large models can display impressive forms of reasoning, yet their reliability remains uneven.
+
+\medskip
+
+\noindent
+\textbf{Current challenges in reasoning.}
+\begin{itemize}
+    \item multistep deduction may be inconsistent,
+    \item reasoning can be brittle under rephrasing,
+    \item models may produce convincing but incorrect chains of argument,
+    \item abstract or compositional tasks remain difficult.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{A central question.}
+Do current neural architectures truly reason, or do they approximate reasoning through sophisticated statistical pattern completion?
+
+\medskip
+
+\noindent
+The answer may depend on the task, the scale of the model, the training procedure, and the form of external tools available during inference.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Progress in machine learning may require deeper integration of statistical learning with causal models, abstraction mechanisms, and more reliable forms of reasoning.
+
+\section{Interpretability and Scientific Understanding}
+
+As models become larger and more capable, understanding how they work becomes increasingly important.
+
+\subsection{Interpretability}
+
+\textbf{Interpretability} is not a single property, but a collection of methods for understanding model behavior.
+
+\medskip
+
+\noindent
+\textbf{Major goals of interpretability.}
+\begin{itemize}
+    \item trust and transparency,
+    \item debugging and failure analysis,
+    \item scientific understanding of learned representations,
+    \item safety and accountability.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Common approaches.}
+\begin{itemize}
+    \item feature attribution,
+    \item saliency and attention-based analyses,
+    \item probing internal representations,
+    \item mechanistic analysis of circuits and subnetworks,
+    \item surrogate or simplified models.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core challenge.}
+Explanations are often partial, non-unique, and sensitive to the method used. A model may admit many plausible interpretations without any one of them being definitive.
+
+\subsection{Scientific Machine Learning}
+
+Machine learning is increasingly used not only for prediction, but also for scientific discovery.
+
+\medskip
+
+\noindent
+\textbf{Scientific ML} includes:
+\begin{itemize}
+    \item learning surrogate models for physical systems,
+    \item integrating differential equations with neural networks,
+    \item using data-driven models in simulation,
+    \item discovering hidden structure in biological, chemical, or physical data.
+\end{itemize}
+
+\medskip
+
+\noindent
+This area raises special demands:
+\begin{itemize}
+    \item data may be scarce or expensive,
+    \item physical constraints may be essential,
+    \item interpretability and uncertainty are especially important,
+    \item extrapolation beyond observed regimes is often required.
+\end{itemize}
+
+\medskip
+
+\noindent
+Thus scientific ML highlights both the promise and the limits of current paradigms.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Interpretability is not only about trust in deployed systems; it is also about using machine learning as a tool for understanding the world.
+
+\section{Energy, Data, and Compute Constraints}
+
+Machine learning progress is often associated with scale, but scale comes with costs.
+
+\subsection{Data Efficiency}
+
+Many modern systems require enormous datasets. This raises several issues:
+\begin{itemize}
+    \item labeled data is expensive,
+    \item high-quality data may be scarce,
+    \item many domains cannot support internet-scale collection,
+    \item data quality may matter more than data volume.
+\end{itemize}
+
+\medskip
+
+\noindent
+A major long-term goal is \textbf{data-efficient learning}: achieving strong performance from fewer examples, weaker supervision, or richer prior structure.
+
+\subsection{Compute Constraints}
+
+Training large models may require vast computational resources.
+
+\medskip
+
+\noindent
+\textbf{Consequences of compute-intensive paradigms.}
+\begin{itemize}
+    \item access becomes concentrated in well-resourced institutions,
+    \item experimentation becomes expensive,
+    \item reproducibility becomes harder,
+    \item some research directions are favored over others because they scale well computationally.
+\end{itemize}
+
+\subsection{Energy Constraints}
+
+Large-scale training and inference also consume significant energy.
+
+\medskip
+
+\noindent
+This matters because:
+\begin{itemize}
+    \item deployment at scale multiplies inference cost,
+    \item environmental impact becomes non-negligible,
+    \item hardware limitations constrain practical systems,
+    \item real-time or edge applications require efficiency.
+\end{itemize}
+
+\medskip
+
+\noindent
+These concerns motivate work on:
+\begin{itemize}
+    \item efficient architectures,
+    \item sparsity and compression,
+    \item distillation,
+    \item low-precision computation,
+    \item algorithmic efficiency improvements.
+\end{itemize}
+
+\subsection{A Broader Limitation}
+
+A paradigm that improves mainly through more data and more compute may be powerful, but it may not be indefinitely sustainable.
+
+\medskip
+
+\noindent
+\textbf{Key question.}
+How much future progress can come from scaling alone, and how much will require genuinely new ideas in representation, reasoning, memory, or learning dynamics?
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Energy, data, and compute constraints are not only engineering details. They shape what kinds of intelligence can be built and who can build it.
+
+\section{Emerging Directions in Generative and Interactive AI}
+
+Recent years have seen rapid progress in generative models and interactive systems.
+
+\subsection{Generative AI}
+
+Generative models now produce realistic text, images, audio, video, and multimodal outputs. This has expanded the role of machine learning from classification and prediction to synthesis, simulation, and interaction.
+
+\medskip
+
+\noindent
+\textbf{Emerging themes in generative modeling.}
+\begin{itemize}
+    \item multimodal generation,
+    \item controllable generation,
+    \item long-context modeling,
+    \item world-model-like simulation,
+    \item integration of generation with reasoning and action.
+\end{itemize}
+
+\medskip
+
+\noindent
+At the same time, generative systems raise new issues:
+\begin{itemize}
+    \item factual reliability,
+    \item hallucination,
+    \item controllability,
+    \item evaluation difficulty,
+    \item alignment with human goals.
+\end{itemize}
+
+\subsection{Interactive and Agentic Systems}
+
+A growing direction is the construction of systems that do not merely predict or generate, but act over time.
+
+\medskip
+
+\noindent
+\textbf{Agentic systems} are systems that:
+\begin{itemize}
+    \item maintain goals over multiple steps,
+    \item interact with tools or environments,
+    \item plan or revise actions,
+    \item incorporate feedback,
+    \item sometimes coordinate multiple components such as retrieval, memory, and action selection.
+\end{itemize}
+
+\medskip
+
+\noindent
+These systems lie between classical machine learning, control, reinforcement learning, and human--computer interaction.
+
+\medskip
+
+\noindent
+\textbf{New challenges for agentic systems.}
+\begin{itemize}
+    \item error accumulation across long horizons,
+    \item reliable planning,
+    \item safe action under uncertainty,
+    \item memory consistency,
+    \item evaluation in open-ended environments.
+\end{itemize}
+
+\subsection{Optimistic and Skeptical Views}
+
+There are at least two broad attitudes toward future progress.
+
+\medskip
+
+\noindent
+\textbf{Optimistic scenario.}
+Scaling, multimodality, tool use, and better training methods may produce increasingly general-purpose systems with stronger reasoning, planning, and scientific usefulness.
+
+\medskip
+
+\noindent
+\textbf{Skeptical scenario.}
+Current systems may remain limited by shallow causal understanding, brittle reasoning, enormous resource requirements, and dependence on statistical regularities rather than true world models.
+
+\medskip
+
+\noindent
+The future may include elements of both views.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+Emerging generative and interactive AI systems broaden what machine learning can do, but they also amplify questions about reliability, agency, and control.
+
+\section{Open Mathematical Questions}
+
+Many of the deepest open problems in machine learning are mathematical.
+
+\subsection{Generalization}
+
+Why do highly overparameterized models often generalize well? Existing theories explain parts of the phenomenon, but a complete predictive theory remains unavailable.
+
+\subsection{Optimization and Dynamics}
+
+Why do simple first-order methods work so well in nonconvex systems? What aspects of loss geometry, noise, and architecture determine the solutions actually found by training?
+
+\subsection{Representation and Abstraction}
+
+How do neural networks form useful internal representations? Under what conditions do they learn invariant, compositional, or causal structure rather than merely compressing correlations?
+
+\subsection{Reasoning and Computation}
+
+Can neural sequence models implement robust algorithmic reasoning in a principled sense? What are the right mathematical frameworks for studying reasoning in learned systems?
+
+\subsection{Robustness and Shift}
+
+Can one derive meaningful guarantees for robustness under realistic perturbations or distribution shifts? What assumptions are necessary for such guarantees to be non-vacuous?
+
+\subsection{Learning with Structure}
+
+How should one integrate symmetry, physics, geometry, logic, or causal structure into learning theory and algorithms in a mathematically principled way?
+
+\medskip
+
+\noindent
+\textbf{Open mathematical direction.}
+Future theory will likely need to unify ideas from:
+\begin{itemize}
+    \item probability and statistics,
+    \item optimization,
+    \item dynamical systems,
+    \item information theory,
+    \item geometry,
+    \item control,
+    \item scientific modeling.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+The mathematics of learning is still developing, and many of its most important concepts may not yet have their final form.
+
+\section{A Final Perspective}
+
+This book has developed machine learning from both mathematical and practical perspectives. Across supervised learning, optimization, deep networks, generative models, and systems design, one theme has recurred:
+
+\begin{quote}
+learning systems are shaped by the interaction of data, models, objectives, algorithms, and environments.
+\end{quote}
+
+\medskip
+
+\noindent
+\textbf{What has become clear.}
+\begin{itemize}
+    \item current machine learning is powerful but not complete,
+    \item success on benchmarks does not eliminate fragility,
+    \item intelligence requires more than raw pattern matching,
+    \item future progress will depend on theory, systems, and scientific insight together.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Final insight.}
+The future of AI will be determined not only by building larger models, but by building systems that are more robust, data-efficient, interpretable, causally informed, and mathematically understood.
+
+\section{Closing Remarks}
+
+Machine learning stands at an unusual and fertile intersection of mathematics, statistics, computer science, engineering, and the sciences.
+
+\medskip
+
+\noindent
+\textbf{Outlook.}
+\begin{itemize}
+    \item new theoretical frameworks may clarify generalization, reasoning, and representation,
+    \item new architectures may improve efficiency, abstraction, and multimodal interaction,
+    \item scientific ML may deepen the connection between machine learning and physical understanding,
+    \item responsible development will remain central as systems become more capable and more widely deployed.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Final guiding principle.}
+Progress in artificial intelligence should be judged not only by performance, but by understanding, reliability, efficiency, and the quality of the scientific and human purposes it serves.
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item \textbf{Critical reflection on current paradigms.}
+    Give three examples of tasks at which modern machine learning performs impressively and three examples of capabilities it still lacks. Explain why these do not contradict each other.
+
+    \item \textbf{Robustness versus accuracy.}
+    A classifier performs extremely well on a benchmark test set but fails under small image corruptions. Explain why high in-distribution accuracy does not guarantee robustness.
+
+    \item \textbf{Uncertainty decomposition.}
+    Explain the difference between aleatoric and epistemic uncertainty. Give one example of each in a real application.
+
+    \item \textbf{Distribution shift.}
+    Describe a situation in which
+    \[
+    P_{\mathrm{train}}(x) \neq P_{\mathrm{test}}(x)
+    \]
+    but
+    \[
+    P(y\mid x)
+    \]
+    is approximately unchanged. Then describe a situation in which the conditional relation itself changes.
+
+    \item \textbf{Correlation and causation.}
+    Give an example where a predictive model can succeed by exploiting correlation, but fails when an intervention changes the environment. Explain why causal reasoning would help.
+
+    \item \textbf{Reasoning and abstraction.}
+    Write a short essay on the difference between pattern recognition and reasoning. To what extent can one emerge from the other?
+
+    \item \textbf{Interpretability critique.}
+    Choose one interpretability method such as feature attribution, saliency, or probing. Explain what it can reveal and what it may fail to reveal.
+
+    \item \textbf{Scientific ML.}
+    Why is scientific machine learning often harder than benchmark prediction? Discuss data scarcity, physical constraints, and extrapolation.
+
+    \item \textbf{Data efficiency.}
+    Why is data efficiency important for the future of AI? Give examples of domains in which internet-scale data collection is unrealistic.
+
+    \item \textbf{Compute and energy.}
+    Discuss how increasing model scale creates both scientific opportunities and practical limitations. Consider cost, access, reproducibility, and environmental impact.
+
+    \item \textbf{Agentic systems.}
+    What distinguishes an agentic system from a one-shot predictor or generator? Give an example of a possible failure mode unique to long-horizon interactive systems.
+
+    \item \textbf{Optimistic future scenario.}
+    Write a short essay describing an optimistic future for machine learning over the next decade. What breakthroughs or developments would support this view?
+
+    \item \textbf{Skeptical future scenario.}
+    Write a short essay describing a skeptical future for machine learning over the next decade. What limitations or bottlenecks would support this view?
+
+    \item \textbf{Comparison of futures.}
+    Compare the optimistic and skeptical scenarios from the previous two exercises. Which points are genuinely in conflict, and which could both be partly true?
+
+    \item \textbf{Open mathematical questions.}
+    Choose one open mathematical question from this chapter and explain why it is difficult. What existing mathematical tools seem relevant, and where do they appear insufficient?
+\end{enumerate}

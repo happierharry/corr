@@ -1,0 +1,615 @@
+\section{Optimization in Practice: SGD, Initialization, and Signal Propagation}
+\markright{2.6.\ Optimization in Practice}
+\thispagestyle{plain}
+
+The previous section explained why deep networks are hard to train.
+Depth creates long chains of forward and backward transformations, and those chains can amplify instability.
+Even when the model class is expressive enough and gradients can be computed exactly, training may still fail if optimization is noisy in the wrong way, if scales drift across layers, or if the interaction between activations and initialization destroys signal flow.
+
+\medskip
+
+We now turn to the first family of practical responses.
+These responses do not change the basic learning objective.
+Rather, they make gradient-based learning \emph{numerically and statistically alive} in deep models.
+
+\medskip
+
+The main ideas are:
+\begin{itemize}
+    \item use stochastic optimization for scalability,
+    \item use minibatches to balance noise and efficiency,
+    \item control learning-rate dynamics over time,
+    \item use momentum or adaptive scaling to improve optimization geometry,
+    \item initialize parameters so that forward activations and backward gradients have reasonable scale,
+    \item choose activations in ways that support trainability rather than destroy it.
+\end{itemize}
+
+\medskip
+
+These ideas are often introduced as practical techniques.
+But they are better understood as answers to a precise question:
+
+\begin{quote}
+How can gradient-based learning remain stable and informative as signals propagate through a deep compositional model?
+\end{quote}
+
+\subsection*{Minibatch stochastic gradient descent in deep networks}
+
+Let the training objective be
+\[
+J(\theta)=\frac{1}{n}\sum_{i=1}^n \ell(f_\theta(x_i),y_i),
+\]
+where $f_\theta$ is a deep network and $\theta$ collects all its parameters.
+
+\medskip
+
+In principle, one could compute the full gradient
+\[
+\nabla J(\theta)
+=
+\frac{1}{n}\sum_{i=1}^n \nabla_\theta \ell(f_\theta(x_i),y_i)
+\]
+at every iteration.
+For modern datasets and models, however, this is often too expensive.
+Each gradient evaluation requires a full forward and backward pass through the network for all training examples.
+
+\medskip
+
+The standard practical alternative is \emph{minibatch stochastic gradient descent}.
+At step $t$, one samples a minibatch $B_t\subseteq \{1,\dots,n\}$ and uses
+\[
+g_t
+=
+\frac{1}{|B_t|}
+\sum_{i\in B_t}
+\nabla_\theta \ell(f_{\theta_t}(x_i),y_i)
+\]
+as a gradient estimate.
+The update is
+\[
+\theta_{t+1}
+=
+\theta_t-\eta_t g_t,
+\]
+where $\eta_t>0$ is the learning rate.
+
+\medskip
+
+This is the basic training rule of deep learning.
+Its importance comes from three simultaneous advantages:
+
+\begin{paragraph}{Scalability.}
+The computation per update is far smaller than for full-batch training.
+\end{paragraph}
+
+\begin{paragraph}{Hardware efficiency.}
+Minibatches allow matrix-based parallel computation on GPUs and related hardware.
+\end{paragraph}
+
+\begin{paragraph}{Controlled stochasticity.}
+The gradient estimate is noisy, but that noise is often acceptable and sometimes even beneficial.
+\end{paragraph}
+
+\medskip
+
+If examples are sampled uniformly, then the minibatch gradient satisfies
+\[
+\mathbb{E}[g_t\mid \theta_t]=\nabla J(\theta_t),
+\]
+so it remains an unbiased estimator of the full empirical-risk gradient.
+
+\medskip
+
+In deep networks, this stochasticity has a dual role.
+On the one hand, it introduces variance into optimization and can destabilize poorly tuned training.
+On the other hand, it reduces computational cost dramatically and may help optimization avoid getting trapped in poor local geometric behavior.
+
+\subsection*{Minibatching as a compromise between noise and efficiency}
+
+Minibatch size is not merely a hardware choice.
+It mediates a conceptual tradeoff.
+
+\medskip
+
+If the batch is very small, then updates are cheap but noisy.
+The direction $g_t$ may fluctuate significantly from step to step.
+
+\medskip
+
+If the batch is very large, then updates are more accurate approximations to the full gradient, but they are more expensive and may reduce the exploratory effect of stochasticity.
+
+\medskip
+
+Thus minibatching is a compromise between two extremes:
+\begin{itemize}
+    \item \textbf{single-example SGD:} maximally noisy, maximally cheap;
+    \item \textbf{full-batch gradient descent:} minimally noisy, maximally expensive.
+\end{itemize}
+
+\medskip
+
+In practice, minibatches are attractive because they balance:
+\begin{itemize}
+    \item statistical efficiency,
+    \item computational throughput,
+    \item gradient variance,
+    \item memory constraints.
+\end{itemize}
+
+\medskip
+
+At a conceptual level, one may say:
+minibatching keeps optimization \emph{alive} by providing enough gradient information to move meaningfully, while remaining cheap enough to make repeated deep-network training feasible.
+
+\subsection*{Learning-rate schedules}
+
+The learning rate $\eta_t$ is one of the most important quantities in optimization.
+It determines how strongly the parameter vector responds to the estimated gradient.
+
+\medskip
+
+If $\eta_t$ is too large, updates may overshoot, oscillate, or diverge.
+If $\eta_t$ is too small, training may make little progress and appear stuck even when a descent direction is available.
+
+\medskip
+
+In deep learning, the issue is especially delicate because the optimization landscape is nonconvex and differently scaled across layers and directions.
+A single poorly chosen step size can destabilize training even when gradients are otherwise informative.
+
+\medskip
+
+For this reason, one often uses a \emph{learning-rate schedule}, meaning that the step size changes over time.
+A typical idea is:
+\begin{itemize}
+    \item begin with relatively large steps, to move quickly and explore the landscape;
+    \item later reduce the step size, to refine the solution and avoid oscillation.
+\end{itemize}
+
+\medskip
+
+Mathematically, one may write
+\[
+\theta_{t+1}=\theta_t-\eta_t g_t,
+\]
+with $\eta_t$ decreasing according to some schedule.
+Common conceptual strategies include:
+\begin{itemize}
+    \item piecewise decay,
+    \item exponential decay,
+    \item cosine-style decay,
+    \item warmup followed by decay.
+\end{itemize}
+
+\medskip
+
+The precise schedule is less important here than the principle:
+optimization typically benefits from different step scales at different stages of training.
+
+\medskip
+
+Early in training, the model is far from a good solution and large steps may be helpful.
+Later, the model often needs smaller steps to stabilize learning and preserve already useful structures.
+
+\subsection*{Momentum}
+
+Plain stochastic gradient descent reacts only to the current gradient estimate.
+But minibatch gradients are noisy, and the loss landscape may contain elongated valleys in which progress is slow and oscillatory.
+
+\medskip
+
+A standard improvement is \emph{momentum}.
+One introduces a running velocity variable $v_t$ and updates according to
+\[
+v_{t+1}=\beta v_t + g_t,
+\qquad
+\theta_{t+1}=\theta_t-\eta_t v_{t+1},
+\]
+where $0\le \beta<1$ controls how much past gradient information is retained.
+
+\medskip
+
+Momentum has a useful physical intuition.
+Instead of responding only to the current force, the parameter vector develops inertia.
+Directions that persist across many steps are reinforced, while high-frequency oscillations are damped.
+
+\medskip
+
+This can help in two important ways:
+\begin{itemize}
+    \item it accelerates progress along directions where gradients are consistently aligned;
+    \item it reduces wasteful oscillation across steep directions of curvature.
+\end{itemize}
+
+\medskip
+
+In deep networks, where curvature is often anisotropic and minibatch noise is unavoidable, momentum is one of the simplest and most effective ways to improve practical trainability.
+
+\subsection*{Adaptive methods}
+
+A further idea is that different parameters or coordinates may require different effective step sizes.
+This leads to \emph{adaptive methods}, which rescale updates using running statistics of past gradients.
+
+\medskip
+
+The details vary by algorithm, but the general form is:
+\begin{itemize}
+    \item estimate how large or variable gradients are in each coordinate;
+    \item reduce steps in coordinates with consistently large gradients;
+    \item allow relatively larger steps in coordinates with smaller effective scale.
+\end{itemize}
+
+\medskip
+
+Conceptually, adaptive methods try to compensate for ill-conditioned optimization by making the step rule more sensitive to coordinatewise behavior.
+
+\medskip
+
+This is attractive in deep models because different parameters may participate in very different parts of the network and may therefore receive gradients with very different magnitudes.
+A single global learning rate may be too crude.
+
+\medskip
+
+Adaptive methods can substantially improve optimization speed and convenience, especially in early training or in settings with heterogeneous gradient scales.
+At the same time, their interaction with generalization is more subtle, and different applications sometimes favor different choices.
+
+\commonconfusion{Adaptive optimizers do \emph{not} remove all trainability issues. They can rescale coordinates and often reduce tuning effort, but they do not magically fix poor signal propagation, bad initialization, saturating activations, or severe architectural mismatch. If gradients reaching early layers are already tiny or wildly unstable, an adaptive step rule has limited information to work with.}
+
+\medskip
+
+At the present level, the main lesson is that modern deep-network optimization is not just raw gradient descent.
+It is gradient descent equipped with mechanisms for controlling direction, scale, and variability.
+
+\subsection*{Initialization as control of signal scale}
+
+Optimization is not determined only by the update rule.
+It also depends critically on where optimization begins.
+
+\medskip
+
+In deep networks, initialization is not a cosmetic detail.
+It controls the scale of both:
+\begin{itemize}
+    \item forward activations,
+    \item backward gradients.
+\end{itemize}
+
+\medskip
+
+Consider a linear part of a layer:
+\[
+z = Wh.
+\]
+If the entries of $W$ are too large, then the norm or variance of $z$ may grow rapidly across depth.
+If they are too small, then the signal may collapse toward zero or near-constant behavior.
+
+\medskip
+
+The same issue appears in backpropagation.
+Gradients are multiplied by transposed weight matrices and by activation derivatives.
+If the initialization scale is poor, then gradient magnitudes may either decay or explode before learning has had any chance to organize useful representations.
+
+\medskip
+
+Thus initialization should be understood as the first act of signal propagation control.
+
+\subsection*{A variance-preservation heuristic}
+
+A simple but extremely important heuristic is to track variance across layers.
+Suppose a layer has $m_{\mathrm{in}}$ input units and $m_{\mathrm{out}}$ output units, and let
+\[
+z_i = \sum_{j=1}^{m_{\mathrm{in}}} W_{ij} h_j.
+\]
+Assume, heuristically, that:
+\begin{itemize}
+    \item the inputs $h_j$ have mean zero and common variance $v_h$,
+    \item the weights $W_{ij}$ are independent with mean zero and variance $\sigma_W^2$,
+    \item the variables are sufficiently weakly correlated for a first-pass variance calculation.
+\end{itemize}
+
+\begin{proposition}[Variance propagation through a linear layer]
+Under the assumptions above,
+\[
+\mathrm{Var}(z_i)
+=
+\sum_{j=1}^{m_{\mathrm{in}}}\mathrm{Var}(W_{ij}h_j)
+\approx
+m_{\mathrm{in}}\,\sigma_W^2\,v_h.
+\]
+Hence preserving the scale of the pre-activations suggests the condition
+\[
+m_{\mathrm{in}}\sigma_W^2 \approx 1.
+\]
+\end{proposition}
+
+\begin{proof}
+Because the weights and activations are centered and treated as independent,
+\[
+\mathbb E[W_{ij}h_j]=\mathbb E[W_{ij}]\,\mathbb E[h_j]=0.
+\]
+So
+\[
+\mathrm{Var}(W_{ij}h_j)=\mathbb E[W_{ij}^2 h_j^2]
+=\mathbb E[W_{ij}^2]\,\mathbb E[h_j^2]
+=\sigma_W^2 v_h.
+\]
+Summing over $j$ gives
+\[
+\mathrm{Var}(z_i)
+\approx
+\sum_{j=1}^{m_{\mathrm{in}}}\sigma_W^2 v_h
+=
+m_{\mathrm{in}}\sigma_W^2 v_h.
+\]
+This is heuristic rather than exact because real networks develop dependence and non-Gaussian effects, but it captures the core scaling law used in initialization.
+\end{proof}
+
+This proposition is the formal anchor.
+If $m_{\mathrm{in}}\sigma_W^2\gg 1$, activations tend to amplify.
+If $m_{\mathrm{in}}\sigma_W^2\ll 1$, they tend to shrink.
+Because deep networks apply many layers in sequence, even mild mismatch can accumulate into severe scale drift.
+
+\subsection*{Deriving Xavier initialization}
+
+Suppose first that the activation function is approximately variance-preserving near the origin, as is heuristically true for linear activations and often roughly true for $\tanh$ at small scale.
+Then one wants
+\[
+\mathrm{Var}(h^{(\ell)})\approx \mathrm{Var}(h^{(\ell-1)})
+\]
+at the start of training.
+By the proposition, a forward-pass requirement is therefore
+\[
+m_{\mathrm{in}}\sigma_W^2 \approx 1,
+\qquad\text{so}
+\qquad
+\sigma_W^2 \approx \frac{1}{m_{\mathrm{in}}}.
+\]
+
+\medskip
+
+Now consider the backward pass.
+If the layer maps $\mathbb R^{m_{\mathrm{in}}}$ to $\mathbb R^{m_{\mathrm{out}}}$, then the gradient entering the layer is multiplied by $W^\top$.
+Running the same variance heuristic backward suggests
+\[
+m_{\mathrm{out}}\sigma_W^2 \approx 1,
+\qquad\text{so}
+\qquad
+\sigma_W^2 \approx \frac{1}{m_{\mathrm{out}}}.
+\]
+
+\medskip
+
+These two goals need not coincide when $m_{\mathrm{in}}\neq m_{\mathrm{out}}$.
+A clean compromise is to balance them symmetrically and choose
+\[
+\sigma_W^2 \approx \frac{2}{m_{\mathrm{in}}+m_{\mathrm{out}}}.
+\]
+This is the basic Xavier or Glorot principle.
+It is not magic.
+It is a compromise between forward variance preservation and backward variance preservation.
+
+\medskip
+
+In words:
+\begin{itemize}
+    \item forward stability alone points toward $1/m_{\mathrm{in}}$;
+    \item backward stability alone points toward $1/m_{\mathrm{out}}$;
+    \item Xavier balances the two.
+\end{itemize}
+
+\subsection*{Deriving He initialization}
+
+ReLU-type activations change the variance story because they do not pass all of the signal.
+For a symmetric zero-mean random variable $z$, the ReLU output satisfies the heuristic identity
+\[
+\mathbb E[\mathrm{ReLU}(z)^2] \approx \frac{1}{2}\mathbb E[z^2].
+\]
+So, at the level of second moments, ReLU keeps roughly half of the incoming energy and sets the rest to zero.
+
+\medskip
+
+Combining this with the linear-layer calculation gives
+\[
+\mathbb E[h_i^2]
+\approx
+\frac{1}{2}\,m_{\mathrm{in}}\sigma_W^2\,v_h.
+\]
+To keep this scale roughly unchanged across layers, one therefore wants
+\[
+\frac{1}{2}m_{\mathrm{in}}\sigma_W^2 \approx 1,
+\qquad\text{so}
+\qquad
+\sigma_W^2 \approx \frac{2}{m_{\mathrm{in}}}.
+\]
+This is the basic He initialization rule.
+
+\medskip
+
+The message is simple.
+Because ReLU discards roughly half of a symmetric signal, the weights must start slightly larger than in the linear or tanh-style case if one wants to preserve useful scale through depth.
+
+\subsection*{One worked example}
+
+A concrete example makes the scaling logic easier to see.
+Suppose a layer has $m_{\mathrm{in}}=400$ inputs and the input activations satisfy $\mathrm{Var}(h_j)=1$.
+
+\begin{example}[Variance scaling at one layer]
+For the linear pre-activation
+\[
+z_i=\sum_{j=1}^{400}W_{ij}h_j,
+\]
+we have the heuristic estimate
+\[
+\mathrm{Var}(z_i)\approx 400\,\sigma_W^2.
+\]
+So three different initialization scales behave very differently:
+\begin{itemize}
+    \item if $\sigma_W^2=1$, then $\mathrm{Var}(z_i)\approx 400$, which is far too large;
+    \item if $\sigma_W^2=1/400$, then $\mathrm{Var}(z_i)\approx 1$, matching Xavier-style forward preservation;
+    \item if the layer is followed by ReLU and $\sigma_W^2=2/400$, then $\mathrm{Var}(z_i)\approx 2$, so after the ReLU gate the output second moment is brought back to about $1$.
+\end{itemize}
+The point is not the exact decimal value.
+The point is that initialization scale changes the network from \emph{immediately unstable} to \emph{numerically plausible} before learning even begins.
+\end{example}
+
+\subsection*{A signal-propagation picture}
+
+Initialization is easiest to remember as a repeated propagation process.
+Each layer transforms the current signal, and the goal is not to make every number identical but to prevent systematic blow-up or collapse.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[>=Latex, node distance=0.55cm and 0.55cm]
+\tikzset{layer/.style={draw, rounded corners, minimum width=2.2cm, minimum height=0.95cm, align=center, font=\small}}
+\node[layer] (h0) {$h^{(0)}$\\input\\scale $\approx 1$};
+\node[layer, right=of h0] (z1) {$z^{(1)}$\\linear map\\$\mathrm{Var}\approx m_{\mathrm{in}}\sigma^2$};
+\node[layer, right=of z1] (h1) {$h^{(1)}=\phi(z^{(1)})$\\nonlinearity\\may shrink signal};
+\node[layer, right=of h1] (z2) {$z^{(2)}$\\linear map\\same scaling test};
+\node[layer, right=of z2] (h2) {$h^{(2)}$\\usable scale\\for deeper layers};
+
+\draw[thick,->] (h0) -- (z1);
+\draw[thick,->] (z1) -- (h1);
+\draw[thick,->] (h1) -- (z2);
+\draw[thick,->] (z2) -- (h2);
+
+\node[below=0.55cm of z1, align=center, font=\small] {Xavier style:\\$m_{\mathrm{in}}\sigma^2 \approx 1$};
+\node[below=0.55cm of z2, align=center, font=\small] {He for ReLU:\\$\tfrac12 m_{\mathrm{in}}\sigma^2 \approx 1$};
+\end{tikzpicture}
+\caption{Signal propagation through layers. Initialization should keep the forward signal in a usable range as it repeatedly passes through linear maps and nonlinearities. Xavier-style scaling targets approximate preservation for near-linear or tanh-like activations, while He scaling compensates for the fact that ReLU removes roughly half of a symmetric signal.}
+\end{figure}
+
+\subsection*{Forward and backward signal preservation}
+
+It is useful to separate two related but distinct goals of initialization.
+
+\paragraph{Forward preservation.}
+The activations
+\[
+h^{(1)},h^{(2)},\dots,h^{(L)}
+\]
+should not systematically blow up or collapse as depth increases.
+
+\paragraph{Backward preservation.}
+The gradients
+\[
+\delta^{(L)},\delta^{(L-1)},\dots,\delta^{(1)}
+\]
+should also remain within a useful numerical range.
+
+\medskip
+
+A good initialization attempts to satisfy both simultaneously.
+This is not always possible perfectly, especially in very deep models, but the principle is central.
+
+\medskip
+
+From this viewpoint, initialization is part of optimization, not separate from it.
+It shapes the geometry of the first forward pass and the first backward pass, and therefore influences the entire subsequent training trajectory.
+
+\subsection*{Activation-dependent trainability}
+
+Initialization cannot be studied independently of the activation function.
+Trainability depends on their interaction.
+
+\medskip
+
+Different activations change both the forward statistics and the backward derivatives:
+\begin{itemize}
+    \item sigmoids and $\tanh$ may saturate, producing small derivatives and weakening backward flow;
+    \item ReLU-type activations avoid some forms of saturation but may deactivate units or create asymmetric signal propagation;
+    \item other activations modify smoothness, scale, and derivative behavior in different ways.
+\end{itemize}
+
+\medskip
+
+Thus a trainable network is not simply a network with many parameters.
+It is a network in which:
+\begin{itemize}
+    \item the activations produce informative intermediate representations,
+    \item the derivatives remain useful for learning,
+    \item the initialization scale is matched to the activation geometry.
+\end{itemize}
+
+\medskip
+
+This is a fundamental deep-learning lesson:
+representation geometry and optimization geometry are inseparable.
+The choice of activation is not only about expressivity.
+It is also about whether the network can carry signal and gradient through depth effectively enough to learn.
+
+\subsection*{SGD, scale, and signal propagation as one picture}
+
+The ideas of this section fit together best when viewed as one coherent system.
+
+\medskip
+
+Minibatch SGD makes deep-network optimization computationally feasible.
+Learning-rate schedules control how aggressively the model moves through parameter space.
+Momentum and adaptive methods improve optimization dynamics in noisy and anisotropic landscapes.
+Initialization controls the initial scale of forward and backward signals.
+Activation choice determines how those signals are transformed at each layer.
+
+\medskip
+
+These are not isolated implementation tricks.
+They are coordinated responses to the central challenge of deep learning:
+maintaining stable and informative signal propagation through a deep compositional model while performing scalable gradient-based optimization.
+
+\medskip
+
+One may summarize the logic as follows:
+
+\begin{itemize}
+    \item \textbf{SGD and minibatches} keep optimization scalable;
+    \item \textbf{learning-rate control} keeps updates dynamically reasonable;
+    \item \textbf{momentum and adaptive scaling} improve movement through difficult geometry;
+    \item \textbf{initialization} keeps activations and gradients at viable scale;
+    \item \textbf{activation choice} determines whether signal flow is preserved or attenuated.
+\end{itemize}
+
+\subsection*{The central lesson}
+
+The correct question is not simply:
+\begin{quote}
+How do we optimize a deep network?
+\end{quote}
+The deeper question is:
+\begin{quote}
+How do we keep gradient-based learning numerically and statistically alive across many layers of representation transformation?
+\end{quote}
+
+\medskip
+
+This section has given the first part of the answer.
+Deep learning works in practice not only because we know how to compute gradients, but because we have learned how to preserve their usefulness.
+
+\whattoremember{Optimization in deep learning is not only about picking a descent rule. Trainability depends on minibatch noise, learning-rate scale, momentum and adaptive rescaling, and especially on signal propagation through depth. Xavier initialization balances forward and backward variance preservation for near-linear or tanh-like activations, while He initialization compensates for ReLU's half-gating effect.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+Assume a layer has $m_{\mathrm{in}}$ inputs, independent zero-mean weights with variance $\sigma_W^2$, and input activations of variance $v$.
+Under the same independence heuristic used in the text, compute $\mathrm{Var}(z_i)$ for
+\[
+z_i=\sum_{j=1}^{m_{\mathrm{in}}}W_{ij}h_j.
+\]
+Then determine the value of $\sigma_W^2$ that keeps $\mathrm{Var}(z_i)\approx v$.
+\end{exercise}
+
+\begin{exercise}
+Compare Xavier and He initialization for a network that uses $\tanh$ versus a network that uses ReLU.
+Why does the ReLU case call for a larger variance scale?
+Your answer should explicitly refer to what happens to the signal after the nonlinearity.
+\end{exercise}
+
+\begin{exercise}
+Reason qualitatively about minibatch size and gradient noise.
+Why do very small batches produce noisier updates?
+Why can very large batches be more stable but less exploratory?
+How might this tradeoff interact with learning-rate choice in practice?
+\end{exercise}
+
+\subsection*{Notes and references}
+
+The purpose of this section is to show that practical deep learning is a problem of controlled signal propagation as much as it is a problem of optimization.
+Minibatches, momentum, adaptive methods, activation choice, and initialization are all responses to the same question: how to keep learning signals informative across depth.
+The variance calculations for Xavier and He initialization are heuristic, but they are among the most useful back-of-the-envelope derivations in modern neural-network practice because they connect linear algebra, probability, and trainability in one clean picture.

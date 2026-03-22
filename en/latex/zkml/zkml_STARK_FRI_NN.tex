@@ -1,0 +1,227 @@
+\section{STARKs: FRI, Polynomial Commitments, and AIR for Neural Networks}
+
+\subsection{Overview}
+
+STARKs differ fundamentally from circuit-based proof systems.  
+Instead of compiling computation into static constraints, they model it as a dynamic process over time using the \emph{Algebraic Intermediate Representation (AIR)}.
+
+\medskip
+
+\noindent
+\textbf{Pipeline.}
+\[
+\text{execution trace}
+\;\longrightarrow\;
+\text{polynomial representation}
+\;\longrightarrow\;
+\text{constraint composition}
+\;\longrightarrow\;
+\text{FRI low-degree proof}.
+\]
+
+\subsection{From Trace to Polynomials}
+
+Let the execution trace have $W$ columns:
+\[
+T_1, T_2, \dots, T_W.
+\]
+
+Each column is interpolated into a polynomial:
+\[
+f_j(X), \qquad \deg(f_j) \le n-1,
+\]
+such that for a multiplicative subgroup $G=\{g^0,\dots,g^{n-1}\}$,
+\[
+f_j(g^t) = T_j[t].
+\]
+
+\subsection{Constraint Polynomials}
+
+A transition rule such as:
+\[
+x_{t+1} = x_t^2 + 1
+\]
+becomes:
+\[
+f_x(gX) - f_x(X)^2 - 1 = 0.
+\]
+
+Boundary constraints are encoded via divisibility:
+\[
+f_x(1) = x_0
+\quad \Longleftrightarrow \quad
+(X-1) \mid (f_x(X) - x_0).
+\]
+
+\subsection{Quotient Construction}
+
+If a constraint polynomial $C(X)$ must vanish on a set $S$, then:
+\[
+C(X) = Z_S(X) \cdot Q(X),
+\quad
+Z_S(X) = \prod_{a \in S} (X-a).
+\]
+
+Thus:
+\[
+Q(X) = \frac{C(X)}{Z_S(X)}
+\]
+must be a low-degree polynomial.
+
+Multiple constraints are combined:
+\[
+C_{\mathrm{comp}}(X) =
+\sum_i \alpha_i \frac{C_i(X)}{Z_i(X)}.
+\]
+
+\subsection{FRI as a Polynomial Commitment}
+
+The prover evaluates polynomials over an extended domain and commits via Merkle trees.
+
+\medskip
+
+\noindent
+\textbf{Key step: folding.}
+
+Given:
+\[
+p_0(X) = g_1(X^2) + X g_2(X^2),
+\]
+define:
+\[
+p_1(X) = g_1(X) + \beta g_2(X).
+\]
+
+This reduces degree and domain size. Repeating yields:
+\[
+p_0 \to p_1 \to p_2 \to \cdots.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+FRI proves that the committed evaluations correspond to a low-degree polynomial.
+
+\subsection{AIR for Convolutional Neural Networks}
+
+Consider a $2\times2$ convolution applied to a $3\times3$ input.
+
+\paragraph{Trace design.}
+
+Each row corresponds to one output location.
+
+Columns:
+\[
+p_1,p_2,p_3,p_4,\quad
+k_1,k_2,k_3,k_4,\quad
+s,\quad y.
+\]
+
+\paragraph{Local constraint.}
+
+\[
+s_t = \sum_{i=1}^4 k_i p_{i,t} + b.
+\]
+
+\paragraph{Activation (example).}
+
+\[
+y_t = s_t^2.
+\]
+
+\paragraph{Transition constraint.}
+
+The patch shifts across the image:
+\[
+\text{patch}_{t+1} = \text{Shift}(\text{patch}_t).
+\]
+
+\paragraph{Boundary constraints.}
+
+\begin{itemize}
+\item first row = first patch
+\item kernel values fixed
+\item last row = final output location
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+CNNs are well-suited to AIR because of repeated local structure.
+
+\subsection{AIR for Transformer Attention}
+
+Consider one attention head:
+\[
+Q = XW_Q,\quad K = XW_K,\quad V = XW_V.
+\]
+
+\subsubsection{Stage 1: Linear projections}
+
+\[
+Q_{ir} = \sum_j X_{ij} (W_Q)_{jr}.
+\]
+
+Implemented via accumulation constraints over rows.
+
+\subsubsection{Stage 2: Attention scores}
+
+\[
+s_{ij} = \sum_r Q_{ir} K_{jr}.
+\]
+
+Each $(i,j)$ pair is computed through a sequence of rows.
+
+\subsubsection{Stage 3: Normalization}
+
+Approximate softmax:
+\[
+u_{ij} = \widetilde{\exp}(s_{ij}),\quad
+z_i = \sum_j u_{ij},\quad
+a_{ij} z_i = u_{ij}.
+\]
+
+\subsubsection{Stage 4: Output}
+
+\[
+O_{ir} = \sum_j a_{ij} V_{jr}.
+\]
+
+\subsection{Comparison: CNN vs Transformer in AIR}
+
+\begin{center}
+\begin{tabular}{l|c|c}
+Feature & CNN & Transformer \\
+\hline
+Interaction & local & global \\
+Trace size & moderate & large \\
+Nonlinearity & simple & complex (softmax) \\
+AIR suitability & high & moderate
+\end{tabular}
+\end{center}
+
+\subsection{Key Insight}
+
+\begin{quote}
+AIR represents computation as a discrete dynamical system:
+\[
+s_{t+1} = F(s_t),
+\]
+and correctness reduces to verifying low-degree polynomial structure.
+\end{quote}
+
+\subsection{Discussion}
+
+\begin{itemize}
+\item FRI provides a transparent polynomial commitment via low-degree testing.
+\item CNNs align naturally with AIR due to locality.
+\item Transformers are expressible but expensive due to global interactions.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Conclusion.}  
+STARKs combine AIR and FRI to enable scalable, transparent proofs of complex computations, including machine learning models.

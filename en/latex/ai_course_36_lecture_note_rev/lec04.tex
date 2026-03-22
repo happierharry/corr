@@ -1,0 +1,310 @@
+\section{Lecture 4: Learning as Optimization}
+
+\subsection{Motivation}
+
+In previous lectures, we developed three key ideas:
+\begin{itemize}
+    \item Learning as function approximation
+    \item Learning as statistical estimation
+    \item The role of hypothesis spaces and inductive bias
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas naturally lead to a central computational question:
+
+\medskip
+
+\noindent
+\textit{How do we actually find the best function within a hypothesis space?}
+
+\medskip
+
+\noindent
+The answer is to formulate learning as an optimization problem.
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Learning is the process of minimizing an objective function defined by data and model assumptions.
+
+\subsection{Optimization Formulations of Learning}
+
+Given a hypothesis space $\mathcal{H} = \{f_\theta\}$ and a loss function $\ell$, we define the empirical objective:
+\[
+L(\theta) = \frac{1}{n} \sum_{i=1}^n \ell(f_\theta(x_i), y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Learning problem.}
+\[
+\min_{\theta \in \Theta} L(\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Regularized formulation.}
+\[
+\min_\theta \; L(\theta) + \lambda \Omega(\theta),
+\]
+where $\Omega(\theta)$ is a regularization term.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Linear regression: quadratic objective
+    \item Logistic regression: convex but nonlinear objective
+    \item Neural networks: highly non-convex objective
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Objective function encodes both data fit and inductive bias
+    \item Learning reduces to searching for optimal parameters
+\end{itemize}
+
+\subsection{Gradient-Based Methods}
+
+Many learning problems are solved using gradient-based optimization.
+
+\medskip
+
+\noindent
+\textbf{Gradient descent.}
+\[
+\theta_{t+1} = \theta_t - \eta \nabla L(\theta_t),
+\]
+where $\eta > 0$ is the step size.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The gradient points in the direction of steepest increase
+    \item We move in the opposite direction to decrease the loss
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{First-order approximation.}
+\[
+L(\theta + \delta) \approx L(\theta) + \nabla L(\theta)^\top \delta.
+\]
+
+\medskip
+
+\noindent
+\textbf{Choice of step size.}
+\begin{itemize}
+    \item Too large: instability
+    \item Too small: slow convergence
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Variants.}
+\begin{itemize}
+    \item Momentum methods
+    \item Adaptive methods (e.g., scaling by past gradients)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Gradient methods exploit local information to iteratively improve solutions.
+
+\subsection{Stochastic Optimization}
+
+In large-scale problems, computing the full gradient is often expensive.
+
+\medskip
+
+\noindent
+\textbf{Stochastic gradient descent (SGD).}
+\[
+\theta_{t+1} = \theta_t - \eta \nabla \ell(f_\theta(x_i), y_i),
+\]
+where $(x_i, y_i)$ is a randomly selected data point.
+
+\medskip
+
+\noindent
+\textbf{Mini-batch SGD.}
+\[
+\theta_{t+1} = \theta_t - \eta \frac{1}{|B|} \sum_{i \in B} \nabla \ell_i(\theta),
+\]
+where $B$ is a subset of the data.
+
+\medskip
+
+\noindent
+\textbf{Properties.}
+\begin{itemize}
+    \item Lower computational cost per step
+    \item Introduces noise into updates
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Effect of noise.}
+\begin{itemize}
+    \item Helps escape poor local minima
+    \item Influences generalization behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Small batches: noisy but fast updates
+    \item Large batches: stable but expensive
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Stochasticity is not merely a computational trick; it plays a role in learning dynamics.
+
+\subsection{Geometry of Loss Landscapes}
+
+The objective function $L(\theta)$ defines a landscape over parameter space.
+
+\medskip
+
+\noindent
+\textbf{Parameter space.}
+\[
+\theta \in \mathbb{R}^d
+\]
+
+\medskip
+
+\noindent
+\textbf{Loss landscape.}
+\[
+L : \mathbb{R}^d \to \mathbb{R}
+\]
+
+\medskip
+
+\noindent
+\textbf{Critical points.}
+\begin{itemize}
+    \item Local minima: $\nabla L(\theta) = 0$, positive curvature
+    \item Saddle points: mixed curvature directions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Convex vs non-convex.}
+\begin{itemize}
+    \item Convex problems: global minimum is unique
+    \item Non-convex problems: many local minima and saddle points
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{High-dimensional effects.}
+\begin{itemize}
+    \item Saddle points are more common than poor local minima
+    \item Many directions may be nearly flat
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Flat vs sharp minima.}
+\begin{itemize}
+    \item Flat minima: stable under perturbations
+    \item Sharp minima: sensitive to parameter changes
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric intuition.}
+\begin{itemize}
+    \item Optimization follows paths along the landscape
+    \item Curvature affects convergence speed
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The geometry of the loss landscape determines both optimization behavior and generalization properties.
+
+\subsection{A Unifying Perspective}
+
+Learning as optimization brings together multiple aspects:
+
+\begin{itemize}
+    \item \textbf{Objective:} encodes data fit and regularization
+    \item \textbf{Algorithm:} determines how solutions are found
+    \item \textbf{Geometry:} shapes optimization trajectories
+    \item \textbf{Stochasticity:} influences dynamics and generalization
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Learning is a dynamical process in parameter space driven by gradients.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The outcome of learning depends not only on the objective, but also on the optimization algorithm used.
+
+\subsection{Outlook}
+
+In this lecture, we formulated learning as an optimization problem and studied:
+
+\begin{itemize}
+    \item objective functions for learning,
+    \item gradient-based optimization,
+    \item stochastic methods,
+    \item geometric properties of loss landscapes.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas lead to deeper questions:
+
+\begin{itemize}
+    \item Why do some models generalize better than others?
+    \item How does optimization interact with model complexity?
+    \item What role does the structure of the loss landscape play?
+\end{itemize}
+
+\medskip
+
+\noindent
+In the next lecture, we study generalization and overfitting, focusing on how models perform on unseen data.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Learning is not only about finding a solution, but about finding a solution that generalizes.

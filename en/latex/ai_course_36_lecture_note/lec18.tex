@@ -1,0 +1,240 @@
+\section{Lecture 18: Normalization Methods}
+
+\subsection{Motivation}
+
+In the previous lectures, we examined two key aspects of training deep networks:
+
+\begin{itemize}
+    \item gradient instability (vanishing and exploding gradients),
+    \item architectural choices such as activation functions and depth.
+\end{itemize}
+
+\medskip
+
+Even with careful initialization and suitable activations, training deep networks can remain unstable.
+
+\medskip
+
+\textbf{Key question.}  
+How can we stabilize the distribution of activations during training?
+
+\medskip
+
+\textbf{Guiding idea.}  
+Normalization methods control the scale and distribution of intermediate representations.
+
+\subsection{Batch Normalization}
+
+Batch normalization is one of the most influential techniques in modern deep learning.
+
+\medskip
+
+Consider activations in a layer:
+\[
+z = W x + b.
+\]
+
+Batch normalization normalizes these activations across a mini-batch.
+
+\medskip
+
+For a batch $\{z_1,\dots,z_m\}$:
+
+\[
+\mu_B = \frac{1}{m}\sum_{i=1}^m z_i
+\]
+
+\[
+\sigma_B^2 = \frac{1}{m}\sum_{i=1}^m (z_i-\mu_B)^2
+\]
+
+Normalized activations:
+
+\[
+\hat{z}_i = \frac{z_i - \mu_B}{\sqrt{\sigma_B^2 + \epsilon}}
+\]
+
+To preserve representational flexibility:
+
+\[
+y_i = \gamma \hat{z}_i + \beta
+\]
+
+where $\gamma$ and $\beta$ are learnable parameters.
+
+\medskip
+
+\textbf{Interpretation}
+
+\begin{itemize}
+\item normalize mean and variance
+\item then allow the network to re-scale if needed
+\end{itemize}
+
+\medskip
+
+\textbf{Benefits}
+
+\begin{itemize}
+\item stabilizes activation distributions
+\item accelerates training
+\item reduces sensitivity to initialization
+\end{itemize}
+
+\subsection{Layer and Instance Normalization}
+
+Batch normalization relies on mini-batch statistics, which may not always be appropriate.
+
+\medskip
+
+Alternative normalization schemes include:
+
+\textbf{Layer normalization}
+
+Normalize across features of a single example:
+
+\[
+\mu = \frac{1}{d}\sum_{j=1}^{d} z_j
+\]
+
+\[
+\sigma^2 = \frac{1}{d}\sum_{j=1}^{d}(z_j-\mu)^2
+\]
+
+\medskip
+
+\textbf{Instance normalization}
+
+Normalize each example independently across spatial dimensions (commonly used in vision tasks).
+
+\medskip
+
+\textbf{Comparison}
+
+\begin{itemize}
+\item Batch normalization: uses batch statistics
+\item Layer normalization: uses feature statistics
+\item Instance normalization: uses per-sample spatial statistics
+\end{itemize}
+
+\medskip
+
+\textbf{Practical observation}
+
+Layer normalization is commonly used in transformer architectures.
+
+\subsection{Stabilization of Training}
+
+Normalization improves training dynamics in several ways.
+
+\medskip
+
+\textbf{Gradient stabilization}
+
+\begin{itemize}
+\item keeps activations within a reasonable range
+\item prevents gradients from exploding or vanishing
+\end{itemize}
+
+\medskip
+
+\textbf{Improved conditioning}
+
+\begin{itemize}
+\item reduces sensitivity to parameter scaling
+\item improves optimization geometry
+\end{itemize}
+
+\medskip
+
+\textbf{Regularization effect}
+
+\begin{itemize}
+\item stochasticity from batch statistics can act as implicit regularization
+\end{itemize}
+
+\medskip
+
+\textbf{Insight}
+
+Normalization reshapes the optimization landscape.
+
+\subsection{Theoretical and Practical Insights}
+
+Although batch normalization was originally motivated heuristically, several explanations have been proposed.
+
+\medskip
+
+\textbf{Variance control}
+
+Normalization prevents signal magnitudes from growing or shrinking across layers.
+
+\medskip
+
+\textbf{Optimization smoothing}
+
+Empirical studies suggest normalization makes the loss landscape smoother and easier to optimize.
+
+\medskip
+
+\textbf{Gradient flow}
+
+Normalized activations help maintain stable gradient magnitudes during backpropagation.
+
+\medskip
+
+\textbf{Architectural interaction}
+
+Normalization often works together with other design choices:
+
+\begin{itemize}
+\item residual connections
+\item ReLU activations
+\item careful initialization
+\end{itemize}
+
+\subsection{A Unifying Perspective}
+
+Normalization methods address a central challenge of deep learning:
+
+\begin{itemize}
+\item controlling the propagation of signals through deep networks.
+\end{itemize}
+
+They interact with:
+
+\begin{itemize}
+\item activation functions,
+\item optimization methods,
+\item architectural design.
+\end{itemize}
+
+\medskip
+
+\textbf{Core idea}
+
+Stable training requires controlling both forward activations and backward gradients.
+
+\subsection{Outlook}
+
+In this lecture we introduced:
+
+\begin{itemize}
+\item batch normalization,
+\item layer and instance normalization,
+\item the role of normalization in training stability.
+\end{itemize}
+
+\medskip
+
+These techniques allow much deeper networks to be trained successfully.
+
+\medskip
+
+In the next lecture, we study regularization methods in deep learning, including dropout and data augmentation, which improve generalization in large neural networks.
+
+\medskip
+
+\textbf{Guiding principle}
+
+Deep learning success depends on carefully balancing expressivity, optimization, and regularization.

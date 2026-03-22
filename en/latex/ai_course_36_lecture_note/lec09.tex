@@ -1,0 +1,262 @@
+\section{Lecture 9: Feature Maps and Nonlinear Models}
+
+\subsection{Motivation}
+
+In previous lectures, we studied linear models such as linear and logistic regression.
+
+\medskip
+
+\noindent
+While these models are simple and interpretable, they are limited:
+
+\begin{itemize}
+    \item They can only represent linear relationships
+    \item Many real-world patterns are inherently nonlinear
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How can we model nonlinear relationships while retaining the simplicity of linear models?
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Transform the input representation so that nonlinear patterns become linear.
+
+\subsection{Basis Expansions}
+
+We introduce a feature map:
+\[
+\phi : \mathcal{X} \to \mathbb{R}^D,
+\]
+which transforms inputs into a higher-dimensional feature space.
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+
+\begin{itemize}
+    \item Polynomial features:
+    \[
+    \phi(x) = (1, x, x^2, \dots, x^d)
+    \]
+
+    \item Interaction terms:
+    \[
+    \phi(x_1, x_2) = (x_1, x_2, x_1 x_2)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Model.}
+\[
+f(x) = w^\top \phi(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Model is linear in $\phi(x)$
+    \item May be nonlinear in original input $x$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Nonlinearity can be introduced through feature transformations.
+
+\subsection{Linear Models in Feature Space}
+
+We now apply linear regression or logistic regression to $\phi(x)$:
+
+\[
+f(x) = w^\top \phi(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Key observation.}
+\begin{itemize}
+    \item The learning algorithm remains unchanged
+    \item Only the representation changes
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Decision boundaries.}
+\begin{itemize}
+    \item Linear in feature space
+    \item Nonlinear in input space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Example.}
+\begin{itemize}
+    \item A quadratic feature map produces curved decision boundaries
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Feature maps allow us to trade simplicity of models for richness of representation.
+
+\subsection{The Kernel Idea (Intuition)}
+
+Working with high-dimensional feature maps can be computationally expensive.
+
+\medskip
+
+\noindent
+\textbf{Key observation.}  
+Many learning algorithms depend only on inner products:
+\[
+\langle \phi(x), \phi(x') \rangle.
+\]
+
+\medskip
+
+\noindent
+\textbf{Kernel function.}
+\[
+k(x, x') = \langle \phi(x), \phi(x') \rangle.
+\]
+
+\medskip
+
+\noindent
+\textbf{Examples.}
+\begin{itemize}
+    \item Polynomial kernel:
+    \[
+    k(x, x') = (x^\top x' + c)^d
+    \]
+
+    \item Gaussian kernel:
+    \[
+    k(x, x') = \exp(-\gamma \|x - x'\|^2)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Kernel trick.}
+\begin{itemize}
+    \item Compute inner products without explicitly computing $\phi(x)$
+    \item Enables work in very high-dimensional spaces
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+We can operate in rich feature spaces implicitly through kernels.
+
+\subsection{Expressivity through Features}
+
+The expressive power of a model depends heavily on the choice of features.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+\begin{itemize}
+    \item A linear model with rich features can approximate complex functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Tradeoffs.}
+\begin{itemize}
+    \item More expressive features:
+    \begin{itemize}
+        \item Lower bias
+        \item Higher risk of overfitting
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to inductive bias.}
+\begin{itemize}
+    \item Feature map defines the hypothesis space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Modern perspective.}
+\begin{itemize}
+    \item Deep learning learns feature maps automatically
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Representation is a central driver of model performance.
+
+\subsection{A Unifying Perspective}
+
+Feature maps unify linear and nonlinear modeling:
+
+\begin{itemize}
+    \item \textbf{Linear model:} simple structure
+    \item \textbf{Feature map:} expressive representation
+    \item \textbf{Kernel:} implicit computation in feature space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Complex learning problems can be solved by combining simple models with powerful representations.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The boundary between linear and nonlinear models is often a matter of representation.
+
+\subsection{Outlook}
+
+In this lecture, we introduced:
+
+\begin{itemize}
+    \item basis expansions and feature maps,
+    \item linear models in feature space,
+    \item the kernel idea,
+    \item expressivity through representations.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas lead naturally to kernel-based methods.
+
+\medskip
+
+\noindent
+In the next lecture, we study support vector machines, where kernels play a central role.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Representation transforms the problem; learning solves it.

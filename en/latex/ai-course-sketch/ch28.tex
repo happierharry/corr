@@ -1,0 +1,250 @@
+\chapter{Generative Adversarial Networks}
+
+\section{Adversarial Formulation}
+
+Generative adversarial networks (GANs) provide an alternative approach to generative modeling based on a game between two models.
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Two networks are trained simultaneously:
+\begin{itemize}
+    \item \textbf{Generator} $G_\theta$: maps noise $z \sim p(z)$ to data space
+    \item \textbf{Discriminator} $D_\phi$: distinguishes real data from generated data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Minimax objective.}
+\[
+\min_\theta \max_\phi \;
+\mathbb{E}_{x \sim p_{\text{data}}}[\log D_\phi(x)]
++
+\mathbb{E}_{z \sim p(z)}[\log(1 - D_\phi(G_\theta(z)))].
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item The generator tries to fool the discriminator
+    \item The discriminator tries to distinguish real and fake samples
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Equilibrium.}  
+At optimality, the generator produces samples indistinguishable from real data.
+
+\medskip
+
+\noindent
+\textbf{Implicit modeling.}  
+GANs define a sampling procedure without explicitly modeling $p_\theta(x)$.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning is framed as a game between two competing objectives.
+
+\section{Divergence Minimization}
+
+GANs can be understood as minimizing a divergence between distributions.
+
+\medskip
+
+\noindent
+\textbf{Optimal discriminator.}  
+For a fixed generator, the optimal discriminator is:
+\[
+D^*(x) = \frac{p_{\text{data}}(x)}{p_{\text{data}}(x) + p_\theta(x)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Resulting objective.}  
+Substituting $D^*$ yields:
+\[
+\min_\theta \; \mathrm{JS}(p_{\text{data}} \,\|\, p_\theta),
+\]
+where $\mathrm{JS}$ denotes the Jensen--Shannon divergence.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item GAN training implicitly minimizes a divergence between distributions
+    \item The generator improves as distributions become closer
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item Divergences may behave poorly when supports do not overlap
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+GANs connect game-theoretic learning with statistical divergence minimization.
+
+\section{Training Instability}
+
+Training GANs is often challenging due to the adversarial nature of the objective.
+
+\medskip
+
+\noindent
+\textbf{Non-convex--non-concave optimization.}  
+The minimax problem does not generally admit stable convergence.
+
+\medskip
+
+\noindent
+\textbf{Mode collapse.}
+\begin{itemize}
+    \item Generator produces limited variety of outputs
+    \item Fails to capture full data distribution
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Oscillatory dynamics.}
+\begin{itemize}
+    \item Generator and discriminator may fail to converge
+    \item Parameters can cycle or diverge
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Gradient issues.}
+\begin{itemize}
+    \item Vanishing gradients when discriminator is too strong
+    \item Unstable updates due to adversarial feedback
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical techniques.}
+\begin{itemize}
+    \item Careful balancing of generator and discriminator updates
+    \item Label smoothing
+    \item Gradient penalties
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Adversarial training introduces dynamics that are fundamentally different from standard optimization.
+
+\section{Variants and Improvements}
+
+Many variants of GANs have been proposed to address training challenges and improve performance.
+
+\medskip
+
+\noindent
+\textbf{Wasserstein GAN (WGAN).}
+\begin{itemize}
+    \item Replaces JS divergence with Wasserstein distance
+    \item Improves stability and gradient behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{WGAN with gradient penalty.}
+\begin{itemize}
+    \item Enforces Lipschitz constraint via gradient penalties
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Conditional GANs.}
+\begin{itemize}
+    \item Generate samples conditioned on labels or inputs
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{CycleGAN and image translation.}
+\begin{itemize}
+    \item Learn mappings between domains without paired data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Style-based GANs.}
+\begin{itemize}
+    \item Introduce structured latent spaces
+    \item Enable fine control over generated images
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Improving GANs often involves modifying the objective, architecture, or training procedure.
+
+\section{A Unifying Perspective}
+
+GANs provide a distinct approach to generative modeling:
+
+\begin{itemize}
+    \item \textbf{Implicit models:} define sampling without explicit density
+    \item \textbf{Adversarial training:} two networks in competition
+    \item \textbf{Divergence minimization:} alignment of distributions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core components.}
+\begin{itemize}
+    \item Generator $G_\theta$
+    \item Discriminator $D_\phi$
+    \item Minimax objective
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Adversarial learning provides a powerful but challenging framework for generative modeling.
+
+\section{Outlook}
+
+This chapter introduced generative adversarial networks:
+\begin{itemize}
+    \item adversarial formulation,
+    \item divergence-based interpretation,
+    \item training challenges,
+    \item key variants and improvements.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study diffusion models, which provide a fundamentally different approach to generative modeling based on stochastic processes.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Different generative frameworks offer different tradeoffs between tractability, stability, and sample quality.

@@ -1,0 +1,98 @@
+\section{Interpreting Learned Representations}
+
+Deep models often behave as high-dimensional distributed systems whose internal logic is not directly transparent.
+This motivates the study of interpretability.
+
+\subsection*{Why interpretability matters}
+
+Interpretability is important for several reasons:
+\begin{itemize}
+    \item debugging model failures,
+    \item understanding what signals a model uses,
+    \item evaluating trustworthiness,
+    \item detecting shortcut learning or spurious correlations,
+    \item gaining scientific insight into learned representations.
+\end{itemize}
+
+Interpretability is therefore not merely a philosophical issue.
+It is connected to reliability, validation, and model improvement.
+
+\subsection*{Feature attribution}
+
+A common local question is:
+which parts of an input contributed most to a given prediction?
+
+\medskip
+
+Feature-attribution methods try to assign importance scores to input components, for example pixels, tokens, or features.
+At a high level, they ask:
+\begin{quote}
+if this input had changed, how might the prediction have changed?
+\end{quote}
+
+These methods can be useful, but they also have limitations:
+different attribution methods may disagree, and a visually plausible explanation need not reflect the full causal structure of the model.
+
+\subsection*{Probing internal representations}
+
+Another strategy is to analyze hidden states directly.
+If a model has intermediate representation \(h\), one may ask whether \(h\) contains information about some property of interest, such as syntax, object identity, sentiment, or latent state.
+
+\medskip
+
+This is often studied through \emph{probing}: train a simple auxiliary model to predict a property from the representation.
+If the property is predictable, then the representation contains relevant information.
+
+\medskip
+
+However, care is needed.
+A successful probe shows that the information is present, but not necessarily that the model uses it in the way the probe suggests.
+
+\subsection*{Circuit-style and mechanistic viewpoints}
+
+A more ambitious approach aims to identify structured internal mechanisms:
+subnetworks, pathways, heads, or feature interactions that implement specific computations.
+
+\medskip
+
+This mechanistic perspective seeks not merely to visualize importance, but to explain how a model computes.
+
+\medskip
+
+Such analyses are promising, but they remain difficult.
+Large deep systems are distributed and context-dependent, and local components may participate in many overlapping functions.
+
+\subsection*{What explanation methods can and cannot reveal}
+
+Interpretability tools can be genuinely informative.
+They can reveal:
+\begin{itemize}
+    \item spurious cues,
+    \item failure modes,
+    \item internal clustering,
+    \item saliency patterns,
+    \item useful hypotheses about model behavior.
+\end{itemize}
+
+But they also have limits:
+\begin{itemize}
+    \item explanations may be unstable,
+    \item local attributions may oversimplify distributed computation,
+    \item interpretability does not automatically imply causality,
+    \item a model may remain opaque even if some of its parts are interpretable.
+\end{itemize}
+
+\subsection*{A modest conclusion}
+
+Interpretability is best understood neither as a solved problem nor as a hopeless one.
+It is a growing collection of tools for partial understanding.
+
+\medskip
+
+A realistic stance is:
+\begin{itemize}
+    \item deep models are not fully transparent,
+    \item some useful explanatory tools exist,
+    \item these tools must themselves be interpreted carefully.
+\end{itemize}
+

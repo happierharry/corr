@@ -1,0 +1,339 @@
+\section{Tutorial 12: Attention Visualization}
+
+\subsection{Objectives}
+
+This tutorial develops intuition for how attention behaves inside transformer models:
+
+\begin{itemize}
+    \item Understand attention weights as interaction patterns
+    \item Interpret self-attention matrices visually
+    \item Relate attention patterns to linguistic or structural roles
+    \item Connect local and global dependencies to model behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Focus.}  
+Attention is not just a formula; it is a structured map of interactions between elements.
+
+\subsection{Exercise 1: Attention Matrix as a Map of Interactions}
+
+Consider a sequence of length $T$ with self-attention matrix:
+\[
+A = \text{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What are the dimensions of $A$?
+    \item What does the entry $A_{ij}$ represent?
+    \item Why does each row sum to $1$?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item
+    \[
+    A \in \mathbb{R}^{T \times T}.
+    \]
+
+    \item $A_{ij}$ is the attention weight from position $i$ to position $j$; it measures how much token $i$ attends to token $j$.
+
+    \item Each row is the output of a softmax, so:
+    \[
+    \sum_{j=1}^T A_{ij} = 1.
+    \]
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Attention matrices are row-stochastic interaction maps.
+
+\subsection{Exercise 2: Interpreting a Simple Attention Pattern}
+
+Suppose a sentence has 5 tokens, and one attention head produces:
+
+\[
+A =
+\begin{pmatrix}
+0.7 & 0.2 & 0.1 & 0.0 & 0.0 \\
+0.1 & 0.6 & 0.2 & 0.1 & 0.0 \\
+0.0 & 0.2 & 0.5 & 0.2 & 0.1 \\
+0.0 & 0.1 & 0.2 & 0.6 & 0.1 \\
+0.0 & 0.0 & 0.1 & 0.2 & 0.7
+\end{pmatrix}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Describe the qualitative pattern.
+    \item What kind of dependency does this head emphasize?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item Most of the mass is near the diagonal.
+
+    \item This head emphasizes local context: each token mostly attends to itself and nearby tokens.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Some attention heads behave like local filters, similar to convolutional receptive fields.
+
+\subsection{Exercise 3: Global Attention Pattern}
+
+Now consider:
+
+\[
+A =
+\begin{pmatrix}
+0.1 & 0.1 & 0.1 & 0.6 & 0.1 \\
+0.0 & 0.2 & 0.1 & 0.6 & 0.1 \\
+0.1 & 0.1 & 0.1 & 0.6 & 0.1 \\
+0.1 & 0.1 & 0.1 & 0.5 & 0.2 \\
+0.1 & 0.1 & 0.1 & 0.6 & 0.1
+\end{pmatrix}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item What is the dominant attended position?
+    \item What might this represent in language?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item Position 4 is dominant.
+
+    \item This may correspond to a syntactically or semantically central token, such as a main verb, subject, or separator token.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention can capture global structure, not only local neighborhoods.
+
+\subsection{Exercise 4: Multi-Head Attention Interpretation}
+
+Transformers use multiple attention heads:
+\[
+\text{MultiHead}(Q,K,V) = \text{Concat}(\text{head}_1, \dots, \text{head}_h)W_O.
+\]
+
+\medskip
+
+\noindent
+\textbf{Question.}  
+Why is multi-head attention useful?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item Different heads can specialize in different patterns
+    \item One head may capture local context
+    \item Another may capture long-range dependencies
+    \item Another may track punctuation or structural boundaries
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key takeaway.}  
+Multi-head attention enables diverse relational representations.
+
+\subsection{Exercise 5: Attention and Positional Structure}
+
+Since self-attention alone is permutation-invariant, transformers add positional encodings.
+
+\medskip
+
+\noindent
+\textbf{Tasks.}
+\begin{enumerate}
+    \item Why can attention alone not distinguish order?
+    \item How does positional encoding fix this?
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{enumerate}
+    \item Without positional information, the model only sees a set of vectors and their pairwise similarities.
+
+    \item Positional encodings inject order information into token representations, so attention can depend on both content and position.
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention captures interactions; positional encoding tells the model where those interactions occur.
+
+\subsection{Exercise 6: Comparison with RNNs and CNNs}
+
+\textbf{Question.}  
+How does attention differ from CNNs and RNNs in how it processes structure?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item CNN:
+    \begin{itemize}
+        \item local interactions
+        \item fixed receptive structure
+    \end{itemize}
+
+    \item RNN:
+    \begin{itemize}
+        \item sequential memory
+        \item hidden-state bottleneck
+    \end{itemize}
+
+    \item Attention:
+    \begin{itemize}
+        \item global interactions
+        \item data-dependent connectivity
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention replaces fixed or sequential structure with adaptive interaction patterns.
+
+\subsection{Exercise 7: Attention as a Kernel Matrix}
+
+Recall the matrix form:
+\[
+A = \text{softmax}\left(\frac{QK^\top}{\sqrt{d}}\right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Task.}  
+Explain why $QK^\top$ resembles a kernel or similarity matrix.
+
+\medskip
+
+\noindent
+\textbf{Solution.}
+
+\begin{itemize}
+    \item Each entry is a dot-product similarity
+    \item Similar to Gram matrices in kernel methods
+    \item Difference: the representation itself is learned and input-dependent
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention can be viewed as a learned, adaptive kernel operator.
+
+\subsection{Exercise 8: Visualization Thought Experiment}
+
+Suppose you plot attention matrices from different layers.
+
+\medskip
+
+\noindent
+\textbf{Question.}  
+What patterns might you expect from shallow vs deep layers?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item Early layers:
+    \begin{itemize}
+        \item more local or lexical patterns
+    \end{itemize}
+
+    \item Later layers:
+    \begin{itemize}
+        \item more global, semantic, or task-specific interactions
+    \end{itemize}
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention patterns evolve hierarchically across depth.
+
+\subsection{Exercise 9 (Discussion): Are Attention Weights Explanations?}
+
+\textbf{Question.}  
+Can attention maps be interpreted as explanations of model decisions?
+
+\medskip
+
+\noindent
+\textbf{Discussion.}
+
+\begin{itemize}
+    \item They show interaction patterns
+    \item But they do not fully explain the model’s computation
+    \item Feedforward layers and residual paths also matter
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Attention visualization is informative, but not a complete explanation.
+
+\subsection{Summary}
+
+\begin{itemize}
+    \item Attention matrices visualize interactions between tokens
+    \item Different heads can capture different structural roles
+    \item Attention can express both local and global dependencies
+    \item Transformers combine interaction modeling with positional information
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preparation for the next part of the course.}  
+We now move from architectures to generative modeling and large-scale AI systems, where attention and transformers play a central role.

@@ -1,0 +1,302 @@
+\section{Lecture 10: Support Vector Machines (Conceptual)}
+
+\subsection{Motivation}
+
+In previous lectures, we studied:
+\begin{itemize}
+    \item Linear and logistic regression
+    \item Feature maps and kernel methods
+\end{itemize}
+
+\medskip
+
+\noindent
+These methods aim to separate data using linear decision boundaries.
+
+\medskip
+
+\noindent
+However, a key question remains:
+
+\medskip
+
+\noindent
+\textit{Among all separating hyperplanes, which one should we choose?}
+
+\medskip
+
+\noindent
+\textbf{Guiding idea.}  
+Choose the decision boundary that is most robust to perturbations.
+
+\subsection{Margin Maximization}
+
+Consider binary classification with labels $y_i \in \{-1, +1\}$.
+
+\medskip
+
+\noindent
+A linear classifier is:
+\[
+f(x) = w^\top x + b.
+\]
+
+\medskip
+
+\noindent
+\textbf{Decision boundary.}
+\[
+w^\top x + b = 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Margin.}
+\begin{itemize}
+    \item Distance between the decision boundary and the closest data points
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric margin.}
+\[
+\gamma = \min_i \frac{y_i (w^\top x_i + b)}{\|w\|}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Optimization problem.}
+\[
+\max_{w,b} \; \gamma.
+\]
+
+\medskip
+
+\noindent
+\textbf{Equivalent formulation.}
+\[
+\min_{w,b} \; \|w\|^2 \quad \text{subject to} \quad y_i(w^\top x_i + b) \geq 1.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Maximizing margin improves robustness
+    \item Only closest points matter
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Support vectors.}
+\begin{itemize}
+    \item Points that lie on the margin boundary
+    \item Determine the classifier
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+SVM focuses on the most informative data points.
+
+\subsection{Hard and Soft Margins}
+
+\textbf{Hard-margin SVM.}
+\begin{itemize}
+    \item Assumes perfectly separable data
+    \item Constraints:
+    \[
+    y_i(w^\top x_i + b) \geq 1
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitation.}
+\begin{itemize}
+    \item Sensitive to noise
+    \item Often infeasible in real data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Soft-margin SVM.}
+
+Introduce slack variables $\xi_i \geq 0$:
+\[
+y_i(w^\top x_i + b) \geq 1 - \xi_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Objective.}
+\[
+\min_{w,b,\xi} \; \|w\|^2 + C \sum_i \xi_i.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Allows violations of margin constraints
+    \item Balances margin size and classification error
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to regularization.}
+\begin{itemize}
+    \item $\|w\|^2$ acts as regularizer
+    \item $C$ controls tradeoff between fit and complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Soft margins extend SVM to noisy, real-world data.
+
+\subsection{Dual Formulation (Conceptual)}
+
+Rather than solving directly for $w$, we can express the solution in terms of training data.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}
+\begin{itemize}
+    \item The optimal $w$ can be written as:
+    \[
+    w = \sum_{i=1}^n \alpha_i y_i x_i.
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Only support vectors have $\alpha_i > 0$
+    \item Solution depends on a subset of data points
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Inner products.}
+\[
+w^\top x = \sum_i \alpha_i y_i (x_i^\top x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The classifier depends only on inner products between data points.
+
+\subsection{Kernel Methods Revisited}
+
+From the dual perspective, predictions depend on:
+\[
+x_i^\top x.
+\]
+
+\medskip
+
+\noindent
+We replace this with a kernel:
+\[
+k(x_i, x) = \langle \phi(x_i), \phi(x) \rangle.
+\]
+
+\medskip
+
+\noindent
+\textbf{Kernel SVM.}
+\[
+f(x) = \sum_i \alpha_i y_i k(x_i, x) + b.
+\]
+
+\medskip
+
+\noindent
+\textbf{Effect.}
+\begin{itemize}
+    \item Linear classifier in feature space
+    \item Nonlinear classifier in input space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key observation.}
+\begin{itemize}
+    \item Kernel trick enables high-dimensional modeling efficiently
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+SVM combines margin maximization with kernel-based representation.
+
+\subsection{A Unifying Perspective}
+
+Support vector machines unify multiple ideas:
+
+\begin{itemize}
+    \item \textbf{Geometry:} margin maximization
+    \item \textbf{Optimization:} constrained quadratic problem
+    \item \textbf{Regularization:} control of model complexity
+    \item \textbf{Representation:} kernel feature spaces
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+A good classifier is one that separates data with maximum robustness.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+The combination of margin and representation leads to powerful nonlinear models.
+
+\subsection{Outlook}
+
+In this lecture, we introduced:
+
+\begin{itemize}
+    \item margin maximization,
+    \item hard and soft margin SVM,
+    \item dual formulation (conceptually),
+    \item kernel methods in SVM.
+\end{itemize}
+
+\medskip
+
+\noindent
+These ideas illustrate how geometry, optimization, and representation interact.
+
+\medskip
+
+\noindent
+In the next lecture, we study model evaluation and selection, focusing on how to assess and compare models in practice.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Effective learning balances data fit, robustness, and representation.

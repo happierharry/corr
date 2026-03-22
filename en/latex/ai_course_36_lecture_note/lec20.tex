@@ -1,0 +1,288 @@
+\section{Lecture 20: Residual Networks and Skip Connections}
+
+\subsection{Motivation}
+
+In previous lectures, we studied:
+
+\begin{itemize}
+    \item gradient instability (Lecture 16),
+    \item activation functions and depth (Lecture 17),
+    \item normalization methods (Lecture 18),
+    \item regularization (Lecture 19).
+\end{itemize}
+
+\medskip
+
+\noindent
+These techniques improve training, yet a fundamental problem remains.
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+As networks become deeper, performance may degrade.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+Why does increasing depth sometimes hurt performance, and how can we fix it?
+
+\subsection{The Degradation Problem}
+
+Empirically, deeper networks can have:
+
+\begin{itemize}
+    \item higher training error,
+    \item worse optimization behavior,
+\end{itemize}
+
+even though they are more expressive.
+
+\medskip
+
+\noindent
+\textbf{Paradox.}
+\begin{itemize}
+    \item A deeper model should be able to represent a shallow model
+    \item Yet optimization fails to find such solutions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The issue is not expressivity, but optimization difficulty.
+
+\subsection{Residual Learning}
+
+Residual networks introduce skip connections.
+
+\medskip
+
+\noindent
+Instead of learning:
+\[
+H(x),
+\]
+we learn a residual function:
+\[
+F(x) = H(x) - x.
+\]
+
+\medskip
+
+\noindent
+Thus:
+\[
+H(x) = x + F(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Residual block.}
+\[
+y = x + F(x; \theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item The network learns a correction to the identity
+    \item If identity is optimal, set $F(x) = 0$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Benefit.}
+\begin{itemize}
+    \item Easier optimization
+    \item Improved gradient flow
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning residuals is easier than learning full transformations.
+
+\subsection{Gradient Flow in Residual Networks}
+
+Consider:
+\[
+y = x + F(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Gradient.}
+\[
+\frac{\partial L}{\partial x}
+= \frac{\partial L}{\partial y}
+\left( I + \frac{\partial F}{\partial x} \right).
+\]
+
+\medskip
+
+\noindent
+\textbf{Key observation.}
+
+\begin{itemize}
+    \item The identity term ensures gradients can flow directly
+    \item Avoids vanishing gradients
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Skip connections create direct gradient pathways.
+
+\subsection{Dynamical Systems Perspective}
+
+Residual networks can be interpreted as discretizations of continuous systems.
+
+\medskip
+
+\noindent
+\textbf{Form.}
+\[
+h_{k+1} = h_k + F(h_k).
+\]
+
+\medskip
+
+\noindent
+This resembles:
+\[
+\frac{dh}{dt} = F(h),
+\]
+
+which is a differential equation.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+
+\begin{itemize}
+    \item Depth corresponds to time steps
+    \item Network computes a flow in representation space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Deep networks can be viewed as discrete dynamical systems.
+
+\subsection{Very Deep Architectures}
+
+Residual connections enable training of very deep networks:
+
+\begin{itemize}
+    \item hundreds or even thousands of layers
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+
+\begin{itemize}
+    \item skip connections
+    \item normalization (e.g., batch normalization)
+    \item suitable activations (e.g., ReLU)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Empirical observation.}
+
+\begin{itemize}
+    \item deeper residual networks often perform better
+    \item training becomes more stable
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to modern models.}
+
+\begin{itemize}
+    \item residual connections are used in:
+    \begin{itemize}
+        \item convolutional networks
+        \item transformers
+    \end{itemize}
+\end{itemize}
+
+\subsection{A Unifying Perspective}
+
+Residual networks address a fundamental challenge:
+
+\begin{itemize}
+    \item enabling depth without sacrificing trainability.
+\end{itemize}
+
+\medskip
+
+\noindent
+They combine:
+
+\begin{itemize}
+    \item architectural design (skip connections),
+    \item normalization,
+    \item activation functions.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Introduce identity mappings to stabilize both forward and backward signal propagation.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Depth becomes useful only when it is trainable.
+
+\subsection{Outlook}
+
+In this lecture, we studied:
+
+\begin{itemize}
+    \item the degradation problem,
+    \item residual learning,
+    \item gradient flow in skip connections,
+    \item dynamical systems interpretation.
+\end{itemize}
+
+\medskip
+
+\noindent
+Residual networks mark a turning point in deep learning, enabling very deep architectures.
+
+\medskip
+
+\noindent
+In the next lectures, we study specialized architectures that exploit structure in data:
+
+\begin{itemize}
+    \item convolutional networks for spatial data,
+    \item sequence models and attention for sequential data.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Architectural design is central to making deep learning effective at scale.

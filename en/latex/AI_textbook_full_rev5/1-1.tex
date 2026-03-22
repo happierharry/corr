@@ -1,0 +1,164 @@
+\chapterroadmap{This chapter develops a mathematical language for learning from data. We begin by asking what it means to learn at all, then formalize learning problems in terms of data, task, and performance. From there we move to Bayes rules and ideal prediction, generalization beyond the training sample, optimization as the engine of fitting, major learning paradigms, and finally the transition from fixed features to learned representations. The goal is to move from a broad conceptual picture to a precise framework that supports the rest of the book.}
+
+\section{What Does It Mean to Learn?}
+
+Before introducing probability distributions, loss functions, or optimization algorithms, it is worth fixing the central idea of the subject: learning is \emph{improvement from experience}. This sounds simple, but it already contains the three ingredients that organize the rest of the chapter. There is some source of experience, there is some task to be performed, and there is some criterion by which improved performance is judged.
+
+\begin{definition}[Learning problem]
+A learning problem consists of a source of experience $E$, a task space $T$, and a performance criterion $P$. A system learns if, after receiving experience from $E$, its performance on tasks in $T$, as measured by $P$, improves.
+\end{definition}
+
+This formulation is intentionally broad. In supervised learning, the experience is often a labeled dataset. In generative modeling, it may be a collection of unlabeled observations. In reinforcement learning, it is interaction with an environment. In all cases, the point is not merely to change after seeing data, but to change in a way that improves future behavior.
+
+\begin{example}[Supervised classification as a triple $(E,T,P)$]
+Consider binary email classification, where the goal is to predict whether an email is spam or not. A natural formulation is:
+\[
+E=\{(x_i,y_i)\}_{i=1}^n,
+\qquad
+T=\{f:\mathcal X\to\{0,1\}\},
+\qquad
+P=\text{classification accuracy on new emails}
+\]
+or, equivalently, the corresponding misclassification rate. Here $x_i$ is an email, $y_i\in\{0,1\}$ is its label, the task space consists of candidate classifiers, and the performance criterion measures how well the learned classifier predicts labels on previously unseen examples.
+\end{example}
+
+\subsection*{Learning as improvement from experience}
+
+A model that changes but does not improve has adapted, but it has not learned in the sense relevant to machine learning. Conversely, a model that performs perfectly on examples it has already seen but poorly on new examples has merely memorized. This is why learning is fundamentally future-oriented: a learning system uses finite experience to do better on cases it has not yet encountered.
+
+\begin{proposition}[Fitting observed data is not enough]
+Perfect performance on a finite training sample does not by itself imply learning in the predictive sense.
+\end{proposition}
+
+\begin{proof}
+Let
+\[
+\mathcal D=\{(x_i,y_i)\}_{i=1}^n
+\]
+be any finite dataset. Define a predictor $f$ by setting $f(x_i)=y_i$ for every training point and assigning arbitrary outputs elsewhere. Then $f$ achieves zero training error on $\mathcal D$, yet its behavior on unseen inputs is unconstrained. Hence fitting the observed sample alone does not certify useful predictive learning.
+\end{proof}
+
+The proposition is elementary, but it captures one of the deepest ideas in the subject. Machine learning is not only about describing the observed sample; it is about extracting regularities that persist beyond that sample.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[scale=1, every node/.style={align=center}]
+    \coordinate (A) at (0,0);
+    \coordinate (B) at (7,0);
+    \coordinate (C) at (3.5,4.8);
+
+    \draw[thick] (A) -- (B) -- (C) -- cycle;
+
+    \node[draw, rounded corners, fill=gray!10, inner sep=6pt] at (A) {\textbf{Data}\\Experience $E$};
+    \node[draw, rounded corners, fill=gray!10, inner sep=6pt] at (B) {\textbf{Performance}\\Criterion $P$};
+    \node[draw, rounded corners, fill=gray!10, inner sep=6pt] at (C) {\textbf{Task}\\Space $T$};
+
+    \node[draw, circle, fill=gray!15, minimum size=1.8cm] (L) at (3.5,1.85) {\textbf{Learning}};
+
+    \draw[-{Latex[length=2.2mm]}, thick] (0.9,0.55) -- (2.6,1.45);
+    \draw[-{Latex[length=2.2mm]}, thick] (6.1,0.55) -- (4.4,1.45);
+    \draw[-{Latex[length=2.2mm]}, thick] (3.5,4.05) -- (3.5,2.85);
+
+    \node at (1.75,2.95) {\small what is observed};
+    \node at (5.25,2.95) {\small what counts as success};
+    \node at (3.5,3.45) {\small what must be done};
+\end{tikzpicture}
+\caption{A learning problem is organized by three ingredients: experience $E$, a task space $T$, and a performance criterion $P$. Learning sits at their intersection.}
+\end{figure}
+
+\subsection*{Data, task, and performance criterion}
+
+It is helpful to name the components of a learning problem explicitly.
+
+\paragraph{Data.}
+Data provide the experience from which the system learns. In supervised learning we often write
+\[
+\mathcal D=\{(x_i,y_i)\}_{i=1}^n,
+\]
+where each $x_i$ is an input and each $y_i$ is a target. In unsupervised settings we may instead have
+\[
+\mathcal D=\{x_i\}_{i=1}^n.
+\]
+The data may be images, signals, text, sensor measurements, trajectories, or interaction histories.
+
+\paragraph{Task.}
+The task says what the learner should do. It may predict a label, estimate a real number, generate a sample, compress a signal, or choose an action sequence. The same dataset can support different tasks, so data and task should not be conflated.
+
+\paragraph{Performance criterion.}
+The criterion specifies what it means to do well. Accuracy, squared error, log-likelihood, expected reward, calibration, robustness, and computational efficiency are all possible criteria. A learning problem is incomplete until the performance notion is made explicit.
+
+\subsection*{Prediction, decision, and representation}
+
+Introductory presentations often equate learning with prediction, but that is too narrow. Three notions should be distinguished from the beginning.
+
+\paragraph{Prediction.}
+A predictor maps an input to an output,
+\[
+\hat y = f(x), \qquad f:\mathcal X\to\mathcal Y.
+\]
+This is the standard language of classification and regression.
+
+\paragraph{Decision.}
+A decision system maps information to an action. Predictions may inform decisions, but decisions also depend on costs, constraints, and long-term consequences. Predicting that a patient is high-risk is different from deciding which treatment to recommend.
+
+\paragraph{Representation.}
+A representation is an internal encoding of data that makes the relevant task easier. Classical pipelines often used fixed, hand-crafted features; modern deep learning often learns these representations from data.
+
+This distinction matters because later chapters will show that modern AI systems succeed not only by fitting output maps, but also by constructing useful internal coordinate systems for data.
+
+\subsection*{Examples of learning problems}
+
+\paragraph{Classification.}
+Given an input $x$, predict a discrete label $y\in\{1,\dots,K\}$. Spam filtering, handwriting recognition, and disease diagnosis are standard examples.
+
+\paragraph{Regression.}
+Given an input $x$, predict a real-valued target $y\in\mathbb R$. House-price estimation, demand forecasting, and scientific calibration are familiar examples.
+
+\paragraph{Generation.}
+Given samples from a distribution, learn to model or generate new samples from a similar distribution. Image synthesis, molecule generation, and speech generation fall into this category.
+
+\paragraph{Control.}
+Observe a state, choose an action, and optimize long-term behavior. Robotics, game playing, recommendation under interaction, and navigation are examples of this setting.
+
+\whattoremember{A learning problem is not defined by data alone. It is defined by a source of experience $E$, a task space $T$, and a performance criterion $P$. Learning is future-oriented improvement from experience: the goal is not merely to fit what has already been observed, but to perform better on new cases, new decisions, or new interactions. From the beginning, it is also important to distinguish prediction, decision, and representation.}
+
+\commonconfusion{A model can have a predictive interface but still solve a decision problem only indirectly. A risk score is a prediction; the treatment chosen after seeing that score is a decision. Likewise, a model can appear to perform well simply because it memorizes a finite sample. Memorization may reproduce the past, but learning aims at useful performance beyond the observed examples.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+For each of the following scenarios, say whether the central goal is primarily one of \emph{prediction}, \emph{decision}, or \emph{representation}. Briefly justify your answer.
+\begin{enumerate}
+    \item Predicting whether an image contains a tumor.
+    \item Choosing a dosage policy for a patient over time.
+    \item Learning a low-dimensional embedding of customer behavior.
+    \item Predicting tomorrow's electricity demand.
+    \item Selecting moves in a board game to maximize the chance of winning.
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}
+Write down plausible triples $(E,T,P)$ for each of the following:
+\begin{enumerate}
+    \item a regression problem,
+    \item a generative modeling problem,
+    \item a reinforcement learning problem.
+\end{enumerate}
+Be explicit about what counts as experience, what the task is, and how performance is measured.
+\end{exercise}
+
+\begin{exercise}
+Construct a predictor that attains zero error on a finite dataset but is clearly unreasonable on new points. Explain why this illustrates the difference between memorization and learning.
+\end{exercise}
+
+\begin{exercise}
+A hospital uses a model to assign a risk score to patients and then uses that score to decide which patients receive immediate follow-up. Identify which part of the pipeline is prediction and which part is decision. Give one reason why optimizing accuracy alone may be insufficient in this setting.
+\end{exercise}
+
+\begin{exercise}
+Give an example in which the same dataset could support two different tasks with two different performance criteria. Explain why the learning problem changes when the task or criterion changes, even if the data do not.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+This section uses the classical triplet $(E,T,P)$ as a compact way to state what a learning problem is, while emphasizing a modern viewpoint in which learning may concern not only prediction but also decision and representation. The distinction between memorization and future predictive performance foreshadows the later discussion of generalization. The representation viewpoint prepares the transition to neural networks and deep learning in the next chapter.

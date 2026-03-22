@@ -1,0 +1,263 @@
+\section{Deep Reinforcement Learning as Learned Representation Plus Control}
+
+\subsection{Overview}
+
+Classical reinforcement learning assumes that value functions and policies can be represented exactly.  
+In modern settings, state and action spaces are large or continuous, and learning must rely on \emph{function approximation}.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+Deep reinforcement learning (deep RL) replaces tabular representations with parameterized functions:
+\[
+V(s) \approx V_\theta(s), \quad Q(s,a) \approx Q_\theta(s,a), \quad \pi(a \mid s) \approx \pi_\theta(a \mid s).
+\]
+
+\medskip
+
+This introduces both expressive power and new sources of instability.
+
+\subsection{Function Approximation in Reinforcement Learning}
+
+\begin{definition}[Value Function Approximation]
+A value function is approximated by a parameterized model $V_\theta : \mathcal{S} \to \mathbb{R}$.
+\end{definition}
+
+\begin{definition}[Action-Value Approximation]
+\[
+Q_\theta : \mathcal{S} \times \mathcal{A} \to \mathbb{R}.
+\]
+\end{definition}
+
+\begin{definition}[Policy Approximation]
+A policy is parameterized as
+\[
+\pi_\theta(a \mid s).
+\]
+\end{definition}
+
+\medskip
+
+\noindent
+\textbf{Representation role.}  
+In deep RL, these functions typically factor as:
+\[
+s \xmapsto{\;\phi_\theta\;} z \xmapsto{\;g_\theta\;} \text{value or policy}.
+\]
+
+Thus, learning control is also learning representations.
+
+\subsection{Value-Based Methods and Bootstrapping}
+
+Value-based methods aim to approximate the Bellman optimality equation:
+\[
+Q^*(s,a) = R(s,a) + \gamma \mathbb{E}_{s'} \max_{a'} Q^*(s',a').
+\]
+
+\medskip
+
+\noindent
+\textbf{Temporal-difference (TD) learning.}  
+Given a sample transition $(s,a,r,s')$, define the target:
+\[
+y = r + \gamma \max_{a'} Q_\theta(s',a').
+\]
+
+Then update $\theta$ to minimize:
+\[
+\mathcal{L}(\theta) = \bigl(Q_\theta(s,a) - y\bigr)^2.
+\]
+
+\begin{remark}[Bootstrapping]
+The target depends on the current estimate $Q_\theta$.  
+Learning thus uses its own predictions as targets.
+\end{remark}
+
+\paragraph{DQN intuition.}
+Deep Q-Networks stabilize this process by:
+\begin{itemize}
+\item using a \emph{target network} for $y$
+\item sampling from a replay buffer to decorrelate data
+\end{itemize}
+
+\subsection{Policy-Based Methods}
+
+Instead of learning value functions, one may directly optimize policies.
+
+\begin{definition}[Objective]
+\[
+J(\theta) = \mathbb{E}_{\pi_\theta}\left[ \sum_{t=0}^\infty \gamma^t R(s_t, a_t) \right].
+\]
+\end{definition}
+
+\begin{theorem}[Policy Gradient Identity]
+\[
+\nabla_\theta J(\theta)
+=
+\mathbb{E}_{\pi_\theta}
+\left[
+\nabla_\theta \log \pi_\theta(a \mid s)\, Q^{\pi_\theta}(s,a)
+\right].
+\]
+\end{theorem}
+
+\begin{proof}[Sketch]
+Write $J(\theta)$ as an expectation over trajectories.  
+Differentiate under the integral and apply the log-derivative trick:
+\[
+\nabla_\theta \pi_\theta = \pi_\theta \nabla_\theta \log \pi_\theta.
+\]
+Rearranging yields the result.
+\end{proof}
+
+\begin{remark}
+In practice, $Q^{\pi_\theta}$ is replaced by sampled returns or learned critics.
+\end{remark}
+
+\subsection{Actor--Critic Methods}
+
+Actor--critic methods combine value and policy learning:
+\begin{itemize}
+\item \textbf{actor:} policy $\pi_\theta$
+\item \textbf{critic:} value function $V_\phi$ or $Q_\phi$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+The critic provides a learned representation of long-term outcomes, guiding the actor’s updates.
+
+\subsection{Model-Free vs Model-Based Reinforcement Learning}
+
+\begin{definition}[Model-Free RL]
+Learns value functions or policies without explicitly modeling $P(s' \mid s,a)$.
+\end{definition}
+
+\begin{definition}[Model-Based RL]
+Learns or uses a model of the environment:
+\[
+\hat{P}(s' \mid s,a), \quad \hat{R}(s,a).
+\]
+\end{definition}
+
+\medskip
+
+\noindent
+\textbf{Comparison.}
+\begin{itemize}
+\item Model-free: simpler, often more robust, data-hungry
+\item Model-based: more sample-efficient, but sensitive to model error
+\end{itemize}
+
+\begin{remark}
+Modern approaches often combine both through learned latent dynamics.
+\end{remark}
+
+\subsection{Worked Example: Learned State Representation}
+
+Consider an agent observing high-dimensional input $x_t$ (e.g., images).  
+A learned encoder $\phi_\theta$ produces:
+\[
+z_t = \phi_\theta(x_t).
+\]
+
+\medskip
+
+Suppose:
+\[
+Q_\theta(x_t, a) = g_\theta(z_t, a).
+\]
+
+If $\phi_\theta$ is trained jointly with $Q_\theta$, it learns to:
+\begin{itemize}
+\item discard irrelevant visual detail
+\item retain task-relevant structure (e.g., object positions)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+The representation $\phi_\theta$ is shaped by control objectives rather than reconstruction or prediction alone.
+
+\subsection{Deep RL Training Loop}
+
+A typical deep RL loop consists of:
+\begin{enumerate}
+\item collect transitions $(s,a,r,s')$
+\item store in replay buffer
+\item sample mini-batches
+\item update value/policy networks
+\item periodically update target networks
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+Learning interleaves data collection, representation learning, and control optimization.
+
+\subsection{Connection to Representation Learning}
+
+Deep RL integrates representation learning with decision making:
+\begin{itemize}
+\item representations must support prediction of future outcomes
+\item invariances are task-dependent (control-relevant)
+\item transfer requires reusable state abstractions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Unlike supervised learning, representations are evaluated by their effect on long-term return.
+
+\subsection{What to Remember}
+
+\begin{itemize}
+\item Deep RL uses function approximation for value and policy
+\item Bootstrapping introduces both efficiency and instability
+\item Policy gradients provide a principled optimization framework
+\item Representations are shaped by control objectives
+\end{itemize}
+
+\subsection{Common Confusion}
+
+\begin{itemize}
+\item Value-based and policy-based methods are not mutually exclusive
+\item Bootstrapping is not the same as supervised learning
+\item Good representations in RL are not necessarily interpretable
+\end{itemize}
+
+\subsection{Exercises}
+
+\begin{exercise}
+Derive the TD update for $V_\theta$ using the Bellman expectation equation.
+\end{exercise}
+
+\begin{exercise}
+Show how the policy gradient identity changes when using a baseline.
+\end{exercise}
+
+\begin{exercise}
+Construct an example where model-based RL fails due to model bias.
+\end{exercise}
+
+\begin{exercise}
+Explain how representation learning differs between supervised learning and RL.
+\end{exercise}
+
+\subsection{Notes and References}
+
+Key directions include:
+\begin{itemize}
+\item temporal-difference learning and Q-learning
+\item policy gradient methods (REINFORCE)
+\item deep Q-networks (DQN)
+\item actor--critic methods
+\item model-based RL and latent dynamics models
+\end{itemize}
+
+Deep RL remains less theoretically understood than supervised learning, particularly in the presence of function approximation and non-stationary data.

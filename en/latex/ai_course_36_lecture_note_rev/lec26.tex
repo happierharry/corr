@@ -1,0 +1,781 @@
+\section{Lecture 26: Generative Adversarial Networks}
+
+\subsection{Bridge: Explicit and Implicit Generative Models}
+
+In the previous lecture, we studied a likelihood-based generative model:
+\[
+p_\theta(x)=\int p_\theta(x|z)p(z)\,dz.
+\]
+
+There, the model tries to assign probability to data explicitly.
+
+\medskip
+
+\noindent
+\textbf{Explicit generative models.}
+These define a density or likelihood, at least in principle:
+\[
+p_\theta(x).
+\]
+
+Examples include:
+\begin{itemize}
+    \item autoregressive models
+    \item latent-variable models such as VAEs
+    \item normalizing flows
+\end{itemize}
+
+\medskip
+
+\noindent
+There is another route.
+
+\medskip
+
+\noindent
+\textbf{Implicit generative models.}
+Instead of explicitly writing down a tractable density $p_\theta(x)$, we define a sampling procedure:
+\[
+z \sim p(z), \qquad x = G_\theta(z).
+\]
+
+Here:
+\begin{itemize}
+    \item $z$ is latent noise
+    \item $G_\theta$ is a generator network
+    \item generated samples induce a model distribution $p_g$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key difference.}
+An implicit model may be easy to sample from but hard to evaluate as a density.
+
+\medskip
+
+\noindent
+This raises the question:
+\begin{quote}
+If we cannot easily compute likelihood, how can we train a generative model?
+\end{quote}
+
+\medskip
+
+\noindent
+Generative adversarial networks answer this by turning learning into a game between two networks.
+
+\subsection{Core Idea of GANs}
+
+A generative adversarial network (GAN) consists of two parts:
+
+\begin{itemize}
+    \item a \textbf{generator} $G_\theta$
+    \item a \textbf{discriminator} $D_\phi$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Generator.}
+The generator maps random noise to synthetic samples:
+\[
+z \sim p(z), \qquad \tilde{x}=G_\theta(z).
+\]
+
+\medskip
+
+\noindent
+\textbf{Discriminator.}
+The discriminator receives an input $x$ and outputs a number in $(0,1)$:
+\[
+D_\phi(x)\in(0,1),
+\]
+interpreted as the probability that $x$ is real rather than generated.
+
+\medskip
+
+\noindent
+\textbf{Adversarial setup.}
+
+\begin{itemize}
+    \item the discriminator tries to distinguish real data from fake samples
+    \item the generator tries to produce samples that fool the discriminator
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Intuition.}
+The discriminator acts as a learned critic. It does not merely classify data; it provides a moving training signal that tells the generator how unrealistic its outputs still are.
+
+\subsection{The Minimax Objective}
+
+Let $p_{\text{data}}$ denote the true data distribution and let $p_g$ denote the distribution induced by the generator.
+
+\medskip
+
+\noindent
+The original GAN objective is
+\[
+\min_G \max_D V(D,G),
+\]
+where
+\[
+V(D,G)
+=
+\mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)]
++
+\mathbb{E}_{z\sim p(z)}[\log(1-D(G(z)))].
+\]
+
+\medskip
+
+\noindent
+\textbf{Meaning of each term.}
+
+\begin{itemize}
+    \item $\mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)]$ rewards the discriminator for assigning high probability to real data
+    \item $\mathbb{E}_{z\sim p(z)}[\log(1-D(G(z)))]$ rewards the discriminator for assigning low probability to fake data
+\end{itemize}
+
+\medskip
+
+\noindent
+The generator wants the opposite outcome: it wants generated samples to look real to the discriminator.
+
+\medskip
+
+\noindent
+\textbf{Game interpretation.}
+The discriminator tries to maximize classification success; the generator tries to minimize it by producing more realistic samples.
+
+\subsection{Two-Player Optimization View}
+
+Training a GAN is not ordinary minimization of one scalar loss over one set of parameters. It is a two-player game.
+
+\medskip
+
+\noindent
+\textbf{Discriminator step.}
+For fixed generator $G$, update $\phi$ to maximize
+\[
+V(D,G).
+\]
+
+\medskip
+
+\noindent
+\textbf{Generator step.}
+For fixed discriminator $D$, update $\theta$ to minimize
+\[
+V(D,G).
+\]
+
+\medskip
+
+\noindent
+In practice, one alternates gradient-based updates:
+\begin{enumerate}
+    \item sample real data $x \sim p_{\text{data}}$
+    \item sample noise $z \sim p(z)$ and form fake data $\tilde{x}=G(z)$
+    \item update discriminator to improve real/fake separation
+    \item update generator to make fake samples more convincing
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Important difference from supervised learning.}
+The target for the generator is not fixed in advance. It is created dynamically by the current state of the discriminator.
+
+\subsection{Generator Loss Variants}
+
+If the generator minimizes the original saturating objective
+\[
+\mathbb{E}_{z\sim p(z)}[\log(1-D(G(z)))],
+\]
+training can be slow when the discriminator is strong.
+
+\medskip
+
+\noindent
+\textbf{Why?}
+If $D(G(z))$ is already close to $0$, then $\log(1-D(G(z)))$ changes only weakly and the generator may receive poor gradients.
+
+\medskip
+
+\noindent
+A common practical alternative is the \textbf{non-saturating} generator loss:
+\[
+\min_G -\mathbb{E}_{z\sim p(z)}[\log D(G(z))].
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+Instead of directly minimizing the discriminator's success, the generator is trained to maximize the discriminator's belief that fake samples are real.
+
+\medskip
+
+\noindent
+This usually gives stronger gradients early in training.
+
+\subsection{Optimal Discriminator Intuition}
+
+To understand GANs theoretically, fix the generator $G$, hence fix the model distribution $p_g$.
+
+\medskip
+
+\noindent
+For a given input $x$, the discriminator seeks to maximize
+\[
+p_{\text{data}}(x)\log D(x) + p_g(x)\log(1-D(x)).
+\]
+
+Pointwise optimization yields the optimal discriminator:
+\[
+D^*(x)=\frac{p_{\text{data}}(x)}{p_{\text{data}}(x)+p_g(x)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+At each point $x$:
+\begin{itemize}
+    \item if real data density is much larger than fake density, then $D^*(x)$ is near $1$
+    \item if fake density is much larger than real density, then $D^*(x)$ is near $0$
+    \item if they match, then $D^*(x)=1/2$
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Key lesson.}
+The optimal discriminator measures how distinguishable the two distributions are.
+
+\subsection{What Happens at Equilibrium?}
+
+Substituting the optimal discriminator back into the value function gives
+\[
+V(D^*,G)
+=
+\mathbb{E}_{x\sim p_{\text{data}}}
+\left[
+\log \frac{p_{\text{data}}(x)}{p_{\text{data}}(x)+p_g(x)}
+\right]
++
+\mathbb{E}_{x\sim p_g}
+\left[
+\log \frac{p_g(x)}{p_{\text{data}}(x)+p_g(x)}
+\right].
+\]
+
+This can be simplified into
+\[
+V(D^*,G)
+=
+- \log 4 + 2\,\mathrm{JS}(p_{\text{data}}\|p_g),
+\]
+where $\mathrm{JS}$ denotes the Jensen--Shannon divergence.
+
+\medskip
+
+\noindent
+\textbf{Consequence.}
+If the discriminator is always optimal, GAN training pushes the generator toward minimizing a divergence between the real and generated distributions.
+
+\medskip
+
+\noindent
+\textbf{Global optimum.}
+The minimum occurs when
+\[
+p_g = p_{\text{data}},
+\]
+in which case
+\[
+D^*(x)=\frac12
+\]
+everywhere, since real and fake samples are no longer distinguishable.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+The discriminator is not the final goal. It is a device for guiding the generator toward the data distribution.
+
+\subsection{Divergence Viewpoint}
+
+GANs can be understood as learning by minimizing a discrepancy between distributions.
+
+\medskip
+
+\noindent
+\textbf{In the original theory,} this discrepancy is the Jensen--Shannon divergence:
+\[
+\mathrm{JS}(p_{\text{data}}\|p_g).
+\]
+
+\medskip
+
+\noindent
+\textbf{Why this matters.}
+It connects adversarial learning to a broader theme in statistics and machine learning:
+\begin{quote}
+Learn a model distribution by making it close to the true distribution under some notion of distance or divergence.
+\end{quote}
+
+\medskip
+
+\noindent
+Different generative methods use different notions of discrepancy:
+\begin{itemize}
+    \item maximum likelihood often corresponds to KL-related objectives
+    \item VAEs use an ELBO involving likelihood and KL terms
+    \item original GANs implicitly target Jensen--Shannon divergence
+    \item Wasserstein GANs use Earth-Mover distance intuition
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Important practical caveat.}
+A divergence may behave poorly when the supports of two distributions barely overlap, which is one reason GAN training can become unstable.
+
+\subsection{Geometric Intuition}
+
+Suppose the data lie on a thin low-dimensional manifold inside a high-dimensional ambient space. Early in training, the generator may place mass on a very different manifold.
+
+\medskip
+
+\noindent
+Then:
+\begin{itemize}
+    \item the discriminator can separate real and fake samples almost perfectly
+    \item gradients for the generator may become weak or uninformative
+    \item optimization becomes unstable
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Intuition.}
+In high dimensions, distributions can be visually similar in sample quality yet still be easy to separate statistically. This makes adversarial training delicate.
+
+\subsection{Why GANs Can Produce Sharp Samples}
+
+Compared with likelihood-based models such as standard VAEs, GANs are often associated with visually sharp outputs.
+
+\medskip
+
+\noindent
+\textbf{Reason.}
+The discriminator does not reward average-case pixelwise accuracy. Instead, it rewards realism under a learned criterion.
+
+\medskip
+
+\noindent
+This can reduce the tendency to average over multiple plausible outputs.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+GANs may produce highly realistic samples without giving a tractable density model, but the optimization is typically more fragile.
+
+\subsection{Mode Collapse}
+
+One of the most famous GAN pathologies is \textbf{mode collapse}.
+
+\medskip
+
+\noindent
+\textbf{Definition.}
+Mode collapse occurs when the generator maps many latent inputs $z$ to a small set of outputs or to only a few modes of the true data distribution.
+
+\medskip
+
+\noindent
+Instead of covering all major patterns in the data, the generator may produce:
+\begin{itemize}
+    \item only a narrow family of faces
+    \item only certain object poses
+    \item repeated high-quality but low-diversity samples
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Why it can happen.}
+If a small subset of outputs consistently fools the current discriminator, the generator may keep exploiting those outputs rather than learning the full distribution.
+
+\medskip
+
+\noindent
+\textbf{Game-theoretic view.}
+The generator may find a locally successful strategy against the present discriminator, even though that strategy is globally poor as a generative model.
+
+\subsection{Training Instability}
+
+GAN training is well known to be unstable.
+
+\medskip
+
+\noindent
+\textbf{Common symptoms.}
+\begin{itemize}
+    \item discriminator quickly becomes too strong
+    \item generator gradients vanish or oscillate
+    \item sample quality improves and then degrades
+    \item different runs behave very differently
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Why this is hard.}
+Ordinary gradient descent is designed for minimization, but GANs involve a minimax game:
+\[
+\min_\theta \max_\phi V(\phi,\theta).
+\]
+
+Even simple games can produce cycling rather than convergence.
+
+\medskip
+
+\noindent
+\textbf{Insight.}
+GAN training difficulty is not just a matter of architecture or hyperparameters. It is tied to the geometry of adversarial optimization itself.
+
+\subsection{Stabilization Tricks in Practice}
+
+A large part of GAN research has focused on making training more stable.
+
+\medskip
+
+\noindent
+\textbf{Common tricks include:}
+
+\begin{itemize}
+    \item \textbf{non-saturating generator loss} rather than the original saturating form
+    \item \textbf{careful balance of updates} between generator and discriminator
+    \item \textbf{label smoothing} for real targets
+    \item \textbf{noise injection} into inputs or intermediate features
+    \item \textbf{batch normalization} or architectural normalization methods
+    \item \textbf{spectral normalization} to control discriminator Lipschitz behavior
+    \item \textbf{feature matching} losses that encourage broader distributional alignment
+    \item \textbf{minibatch discrimination} to reduce mode collapse
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Architectural design also matters.}
+Convolutional inductive bias, normalization choices, and discriminator capacity strongly affect training behavior.
+
+\medskip
+
+\noindent
+\textbf{Important principle.}
+The discriminator should be strong enough to provide useful feedback, but not so overpowering that the generator receives no meaningful gradient signal.
+
+\subsection{Conditional GANs}
+
+Often we do not want unconditional generation. Instead, we want to generate data conditioned on side information.
+
+\medskip
+
+\noindent
+Let $y$ denote a conditioning variable, such as:
+\begin{itemize}
+    \item a class label
+    \item text
+    \item another image
+    \item semantic attributes
+\end{itemize}
+
+\medskip
+
+\noindent
+A conditional GAN models
+\[
+p(x|y).
+\]
+
+\medskip
+
+\noindent
+\textbf{Generator.}
+\[
+\tilde{x}=G(z,y).
+\]
+
+\medskip
+
+\noindent
+\textbf{Discriminator.}
+\[
+D(x,y),
+\]
+which judges whether $x$ is a real sample consistent with condition $y$.
+
+\medskip
+
+\noindent
+\textbf{Conditional objective.}
+\[
+\min_G \max_D
+\;
+\mathbb{E}_{(x,y)\sim p_{\text{data}}}[\log D(x,y)]
++
+\mathbb{E}_{z\sim p(z),\, y\sim p(y)}[\log(1-D(G(z,y),y))].
+\]
+
+\medskip
+
+\noindent
+\textbf{Applications.}
+\begin{itemize}
+    \item class-conditional image generation
+    \item image-to-image translation
+    \item text-to-image generation in early adversarial systems
+    \item super-resolution
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Conceptual point.}
+Conditioning reduces ambiguity and gives the generator a clearer target. Instead of modeling the entire distribution at once, it models a family of conditional distributions.
+
+\subsection{Image-to-Image and Structured Conditional Generation}
+
+Conditional GANs became especially influential in structured generation tasks.
+
+\medskip
+
+\noindent
+Examples include:
+\begin{itemize}
+    \item edge map $\rightarrow$ photo
+    \item segmentation mask $\rightarrow$ street scene
+    \item low-resolution image $\rightarrow$ high-resolution image
+\end{itemize}
+
+\medskip
+
+\noindent
+In such cases, the generator is not producing from pure noise alone. It is transforming one representation into another while the discriminator enforces realism.
+
+\medskip
+
+\noindent
+\textbf{Practical advantage.}
+The adversarial loss can encourage sharper, more realistic outputs than purely pixelwise losses.
+
+\subsection{Wasserstein GAN: Motivation}
+
+Original GANs can suffer when Jensen--Shannon divergence becomes uninformative, especially if the real and generated distributions are far apart or supported on different low-dimensional sets.
+
+\medskip
+
+\noindent
+Wasserstein GAN (WGAN) changes the discrepancy measure.
+
+\medskip
+
+\noindent
+\textbf{Idea.}
+Instead of using a discriminator that estimates a classification probability, use a critic that scores samples, and train the generator to reduce the \emph{Wasserstein-1 distance} between distributions.
+
+\medskip
+
+\noindent
+This distance is also called the \textbf{Earth-Mover distance}.
+
+\medskip
+
+\noindent
+\textbf{Intuition.}
+Imagine one distribution as a pile of earth and the other as a desired arrangement. The Wasserstein distance measures how much ``work'' is needed to move mass from one to the other.
+
+\medskip
+
+\noindent
+\textbf{Why this helps.}
+Unlike some divergences, Wasserstein distance can still provide meaningful gradients even when distributions have little overlap.
+
+\subsection{Conceptual WGAN Objective}
+
+In WGAN, the discriminator is replaced by a \textbf{critic} $f_\phi(x)$, which outputs a real number rather than a probability.
+
+\medskip
+
+\noindent
+Conceptually, the objective takes the form
+\[
+\max_{f \in \mathcal{F}_{\text{Lip}}}
+\;
+\mathbb{E}_{x\sim p_{\text{data}}}[f(x)]
+-
+\mathbb{E}_{x\sim p_g}[f(x)],
+\]
+where $\mathcal{F}_{\text{Lip}}$ denotes a class of 1-Lipschitz functions.
+
+\medskip
+
+\noindent
+The generator then tries to minimize this gap.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+The critic assigns higher scores to real samples and lower scores to fake ones, under a smoothness constraint. This score difference estimates how far the two distributions are in Wasserstein distance.
+
+\subsection{Why the Lipschitz Constraint Matters}
+
+The Lipschitz constraint is central to WGAN theory.
+
+\medskip
+
+\noindent
+\textbf{Without it,} the critic could scale arbitrarily and the Wasserstein interpretation would break.
+
+\medskip
+
+\noindent
+\textbf{With it,} the critic remains controlled and yields a meaningful notion of distance between distributions.
+
+\medskip
+
+\noindent
+The original WGAN enforced this approximately by \textbf{weight clipping}, but this can damage optimization and restrict critic capacity.
+
+\subsection{WGAN-GP: Gradient Penalty}
+
+A more effective alternative is \textbf{WGAN-GP}, where the Lipschitz constraint is encouraged by penalizing gradient norm deviations.
+
+\medskip
+
+\noindent
+Conceptually, one adds a term of the form
+\[
+\lambda \, \mathbb{E}_{\hat{x}}
+\left[
+\bigl(\|\nabla_{\hat{x}} f(\hat{x})\|_2 - 1\bigr)^2
+\right],
+\]
+where $\hat{x}$ is sampled along lines between real and fake examples.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+This encourages the critic to behave approximately like a 1-Lipschitz function.
+
+\medskip
+
+\noindent
+\textbf{Practical outcome.}
+WGAN-GP often leads to:
+\begin{itemize}
+    \item more stable training
+    \item more meaningful loss curves
+    \item improved resistance to severe gradient pathologies
+\end{itemize}
+
+\subsection{Comparing Original GAN and WGAN}
+
+\textbf{Original GAN.}
+\begin{itemize}
+    \item discriminator outputs a probability
+    \item linked to Jensen--Shannon divergence
+    \item can suffer from saturation and instability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{WGAN.}
+\begin{itemize}
+    \item critic outputs a real-valued score
+    \item linked to Wasserstein distance intuition
+    \item often provides smoother optimization behavior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Conceptual lesson.}
+Changing the notion of discrepancy between distributions changes the geometry of the learning problem.
+
+\subsection{GANs in the Broader Generative Modeling Landscape}
+
+GANs occupy a distinct point in the design space of generative models.
+
+\medskip
+
+\noindent
+\textbf{Compared with VAEs:}
+\begin{itemize}
+    \item GANs often produce sharper samples
+    \item VAEs offer a more explicit probabilistic framework
+    \item GANs avoid explicit likelihood
+    \item VAEs provide a clearer inference model through the encoder
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Compared with diffusion models:}
+\begin{itemize}
+    \item GAN generation is often fast at sampling time
+    \item diffusion models are usually more stable to train
+    \item diffusion models provide broader mode coverage in many modern settings
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Historical role.}
+GANs were crucial in showing that high-dimensional neural generators could produce strikingly realistic samples, and they shaped much of modern generative modeling.
+
+\subsection{Summary}
+
+\textbf{Main points of this lecture.}
+
+\begin{itemize}
+    \item GANs are implicit generative models defined by a sampling procedure
+    \[
+    z\sim p(z), \qquad x=G(z).
+    \]
+    \item Learning is framed as an adversarial game between generator and discriminator.
+    \item The original minimax objective is
+    \[
+    \min_G \max_D
+    \left[
+    \mathbb{E}_{x\sim p_{\text{data}}}[\log D(x)]
+    +
+    \mathbb{E}_{z\sim p(z)}[\log(1-D(G(z)))]
+    \right].
+    \]
+    \item For fixed generator, the optimal discriminator is
+    \[
+    D^*(x)=\frac{p_{\text{data}}(x)}{p_{\text{data}}(x)+p_g(x)}.
+    \]
+    \item Under this discriminator, GAN training relates to minimizing Jensen--Shannon divergence.
+    \item GANs can produce sharp samples but are prone to instability and mode collapse.
+    \item Stabilization methods include improved losses, normalization, regularization, and architectural choices.
+    \item Conditional GANs generate data conditioned on labels or other inputs.
+    \item WGAN and WGAN-GP replace the original divergence picture with Wasserstein distance intuition and often improve training behavior.
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Looking ahead.}
+GANs generate in one shot through adversarial training. In the next lecture, we study diffusion models, which generate instead by gradual denoising and iterative refinement.

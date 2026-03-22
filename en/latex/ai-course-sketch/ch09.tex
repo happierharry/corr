@@ -1,0 +1,300 @@
+\chapter{Feature Maps and Nonlinear Models}
+
+\section{Basis Expansions}
+
+Linear models are simple and computationally efficient, but their expressivity is limited: they can only represent linear relationships in the input space. A natural way to overcome this limitation is to transform the inputs before applying a linear model.
+
+\medskip
+
+\noindent
+\textbf{Feature map.}  
+A feature map is a function
+\[
+\phi : \mathcal{X} \to \mathbb{R}^m,
+\]
+which maps the original input into a new feature space.
+
+\medskip
+
+\noindent
+We then define a model of the form
+\[
+f(x) = \langle w, \phi(x) \rangle.
+\]
+
+\medskip
+
+\noindent
+\textbf{Example (polynomial features).}  
+For $x \in \mathbb{R}$,
+\[
+\phi(x) = (1, x, x^2, \dots, x^d).
+\]
+
+\medskip
+
+\noindent
+\textbf{Example (interaction features).}  
+For $x \in \mathbb{R}^d$, include terms such as $x_i x_j$ to capture interactions.
+
+\medskip
+
+\noindent
+\textbf{Key idea.}  
+A linear model in feature space corresponds to a nonlinear model in the original input space.
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}  
+Basis expansions allow us to approximate complex functions by combining simpler building blocks.
+
+\medskip
+
+\noindent
+\textbf{Connection to approximation theory.}  
+Polynomials, Fourier bases, and other function systems can approximate a wide range of functions when combined linearly.
+
+\section{Linear Models in Feature Space}
+
+Once a feature map is defined, learning proceeds as before:
+\[
+\min_w \; \frac{1}{n} \sum_{i=1}^n \ell(\langle w, \phi(x_i) \rangle, y_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Matrix formulation.}  
+Let $\Phi \in \mathbb{R}^{n \times m}$ be the feature matrix:
+\[
+\Phi =
+\begin{bmatrix}
+- & \phi(x_1)^\top & - \\
+- & \phi(x_2)^\top & - \\
+& \vdots & \\
+- & \phi(x_n)^\top & -
+\end{bmatrix}.
+\]
+
+Then predictions are given by
+\[
+\hat{y} = \Phi w.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+All linear regression and classification methods extend directly to feature space by replacing $X$ with $\Phi$.
+
+\medskip
+
+\noindent
+\textbf{Expressivity vs complexity.}
+\begin{itemize}
+    \item Increasing feature dimension $m$ increases expressivity
+    \item But also increases risk of overfitting and computational cost
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Geometric viewpoint.}  
+The data is embedded into a higher-dimensional space where it may become linearly separable.
+
+\medskip
+
+\noindent
+\textbf{Example.}  
+Points that are not separable by a line in $\mathbb{R}^2$ may become separable by a hyperplane after mapping into $\mathbb{R}^3$.
+
+\section{The Kernel Idea (Intuition)}
+
+A challenge arises when the feature space is very high-dimensional or even infinite-dimensional.
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+Many algorithms depend on inner products between feature vectors:
+\[
+\langle \phi(x), \phi(x') \rangle.
+\]
+
+\medskip
+
+\noindent
+\textbf{Kernel function.}  
+A kernel is a function
+\[
+k(x, x') = \langle \phi(x), \phi(x') \rangle,
+\]
+which computes this inner product without explicitly evaluating $\phi(x)$.
+
+\medskip
+
+\noindent
+\textbf{Key idea (kernel trick).}  
+We can work implicitly in a high-dimensional feature space by using $k(x,x')$ directly.
+
+\medskip
+
+\noindent
+\textbf{Examples of kernels.}
+\begin{itemize}
+    \item Polynomial kernel:
+    \[
+    k(x,x') = (\langle x, x' \rangle + c)^d
+    \]
+
+    \item Gaussian (RBF) kernel:
+    \[
+    k(x,x') = \exp\left(-\frac{\|x - x'\|^2}{2\sigma^2}\right)
+    \]
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Kernels measure similarity between inputs
+    \item They define an implicit feature space
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Practical advantage.}
+\begin{itemize}
+    \item Avoid explicit high-dimensional computations
+    \item Enable flexible nonlinear models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Limitation.}
+\begin{itemize}
+    \item Computational cost scales with number of data points
+    \item Less scalable than modern deep learning approaches
+\end{itemize}
+
+\section{Expressivity through Features}
+
+Feature maps determine what functions a model can represent.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How does the choice of $\phi$ affect the expressive power of the model?
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+A linear model in a sufficiently rich feature space can approximate highly complex functions.
+
+\medskip
+
+\noindent
+\textbf{Tradeoff.}
+\begin{itemize}
+    \item Rich features $\rightarrow$ high expressivity
+    \item But increased risk of overfitting
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Design principles for features.}
+\begin{itemize}
+    \item Encode domain knowledge (e.g., invariances)
+    \item Capture relevant structure
+    \item Maintain computational tractability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{From feature engineering to representation learning.}
+\begin{itemize}
+    \item Classical methods rely on manually designed features
+    \item Deep learning learns features automatically from data
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Compositionality.}  
+Complex features can be built by composing simpler transformations:
+\[
+\phi(x) = \phi_L(\phi_{L-1}(\cdots \phi_1(x))).
+\]
+
+\medskip
+
+\noindent
+This idea forms the foundation of deep neural networks.
+
+\medskip
+
+\noindent
+\textbf{Geometric perspective.}  
+Feature maps reshape the geometry of the data:
+\begin{itemize}
+    \item clusters become separable,
+    \item nonlinear structures become linear,
+    \item distances and similarities are redefined.
+\end{itemize}
+
+\section{A Unifying Perspective}
+
+Feature maps provide a bridge between linear models and nonlinear behavior.
+
+\medskip
+
+\noindent
+\textbf{Key components.}
+\begin{itemize}
+    \item Feature map $\phi$
+    \item Linear model in feature space
+    \item Optimization over parameters
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Two paradigms.}
+\begin{itemize}
+    \item \textbf{Fixed features:} designed manually (e.g., kernels)
+    \item \textbf{Learned features:} optimized jointly with the model (deep learning)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core insight.}  
+Nonlinearity in machine learning often arises not from the model itself, but from the representation of the data.
+
+\section{Outlook}
+
+This chapter introduced feature maps as a way to extend linear models:
+\begin{itemize}
+    \item basis expansions for nonlinear modeling,
+    \item linear learning in transformed spaces,
+    \item kernel methods for implicit high-dimensional features,
+    \item the role of representation in expressivity.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we study support vector machines, which combine geometric insights with kernel methods to produce powerful classifiers.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+The choice of representation often determines the success of a learning system as much as the choice of model.

@@ -1,0 +1,222 @@
+\section{Expressivity, Hierarchy, and the Role of Depth}
+
+The previous section introduced neural networks as compositional function models. We now ask the next natural question:
+
+\begin{quote}
+What kinds of functions can such models represent, and why might depth matter?
+\end{quote}
+
+This is the section in which neural networks first receive a mathematical defense beyond historical success. The central issue is \emph{expressive power}: how the architecture of a model constrains the class of functions it can approximate. Width matters, but so does depth. A shallow model can already be remarkably expressive; a deep model can express some structures more naturally by reusing intermediate computations hierarchically.
+
+\subsection*{Expressive power and approximation classes}
+
+To speak precisely, we need a language for what it means for a model family to be expressive.
+
+\begin{definition}[Expressive power]
+The \emph{expressive power} of a model class is its ability to represent or approximate functions of interest on a given domain. A class is more expressive if it can realize a broader or more structurally rich set of input-output mappings.
+\end{definition}
+
+\begin{definition}[Approximation class]
+Let $K\subset\mathbb R^d$ be compact. A family of functions $\mathcal H$ is called an \emph{approximation class} for a target class $\mathcal F$ on $K$ if, for every $f\in\mathcal F$ and every $\varepsilon>0$, there exists $h\in\mathcal H$ such that
+\[
+\sup_{x\in K}|f(x)-h(x)|<\varepsilon.
+\]
+In that case we say that $\mathcal H$ can approximate $\mathcal F$ uniformly on $K$.
+\end{definition}
+
+This is an approximation-based notion of expressivity. It does not require exact representation. It asks whether the model class can get arbitrarily close to the desired target functions.
+
+\subsection*{A carefully stated universal approximation theorem}
+
+One of the best-known theorems in neural-network theory says that even shallow networks can be very expressive.
+
+\begin{theorem}[Universal approximation, one-hidden-layer form]
+Let $K\subset\mathbb R^d$ be compact, and let
+\[
+f:K\to\mathbb R
+\]
+be continuous. Let $\sigma:\mathbb R\to\mathbb R$ be a continuous activation function that is not a polynomial. Then for every $\varepsilon>0$, there exist an integer $m$, coefficients $a_1,\dots,a_m\in\mathbb R$, vectors $w_1,\dots,w_m\in\mathbb R^d$, biases $b_1,\dots,b_m\in\mathbb R$, and a constant $c\in\mathbb R$ such that
+\[
+h(x)=c+\sum_{j=1}^m a_j\,\sigma(w_j^\top x+b_j)
+\]
+satisfies
+\[
+\sup_{x\in K}|f(x)-h(x)|<\varepsilon.
+\]
+In particular, a sufficiently wide network with one hidden layer can approximate any continuous function on a compact domain arbitrarily well.
+\end{theorem}
+
+\begin{proof}[Proof idea]
+A full proof is beyond the scope of this chapter, but the structure is worth understanding. The theorem is an approximation statement on compact sets. The key point is that nonpolynomial activations generate a rich enough family of ridge functions
+\[
+x\mapsto \sigma(w^\top x+b)
+\]
+that finite linear combinations of them are dense in $C(K)$, the space of continuous functions on $K$ with the uniform norm. Different proofs establish this density through different functional-analytic arguments. The conclusion is that one-hidden-layer networks are universal approximators in the approximation sense stated above.
+\end{proof}
+
+This theorem is mathematically important because it shows that shallow neural networks are not inherently too weak to approximate complicated continuous functions. But it does \emph{not} say that depth is irrelevant.
+
+\paragraph{What universal approximation does not say.}
+The theorem is often quoted too loosely. It does \emph{not} say:
+
+\begin{itemize}
+    \item that every function can be represented exactly by a small shallow network;
+    \item that approximation is efficient in width, parameters, or sample size;
+    \item that a network which can approximate a function can also be trained easily to find that approximation;
+    \item that depth provides no advantage.
+\end{itemize}
+
+A model family may be universal in principle and still be impractical in size or difficult to optimize in practice. Universal approximation is an existence theorem, not a trainability theorem.
+
+\subsection*{Depth as hierarchical reuse}
+
+If shallow networks are already universal approximators, why does depth matter?
+
+The answer is that expressivity is not only about \emph{whether} approximation is possible. It is also about \emph{how naturally} and \emph{how efficiently} a function can be represented. Many functions have internal compositional structure. When that structure is exploited, a deep architecture can reuse intermediate computations instead of recomputing them from scratch.
+
+For example, consider a function of the form
+\[
+f(x)=q\bigl(r_1(x),r_2(x),r_3(x)\bigr),
+\]
+where each $r_j$ itself has internal structure. A deep network can assign different layers to different stages of this computation. A shallow network can still approximate the same overall mapping, but may need to encode all interactions more directly in one large layer.
+
+\begin{figure}[tbp]
+\centering
+\begin{tikzpicture}[
+    box/.style={draw, rounded corners, fill=gray!10, inner sep=6pt, minimum width=2.5cm, minimum height=0.9cm},
+    arrow/.style={-{Latex[length=2.2mm]}, thick},
+    every node/.style={align=center}
+]
+    % shallow
+    \node at (2.6,4.2) {\small shallow wide network};
+    \node[box] (sx) at (0.8,3.0) {input};
+    \node[box] (sh) at (3.6,3.0) {large hidden layer};
+    \node[box] (sy) at (6.4,3.0) {output};
+    \draw[arrow] (1.95,3.0) -- (2.35,3.0);
+    \draw[arrow] (4.85,3.0) -- (5.15,3.0);
+
+    % deep
+    \node at (2.8,1.35) {\small deep network with hierarchical reuse};
+    \node[box] (dx) at (0.8,0.3) {input};
+    \node[box] (d1) at (2.8,0.3) {features};
+    \node[box] (d2) at (4.8,0.3) {parts / patterns};
+    \node[box] (d3) at (6.8,0.3) {higher composition};
+    \node[box] (dy) at (8.8,0.3) {output};
+
+    \draw[arrow] (1.95,0.3) -- (2.15,0.3);
+    \draw[arrow] (3.95,0.3) -- (4.15,0.3);
+    \draw[arrow] (5.95,0.3) -- (6.15,0.3);
+    \draw[arrow] (7.95,0.3) -- (8.15,0.3);
+
+    \node at (4.8,-0.8) {\small deep models can reuse intermediate computations rather than flatten all interactions into one stage};
+\end{tikzpicture}
+\caption{A schematic contrast. A shallow model may approximate a complex mapping in one large hidden layer, while a deep model can exploit hierarchical structure by building and reusing intermediate representations across layers.}
+\end{figure}
+
+This is the main mathematical intuition behind the role of depth: depth is a mechanism for hierarchical reuse.
+
+\subsection*{ReLU networks and piecewise linear structure}
+
+A particularly important modern activation is the rectified linear unit,
+\[
+\operatorname{ReLU}(t)=\max\{0,t\}.
+\]
+Because ReLU is piecewise linear, networks built from it have a distinctive geometric structure.
+
+\begin{proposition}[ReLU networks represent piecewise linear functions]
+Any feedforward network with ReLU activations and a linear output layer represents a continuous piecewise linear function of its input. More precisely, the input space can be partitioned into finitely many polyhedral regions such that on each region the network acts as an affine map.
+\end{proposition}
+
+\begin{proof}
+For a single ReLU unit,
+\[
+x\mapsto \max\{0,w^\top x+b\},
+\]
+the input space is divided by the hyperplane
+\[
+w^\top x+b=0
+\]
+into two regions. On one region the unit outputs $0$; on the other it outputs the affine function $w^\top x+b$. So a single ReLU unit is piecewise affine.
+
+Now consider one layer of ReLU units. The activation pattern of the layer is determined by which pre-activations are positive and which are nonpositive. Each fixed activation pattern defines a polyhedral region in input space, and on that region the layer acts affinely.
+
+Proceeding layer by layer, each new layer refines the partition into finitely many polyhedral regions. On each such region, every ReLU unit has a fixed linear branch, so the entire network reduces to a composition of affine maps, hence is affine on that region. Therefore the network as a whole is continuous and piecewise linear.
+\end{proof}
+
+This proposition gives a very useful geometric picture of ReLU networks. They build complicated decision surfaces by partitioning the input space into many linear pieces and arranging those pieces hierarchically across layers.
+
+\subsection*{A toy example of hierarchical composition}
+
+Consider the function
+\[
+f(x_1,x_2,x_3,x_4)=(x_1x_2)+(x_3x_4).
+\]
+A shallow approximation strategy might attempt to learn the entire interaction pattern at once. A hierarchical strategy would first form two intermediate quantities,
+\[
+z_1=x_1x_2,
+\qquad
+z_2=x_3x_4,
+\]
+and then combine them as
+\[
+f=z_1+z_2.
+\]
+
+The point is not that this example requires deep networks in a strict theorem-level sense. The point is that it exhibits \emph{reuse of subcomputations}. If many related outputs depend on the same intermediate structures, depth provides a natural way to represent that fact.
+
+This perspective becomes even more compelling in vision, language, and structured reasoning:
+local patterns combine into motifs, motifs combine into larger structures, and higher layers operate on abstractions produced by lower layers.
+
+\subsection*{Approximation power is not trainability}
+
+At this point it is crucial to separate two ideas:
+
+\begin{itemize}
+    \item \textbf{approximation power:} whether a function class can represent or approximate targets of interest;
+    \item \textbf{trainability:} whether an optimization algorithm can efficiently find good parameters from finite data.
+\end{itemize}
+
+A model may be expressive enough in principle and still be hard to train. Conversely, a model may be easy to optimize but too limited to capture the structure of the task. The theory of expressivity answers one question; optimization and generalization answer different ones.
+
+\commonconfusion{Universal approximation does not prove that ``depth does not matter.'' It shows only that sufficient width can provide broad approximation power. It says nothing about efficiency of representation, sample requirements, optimization difficulty, or the advantages of hierarchical reuse. Likewise, a class being expressive enough in principle does not mean gradient-based training will easily find a good solution.}
+
+\whattoremember{Expressive power concerns what functions a model class can represent or approximate. Universal approximation shows that even a one-hidden-layer network can approximate any continuous function on a compact set arbitrarily well, but this is an existence result, not a statement about efficiency or trainability. Depth matters because many functions have hierarchical structure, and deep networks can reuse intermediate computations more naturally than shallow ones. ReLU networks provide a useful geometric example: they represent continuous piecewise linear functions by partitioning input space into affine regions.}
+
+\subsection*{Exercises}
+
+\begin{exercise}
+In your own words, explain the difference between saying that a model class is expressive and saying that it is easy to train.
+\end{exercise}
+
+\begin{exercise}
+State the universal approximation theorem informally. Then list two things that the theorem does \emph{not} imply.
+\end{exercise}
+
+\begin{exercise}
+Consider the toy compositional function
+\[
+f(x_1,x_2,x_3,x_4)=(x_1+x_2)(x_3+x_4).
+\]
+Identify at least one natural intermediate representation that a hierarchical model could reuse.
+\end{exercise}
+
+\begin{exercise}
+Why does the proposition on ReLU networks imply that their decision boundaries can be geometrically complex even though each local piece is affine?
+\end{exercise}
+
+\begin{exercise}
+Compare the two viewpoints:
+\begin{enumerate}
+    \item a shallow network approximates a target function in one large hidden layer;
+    \item a deep network approximates the same target by building intermediate representations.
+\end{enumerate}
+What is the possible advantage of the second viewpoint?
+\end{exercise}
+
+\begin{exercise}
+Give one reason why approximation power alone is insufficient as a theory of practical deep learning.
+\end{exercise}
+
+\subsection*{Notes and references}
+
+This section provides the chapter's first mathematical defense of depth. Universal approximation shows that shallow networks already possess broad approximation power, so the importance of deep learning cannot be explained simply by saying that shallow networks are incapable of representing complex functions. The more refined issue is efficiency of representation and the exploitation of hierarchical structure. ReLU networks make this especially tangible because their functions are piecewise linear, built from many affine regions arranged across layers. Later sections will connect these expressive considerations to optimization, trainability, and learned internal representations.

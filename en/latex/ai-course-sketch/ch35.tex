@@ -1,0 +1,271 @@
+\chapter{Practical System Design}
+
+\section{Data Pipelines}
+
+In modern machine learning systems, data is as important as models. Effective system design begins with reliable and scalable data pipelines.
+
+\medskip
+
+\noindent
+\textbf{Data pipeline.}  
+A data pipeline transforms raw data into a form suitable for training and evaluation.
+
+\medskip
+
+\noindent
+\textbf{Stages.}
+\begin{itemize}
+    \item Data collection
+    \item Cleaning and preprocessing
+    \item Feature extraction or encoding
+    \item Storage and access
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Preprocessing.}
+\begin{itemize}
+    \item Normalization and scaling
+    \item Handling missing values
+    \item Data augmentation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Streaming vs batch processing.}
+\begin{itemize}
+    \item Batch pipelines process data in large chunks
+    \item Streaming pipelines process data continuously
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Data quality.}
+\begin{itemize}
+    \item Consistency and correctness
+    \item Noise and bias considerations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+The quality of a machine learning system is fundamentally limited by the quality of its data.
+
+\section{Training Workflows}
+
+Training modern models requires coordinated workflows that manage data, computation, and experimentation.
+
+\medskip
+
+\noindent
+\textbf{Training loop.}
+\begin{enumerate}
+    \item Load batch of data
+    \item Compute predictions
+    \item Evaluate loss
+    \item Compute gradients
+    \item Update parameters
+\end{enumerate}
+
+\medskip
+
+\noindent
+\textbf{Experiment management.}
+\begin{itemize}
+    \item Track hyperparameters
+    \item Record metrics and logs
+    \item Compare different model configurations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Hyperparameter tuning.}
+\begin{itemize}
+    \item Grid search, random search
+    \item Adaptive methods (e.g., Bayesian optimization)
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Distributed training.}
+\begin{itemize}
+    \item Data parallelism across multiple devices
+    \item Model parallelism for large models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Checkpointing.}
+\begin{itemize}
+    \item Save intermediate model states
+    \item Enable recovery and experimentation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Well-designed workflows enable efficient experimentation and reliable model development.
+
+\section{Debugging and Diagnostics}
+
+Training machine learning models often involves diagnosing issues that arise during optimization.
+
+\medskip
+
+\noindent
+\textbf{Common problems.}
+\begin{itemize}
+    \item Training does not converge
+    \item Overfitting or underfitting
+    \item Numerical instability
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Diagnostic tools.}
+\begin{itemize}
+    \item Training and validation curves
+    \item Gradient norms
+    \item Activation statistics
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Sanity checks.}
+\begin{itemize}
+    \item Verify loss decreases on small datasets
+    \item Check gradient correctness
+    \item Ensure labels and data are consistent
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Visualization.}
+\begin{itemize}
+    \item Monitor metrics over time
+    \item Inspect intermediate outputs
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Systematic debugging.}
+\begin{itemize}
+    \item Isolate components
+    \item Simplify the model
+    \item Incrementally increase complexity
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Debugging is an essential skill in machine learning, requiring both theoretical understanding and practical experience.
+
+\section{Reproducibility}
+
+Reproducibility is critical for scientific and engineering reliability.
+
+\medskip
+
+\noindent
+\textbf{Definition.}  
+A result is reproducible if it can be consistently obtained under the same conditions.
+
+\medskip
+
+\noindent
+\textbf{Sources of variability.}
+\begin{itemize}
+    \item Random initialization
+    \item Data shuffling
+    \item Hardware and numerical differences
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Best practices.}
+\begin{itemize}
+    \item Fix random seeds
+    \item Record configurations and hyperparameters
+    \item Version datasets and code
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Experiment tracking.}
+\begin{itemize}
+    \item Store results systematically
+    \item Maintain logs of experiments
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Determinism vs performance.}
+\begin{itemize}
+    \item Fully deterministic execution may reduce performance
+    \item Tradeoff between reproducibility and efficiency
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Reproducibility ensures that results are reliable and can be built upon.
+
+\section{A Unifying Perspective}
+
+Practical system design integrates multiple components:
+
+\begin{itemize}
+    \item \textbf{Data:} pipelines and preprocessing
+    \item \textbf{Computation:} training workflows
+    \item \textbf{Diagnostics:} debugging tools
+    \item \textbf{Reliability:} reproducibility practices
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core idea.}  
+Successful machine learning systems require careful coordination of data, models, and infrastructure.
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Practical effectiveness depends not only on algorithms, but on the systems that support them.
+
+\section{Outlook}
+
+This chapter examined practical aspects of machine learning systems:
+\begin{itemize}
+    \item data pipelines,
+    \item training workflows,
+    \item debugging and diagnostics,
+    \item reproducibility.
+\end{itemize}
+
+\medskip
+
+This concludes the book.
+
+\medskip
+
+\noindent
+\textbf{Final guiding principle.}  
+Machine learning is both a mathematical discipline and an engineering practice, requiring insight into theory, data, and systems.

@@ -1,0 +1,358 @@
+\section{Foundation Models and Learning at Scale}
+
+Sections 4.1--4.3 argued that modern learning increasingly separates the acquisition of representation from the final downstream use of that representation.
+Foundation models are a large-scale realization of that idea.
+They are not best understood as ``very large neural networks'' in the abstract.
+Rather, they are systems trained on broad data with a reusable interface, so that one parameter set can support many later tasks through prompting, fine-tuning, retrieval, or other adaptation mechanisms.
+This section gives a sober account of that regime.
+Its aim is not to celebrate scale, but to make precise what changes when representation learning, pretraining, and deployment are organized around one large pretrained model.
+
+\subsection*{A precise working definition}
+
+We begin with a definition tailored to the logic of this chapter.
+
+\begin{definition}[Foundation model]
+A \emph{foundation model} is a pretrained parametric model
+\[
+F_{\theta_0}
+\]
+obtained from broad data distribution $P_{\mathrm{pre}}$ by optimizing a generic pretraining objective
+\[
+\mathcal{L}_{\mathrm{pre}}(\theta),
+\]
+such that the resulting parameter vector $\theta_0$ supports a family of downstream tasks $\mathcal{T}$ through one or more adaptation mechanisms and deployment interfaces, with comparatively modest task-specific modification relative to training the model from scratch for each task.
+\end{definition}
+
+This definition is intentionally narrower than ``large model'' and broader than ``language model.''
+Three ingredients matter.
+First, the model is trained on broad rather than narrowly task-specific data.
+Second, the pretraining objective is generic enough to produce reusable internal structure.
+Third, the resulting system is reused across many tasks through a stable interface.
+The word ``foundation'' therefore refers to a role in a learning pipeline, not merely to parameter count.
+
+A small model can in principle play this role within a restricted domain, and a large model can fail to play it if it is trained only for one narrow benchmark.
+In practice, however, the models usually discussed under this heading are large because broad reuse often benefits from large capacity, diverse data, and substantial compute.
+
+\subsection*{Pretraining objective, adaptation mechanism, and deployment interface}
+
+One source of confusion in current discussion is that several distinct layers are mixed together.
+For a mathematically cleaner account, it is useful to separate them.
+
+\begin{definition}[Pretraining objective]
+A \emph{pretraining objective} is a loss functional
+\[
+\mathcal{L}_{\mathrm{pre}}(\theta)
+=
+\mathbb{E}_{x \sim P_{\mathrm{pre}}}\bigl[\ell_{\mathrm{pre}}(x;\theta)\bigr]
+\]
+or its empirical approximation on a large dataset.
+Examples include masked prediction, autoregressive next-token prediction, denoising, contrastive objectives, or multimodal matching objectives.
+Its role is to determine what regularities the model is rewarded for internalizing during large-scale training.
+\end{definition}
+
+\begin{definition}[Adaptation mechanism]
+An \emph{adaptation mechanism} is a procedure that converts a pretrained model into a task-specialized system.
+Formally, it is a map of the form
+\[
+\mathcal{A} : (\theta_0,\mathcal{D}_T) \mapsto \Theta_T,
+\]
+where $\mathcal{D}_T$ is task-specific information and $\Theta_T$ denotes either updated parameters, auxiliary modules, prompts, retrieval state, or some combination thereof.
+Full fine-tuning, linear probing, adapters, low-rank adaptation, and instruction tuning are examples.
+\end{definition}
+
+\begin{definition}[Deployment interface]
+A \emph{deployment interface} is the protocol by which a user or downstream system queries the pretrained or adapted model.
+It specifies what object may be presented to the model at inference time and what output is requested.
+For example, a prompt interface may accept text context $c$ and return a conditional distribution over continuations,
+\[
+y \mapsto p_{\theta}(y \mid c),
+\]
+while a classification interface may accept an input $x$ and return a label or score.
+\end{definition}
+
+These three notions should not be conflated.
+The pretraining objective explains how the shared representation was learned.
+The adaptation mechanism explains whether and how the parameters or auxiliary modules are changed for a new task.
+The deployment interface explains how the resulting system is queried at use time.
+Much confusion around foundation models arises when prompting is discussed as if it were a training objective, or instruction tuning is discussed as if it were only an inference trick.
+
+\begin{example}[One model, three different layers]
+Consider a decoder-only transformer trained with next-token prediction.
+Its pretraining objective is autoregressive likelihood.
+Its adaptation mechanism might be none at all (zero-shot prompting), or supervised instruction tuning, or low-rank fine-tuning.
+Its deployment interface might be a text prompt followed by generation, a chat interface, or an API that returns log-probabilities over candidate outputs.
+These are related, but they are not the same mathematical object.
+\end{example}
+
+\subsection*{A formal view of prompting and conditional behavior}
+
+For concreteness, suppose a pretrained decoder defines
+\[
+p_{\theta}(x_{1:T})
+=
+\prod_{t=1}^{T} p_{\theta}(x_t \mid x_{<t}).
+\]
+If a context or prompt $c$ is provided, then the model induces a conditional distribution on continuations:
+\[
+p_{\theta}(y \mid c).
+\]
+This is the basic mathematical content of prompting.
+One does not change the parameters.
+One changes the conditioning context.
+
+\begin{definition}[Prompting]
+Let $\theta$ be fixed.
+\emph{Prompting} is the use of a context variable $c$ at inference time to select a conditional prediction rule
+\[
+q_{\theta,c}(y) = p_{\theta}(y \mid c).
+\]
+The prompt may contain an instruction, demonstrations, formatting constraints, retrieved external information, or a question to be answered.
+\end{definition}
+
+This definition is deliberately simple.
+It captures both ordinary continuation and more elaborate prompting patterns.
+Few-shot prompting is the case in which the prompt includes example input--output pairs.
+Chain-of-thought prompting is the case in which the prompt encourages intermediate reasoning-like text.
+Retrieval-augmented prompting is the case in which the prompt is extended by externally fetched context.
+All of these remain, mathematically, conditional inference with fixed parameters.
+
+\begin{proposition}[Prompting changes context, not weights]
+Fix model parameters $\theta$.
+Then the family of predictors available through prompting is
+\[
+\mathcal{Q}_{\theta}
+=
+\{q_{\theta,c} : c \in \mathcal{C}\},
+\qquad
+q_{\theta,c}(y)=p_{\theta}(y \mid c).
+\]
+Prompting can select different conditional behaviors within $\mathcal{Q}_{\theta}$, but it does not alter the underlying parameter vector and therefore does not perform parameter adaptation.
+\end{proposition}
+
+\paragraph{Proof sketch.}
+For fixed $\theta$, every admissible prompt $c$ defines a conditional distribution $p_{\theta}(\cdot \mid c)$.
+Varying $c$ therefore varies the member of the family $\mathcal{Q}_{\theta}$ being queried.
+But the map $\theta \mapsto p_{\theta}$ is unchanged, since no optimization step or parameter update occurs.
+Thus prompting can reveal or organize capabilities already encoded by the pretrained parameters, but it does not itself move the model to a new point in parameter space.
+\qed
+
+The proposition is elementary, but it clarifies a major conceptual distinction.
+When a prompted model performs a new task, two different explanations are possible.
+One is that the pretrained model already contains a sufficiently rich conditional mechanism, and the prompt selects the relevant behavior.
+The other is that the model is being genuinely improved by additional parameter adaptation.
+Prompting belongs to the first category; instruction tuning belongs to the second.
+
+\subsection*{Instruction tuning and post-pretraining alignment}
+
+Instruction tuning is a parameter update stage applied after broad pretraining.
+Suppose one has instruction--response pairs $(u,r)$ drawn from a distribution $P_{\mathrm{inst}}$.
+Starting from pretrained parameters $\theta_0$, one optimizes
+\[
+\mathcal{L}_{\mathrm{inst}}(\theta)
+=
+\mathbb{E}_{(u,r)\sim P_{\mathrm{inst}}}
+\bigl[-\log p_{\theta}(r \mid u)\bigr].
+\]
+This does not merely select among existing conditionals.
+It changes the parameters so that the model becomes easier to steer by instruction-like inputs.
+
+In the current literature, this stage is often grouped under broader labels such as alignment or post-training.
+The exact procedures vary: supervised instruction tuning, preference-based optimization, rejection sampling from stronger models, and combinations with retrieval or tool use all appear in practice.
+What matters conceptually is the distinction between two questions:
+\begin{itemize}
+    \item how the broad internal representation was acquired during pretraining,
+    \item how the deployed behavior was later shaped toward task following, helpfulness, safety constraints, or conversational format.
+\end{itemize}
+
+It is therefore misleading to say that prompting, instruction tuning, and alignment are interchangeable.
+Prompting changes the input to a fixed model.
+Instruction tuning changes the model itself.
+Alignment, in a broad engineering sense, usually refers to post-pretraining procedures intended to shape deployed behavior, of which instruction tuning is one important example.
+
+\subsection*{In-context behavior: what can be stated cleanly}
+
+A striking empirical feature of large pretrained sequence models is that they may behave as if they had adapted to a task merely from examples given in the context.
+For instance, one may provide several input--output pairs in a prompt and then ask the model to continue with the output for a new input.
+This is commonly called \emph{in-context learning} or \emph{in-context behavior}.
+
+A careful exposition should separate the mathematical fact from the stronger interpretation.
+The mathematical fact is simple: because the model computes $p_{\theta}(y\mid c)$ for arbitrary admissible context $c$, one may include demonstrations inside $c$.
+The stronger interpretation---that the model is internally implementing a fast learning algorithm over the prompt---is plausible in some cases and supported by several theoretical toy models, but it is not a general theorem about deployed systems.
+
+\begin{definition}[In-context behavior]
+Let $\theta$ be fixed.
+We say that a model exhibits \emph{in-context behavior} for a task family if its conditional predictor
+\[
+y \mapsto p_{\theta}(y \mid c)
+\]
+changes systematically when the context $c$ is augmented by task descriptions or demonstrations, so that performance on the implied task improves without an explicit weight update.
+\end{definition}
+
+This definition is intentionally behavioral.
+It does not claim that the model literally updates an internal parameter vector in the way an external training algorithm would.
+It only claims that the input--output map depends on the context in a task-relevant way.
+That is the phenomenon one can observe directly.
+
+\begin{example}[Prompting versus instruction tuning]
+Suppose a pretrained language model is asked to classify sentiment.
+With no adaptation, one may prompt it by writing:
+\begin{quote}
+Text: ``The film was unexpectedly moving.''\newline
+Label:
+\end{quote}
+and sampling or scoring candidate outputs such as ``positive'' and ``negative.''
+If one instead provides several labeled examples before the query, this becomes few-shot prompting.
+By contrast, instruction tuning would optimize the model parameters on many such instruction--response pairs before deployment.
+The first is conditional use of a fixed model; the second is parameter adaptation.
+\end{example}
+
+\subsection*{Learning at scale: what is algorithmic fact and what is empirical observation}
+
+Foundation models are strongly associated with scale.
+To discuss this responsibly, it helps to separate three kinds of statement.
+
+First, there are \emph{architectural and algorithmic facts}.
+For a dense transformer with depth $L$, width $d$, and context length $T$, one can analyze parameter count, memory footprint, and per-step computational cost.
+At a high level, the parameter count of the feedforward and attention projections scales on the order of
+\[
+O(Ld^2),
+\]
+while dense self-attention contributes sequence-length dependence on the order of
+\[
+O(LT^2d)
+\]
+in time and roughly $O(T^2)$ per layer in attention-score storage before implementation details are taken into account.
+These are not empirical laws but consequences of the architecture.
+They explain why larger width, depth, and context require substantial engineering resources.
+
+Second, there are \emph{empirical scaling observations}.
+Across substantial but finite training regimes, several studies report that validation loss or perplexity often follows approximate power-law trends as model size, data, and compute increase.
+Symbolically, one often writes a relation of the form
+\[
+\mathcal{L}(N,D,C)
+\approx
+A N^{-\alpha} + B D^{-\beta} + \cdots,
+\]
+where $N$ denotes parameter count, $D$ effective training data, and $C$ compute budget.
+This notation is useful, but it should not be mistaken for a theorem of learning theory.
+The exponents are fitted in restricted regimes, depend on modeling choices, and need not be universal.
+
+Third, there are \emph{design practices and frontier claims}.
+Claims about sudden capability transitions, the best post-training recipe, the correct balance between synthetic and human data, or the ideal mixture of retrieval, tools, and prompting are largely empirical and engineering-driven.
+Some are well supported by repeated practice.
+Very few are settled mathematically.
+
+This separation is essential.
+It is true, in a precise computational sense, that larger models usually cost more to train and serve.
+It is true, in a repeated empirical sense, that performance often improves predictably over useful ranges as scale increases.
+It is not true that current theory provides a complete first-principles account of why broad competence emerges at particular scales or why one post-training pipeline dominates another.
+
+\begin{figure}[h]
+\centering
+\fbox{%
+\begin{minipage}{0.94\textwidth}
+\centering
+\textbf{Lifecycle of a modern foundation-model pipeline}
+
+\vspace{0.6em}
+\begin{tabular}{p{0.82\textwidth}}
+\centering Broad data source $P_{\mathrm{pre}}$ \\
+\centering $\downarrow$ \\
+\centering Pretraining objective $\mathcal{L}_{\mathrm{pre}}$ \\
+\centering $\downarrow$ \\
+\centering Shared base model $F_{\theta_0}$ \\
+\centering $\downarrow$ \\
+\centering Post-pretraining shaping: instruction tuning, preference optimization, safety constraints \\
+\centering $\downarrow$ \\
+\centering Deployment-time interfaces: prompting, retrieval, tools, API calls \\
+\centering $\downarrow$ \\
+\centering Optional task adaptation: probe, adapter, low-rank update, or full fine-tuning \\
+\centering $\downarrow$ \\
+\centering Deployed system for downstream use
+\end{tabular}
+\end{minipage}}
+\caption{A print-friendly schematic of the lifecycle.
+Pretraining, post-training alignment, prompting, and task adaptation occupy different levels of the pipeline.
+The same base model may support several deployment routes, and the mathematical role of each route is different.}
+\end{figure}
+
+\subsection*{Why scale matters for representation learning}
+
+Why should large data and large models help at all?
+At the chapter level, the most conservative answer is representational.
+A broad pretraining distribution exposes the model to many contexts, tasks, styles, and regularities.
+A sufficiently expressive architecture can then allocate parameters to internal variables that are not tied to one benchmark label space.
+Scale increases the opportunity to learn stable reusable coordinates rather than brittle task-specific shortcuts.
+
+This statement should also be interpreted carefully.
+Scale does not guarantee semantic understanding, factual reliability, or robust reasoning in every setting.
+It changes the regime in which representation learning takes place.
+The resulting models can then often support a larger collection of downstream behaviors through the interfaces described above.
+That is already a substantial claim, and it is the one most closely aligned with the rest of this chapter.
+
+\subsection*{What is understood, what is empirical, and what remains design practice}
+
+We can now summarize the epistemic status of the main claims in this area.
+
+\paragraph{Relatively well understood.}
+The probabilistic semantics of autoregressive and masked objectives are clear.
+The distinction between prompting and parameter adaptation is clear.
+The computational scaling of dense architectures in parameters, memory, and sequence length is clear.
+The existence of transfer through shared representations is supported both by theory in simplified settings and by overwhelming empirical evidence.
+
+\paragraph{Strongly empirical but stable enough to teach.}
+Large-scale pretraining often produces features that transfer broadly.
+Instruction tuning often improves task following and interface usability.
+ Approximate scaling-law regularities are often visible over substantial ranges.
+Prompt design, retrieval augmentation, and post-training methods materially affect deployment behavior.
+These statements are not universal theorems, but they are robust enough to form part of modern practice.
+
+\paragraph{Still largely design practice or open theory.}
+There is no complete theory of in-context learning in realistic models.
+There is no settled first-principles account of why some capabilities appear gradually while others seem to improve abruptly under certain evaluation protocols.
+There is no single mathematically justified recipe for post-training alignment.
+Questions of robustness, calibration, tool use, long-horizon reasoning, and multimodal grounding remain only partially understood.
+
+That balance matters pedagogically.
+A mathematically serious treatment should neither understate what is genuinely established nor overstate what remains heuristic.
+Foundation models are important partly because they work, but academic exposition should still distinguish clean formal structure from well-supported empirical regularity and from frontier design judgment.
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item A foundation model is defined here by its role: broad pretraining, reusable internal structure, and support for many downstream tasks through stable interfaces.
+    \item Pretraining objective, adaptation mechanism, and deployment interface are distinct objects and should not be conflated.
+    \item Prompting changes context for a fixed model, whereas instruction tuning changes parameters after pretraining.
+    \item In-context behavior is an empirical phenomenon of task-sensitive conditioning without explicit weight updates.
+    \item Computational scaling of dense architectures is analyzable, but observed scaling laws and post-training recipes are primarily empirical.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item \textbf{``Foundation model'' means only ``very large model.''} Size matters in practice, but the more important idea is broad reusable pretraining plus many downstream uses.
+    \item \textbf{Prompting and fine-tuning are the same.} They are not: prompting leaves parameters fixed, while fine-tuning updates them.
+    \item \textbf{Instruction tuning is identical to pretraining.} It is usually a later stage with different data and different behavioral goals.
+    \item \textbf{Scaling laws are theorems.} They are fitted empirical regularities, not universal derivations from first principles.
+    \item \textbf{In-context learning is fully understood.} It is observed and partially modeled, but a complete theory for realistic systems is still missing.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Let a pretrained decoder define $p_{\theta}(x_{1:T}) = \prod_{t=1}^{T} p_{\theta}(x_t \mid x_{<t})$. Show directly that a prompt $c$ induces a conditional predictor $q_{\theta,c}(y)=p_{\theta}(y\mid c)$. Why does this formalize prompting without parameter adaptation?
+    \item Give one example each of a pretraining objective, an adaptation mechanism, and a deployment interface for a language model. Explain why confusing any two of them leads to conceptual error.
+    \item Compare zero-shot prompting, few-shot prompting, instruction tuning, and full fine-tuning. For each, say what changes mathematically: the input context, the parameter vector, or both.
+    \item Suppose a dense transformer has depth $L$, width $d$, and context length $T$. Using the chapter's rough scaling discussion, explain qualitatively how training cost changes when one doubles $d$ versus when one doubles $T$.
+    \item A student claims that because prompting can produce different behaviors, it should count as learning in exactly the same sense as gradient-based fine-tuning. Give a careful response using the proposition in this section.
+    \item Write a short essay comparing two deployment routes for the same base model: prompt-only use versus adapter-based task adaptation. Discuss flexibility, cost, and control.
+\end{enumerate}
+
+\subsection*{Notes and references}
+
+For the phrase \emph{foundation model} and a broad systems-level framing, a standard reference is the survey by Bommasani et al.
+Canonical large-scale language-model papers include BERT for masked language modeling, GPT-style autoregressive models, T5 for text-to-text transfer, and later large decoder-only systems such as PaLM and related families.
+For empirical scaling-law work, the Kaplan et al.~study is the classic early reference, while Hoffmann et al.~(``Chinchilla'') is central for the compute--data tradeoff discussion.
+For multimodal large-scale pretraining, CLIP is a standard reference on contrastive vision--language alignment, and Flamingo-style work is representative of multimodal prompting with frozen or partially frozen backbones.
+On instruction tuning and post-training alignment, common reference points include the FLAN line of work, InstructGPT, and subsequent preference-optimization methods.
+Theoretical work on in-context learning exists in several simplified regimes, including analyses of transformers as implicit learners in stylized settings, but the field remains much less settled than the empirical literature.

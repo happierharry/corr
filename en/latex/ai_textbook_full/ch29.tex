@@ -1,0 +1,243 @@
+\chapter{Autoregressive Generative Models}
+
+\section{Introduction}
+
+Autoregressive models provide a simple and powerful approach to generative modeling by factorizing a joint distribution into a product of conditional distributions. They form the foundation of modern language models and connect naturally to sequence modeling, attention, and transformers.
+
+This chapter develops autoregressive models from first principles, covering likelihood-based training, causal masking, and decoding strategies. We also discuss their role in modern large language models.
+
+\section{Probability Factorization by the Chain Rule}
+
+Any joint distribution over variables $x = (x_1,\dots,x_n)$ can be factorized as:
+\[
+p(x) = \prod_{i=1}^n p(x_i \mid x_{<i}),
+\quad \text{where } x_{<i} = (x_1,\dots,x_{i-1}).
+\]
+
+\begin{itemize}
+    \item this is an exact identity,
+    \item no approximation is introduced,
+    \item modeling reduces to learning conditional distributions.
+\end{itemize}
+
+\section{Autoregressive Models for Different Data Types}
+
+\subsection{Sequences (Text)}
+
+For text:
+\[
+p(x_1,\dots,x_T) = \prod_{t=1}^T p(x_t \mid x_{<t}).
+\]
+
+Each token is predicted from previous tokens.
+
+\subsection{Images}
+
+Images can be flattened into sequences (e.g., row-wise):
+\[
+p(x) = \prod_{i=1}^N p(x_i \mid x_{<i}).
+\]
+
+Here $x_i$ corresponds to pixel intensities.
+
+\subsection{General Data}
+
+Any structured data can be ordered and modeled autoregressively, though the choice of ordering affects modeling efficiency.
+
+\section{Log-Likelihood Objective}
+
+Given data $\{x^{(j)}\}$, the log-likelihood is:
+\[
+\sum_j \log p(x^{(j)}) = \sum_j \sum_{i=1}^n \log p(x_i^{(j)} \mid x_{<i}^{(j)}).
+\]
+
+\begin{itemize}
+    \item training decomposes into local prediction problems,
+    \item likelihood is tractable and exact,
+    \item gradients are straightforward to compute.
+\end{itemize}
+
+\section{Teacher Forcing and Next-Token Prediction}
+
+During training, models are typically trained with \emph{teacher forcing}:
+\begin{itemize}
+    \item the true previous tokens $x_{<t}$ are provided,
+    \item the model predicts $x_t$.
+\end{itemize}
+
+This leads to the objective:
+\[
+\sum_t \log p(x_t \mid x_{<t}),
+\]
+which corresponds to next-token prediction.
+
+\section{Causal Masking and Training}
+
+In neural implementations (e.g., transformers), causal structure is enforced by masking.
+
+\begin{definition}[Causal Masking]
+During training, ensure that the prediction at position $i$ depends only on $x_{<i}$ by masking future positions:
+\[
+\text{attention weight } \alpha_{ij} = 0 \quad \text{for } j > i.
+\]
+\end{definition}
+
+This ensures that the model respects the autoregressive factorization.
+
+\section{Sampling and Decoding}
+
+To generate samples, we proceed sequentially:
+\[
+x_1 \sim p(x_1),\quad
+x_2 \sim p(x_2 \mid x_1),\quad
+\dots
+\]
+
+\subsection{Decoding Strategies}
+
+\begin{itemize}
+    \item \textbf{Greedy decoding:} choose most probable token,
+    \item \textbf{Sampling:} sample from the distribution,
+    \item \textbf{Temperature scaling:} adjust randomness,
+    \item \textbf{Top-$k$ / nucleus sampling:} restrict candidate tokens.
+\end{itemize}
+
+\subsection{Tradeoffs}
+
+\begin{itemize}
+    \item deterministic decoding yields coherent but less diverse outputs,
+    \item stochastic decoding increases diversity but may reduce quality.
+\end{itemize}
+
+\section{Exposure Bias}
+
+During training:
+\begin{itemize}
+    \item model sees true history,
+\end{itemize}
+
+During generation:
+\begin{itemize}
+    \item model conditions on its own predictions.
+\end{itemize}
+
+This mismatch is called \emph{exposure bias}.
+
+\subsection{Implication}
+
+Errors can accumulate during generation, as mistakes affect future predictions.
+
+\section{Worked Examples}
+
+\subsection{Character-Level Language Modeling}
+
+For a text sequence:
+\[
+p(x) = \prod_{t=1}^T p(x_t \mid x_{<t}),
+\]
+where $x_t$ are characters.
+
+The model predicts each character given previous ones.
+
+\subsection{Pixel Ordering in Images}
+
+Flatten an image into a sequence:
+\[
+(x_{1,1}, x_{1,2}, \dots, x_{H,W}).
+\]
+
+Then:
+\[
+p(x) = \prod_i p(x_i \mid x_{<i}).
+\]
+
+This models spatial dependencies sequentially.
+
+\subsection{Simple Decoding Example}
+
+Given probabilities:
+\[
+p(x_t \mid x_{<t}) = (0.7, 0.2, 0.1),
+\]
+\begin{itemize}
+    \item greedy decoding selects the first token,
+    \item sampling may choose any token according to probabilities.
+\end{itemize}
+
+\section{Relationship to Modern Language Models}
+
+Modern large language models are autoregressive models trained on massive text corpora.
+
+\begin{itemize}
+    \item transformers implement $p(x_t \mid x_{<t})$,
+    \item causal masking enforces autoregression,
+    \item training is next-token prediction.
+\end{itemize}
+
+Thus autoregressive modeling is the foundation of modern NLP systems.
+
+\section{Comparison with Latent-Variable Models}
+
+\begin{itemize}
+    \item autoregressive models:
+    \begin{itemize}
+        \item exact likelihood,
+        \item sequential generation,
+        \item no latent variables required.
+    \end{itemize}
+    \item latent-variable models:
+    \begin{itemize}
+        \item introduce hidden structure,
+        \item may require approximate inference,
+        \item allow global representations.
+    \end{itemize}
+\end{itemize}
+
+Each approach has strengths and limitations.
+
+\section{A Unifying Perspective}
+
+Autoregressive models reduce generative modeling to conditional prediction. By factorizing distributions via the chain rule, they transform a complex global problem into a sequence of local prediction problems.
+
+They connect naturally to:
+\begin{itemize}
+    \item sequence modeling,
+    \item attention mechanisms,
+    \item modern language models.
+\end{itemize}
+
+\section{Summary}
+
+In this chapter we developed autoregressive generative models. We derived the chain-rule factorization, introduced likelihood-based training, and explained teacher forcing and causal masking. We discussed sampling and decoding strategies, as well as exposure bias.
+
+Autoregressive models provide a simple yet powerful framework that underlies modern large-scale generative systems.
+
+\section*{Exercises}
+
+\begin{enumerate}
+    \item Write the autoregressive factorization for:
+    \begin{enumerate}
+        \item a sequence of words,
+        \item a grayscale image,
+        \item a time series.
+    \end{enumerate}
+
+    \item Show that maximizing log-likelihood in an autoregressive model reduces to a sum of conditional log-probabilities.
+
+    \item Explain the difference between teacher forcing and free-running generation.
+
+    \item Compare greedy decoding and sampling. When might each be preferred?
+
+    \item Explain exposure bias and propose one possible mitigation strategy.
+
+    \item Compare autoregressive models and latent-variable models in terms of:
+    \begin{enumerate}
+        \item likelihood computation,
+        \item sampling,
+        \item representation learning.
+    \end{enumerate}
+
+    \item For a simple sequence model, compute $p(x)$ given conditional probabilities.
+
+    \item Explain how causal masking enforces autoregressive structure in transformers.
+\end{enumerate}

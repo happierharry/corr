@@ -1,0 +1,180 @@
+\section{What Is Established and What Remains Open}
+
+This chapter has argued that modern machine learning increasingly relies on \emph{learned representations} that can be reused, adapted, or conditioned across tasks. That broad claim is now well supported by practice, but the surrounding theory is uneven. Some parts of the chapter rest on firm mathematical foundations. Other parts are established primarily by repeated empirical success. Still others remain conjectural, heuristic, or only partially explained.
+
+\medskip
+
+Accordingly, the conclusion of this chapter should separate three levels of understanding:
+\begin{itemize}
+    \item results that are mathematically established within clear assumptions,
+    \item empirical facts that are robust across many experiments and applications,
+    \item theoretical conjectures or explanatory narratives that remain incomplete.
+\end{itemize}
+
+This distinction is especially important in representation learning, where practical success often runs ahead of general theory.
+
+\subsection*{Established mathematical structure}
+
+A first group of claims is established at the level of definitions, operators, and finite-model analysis.
+
+\paragraph{Representations induce new hypothesis classes.}
+If one fixes a representation map $\phi : \mathcal{X} \to \mathcal{Z}$ and then learns only a downstream predictor $g$ on $\mathcal{Z}$, one has effectively replaced a hypothesis class on $\mathcal{X}$ by an induced class
+\[
+\mathcal{H}_{\phi} = \{ g \circ \phi : g \in \mathcal{G} \}.
+\]
+This is a precise mathematical statement. It formalizes the idea that representation learning changes the geometry and complexity of the learning problem. What is \emph{not} automatically established is that the induced class is better for every downstream task. That depends on how well $\phi$ preserves relevant information and suppresses nuisance variation.
+
+\paragraph{Self-supervised objectives can be written as well-defined optimization problems.}
+Masked prediction, autoregressive prediction, and contrastive learning all admit clean abstract formulations. In that sense, the chapter's self-supervised learning material is not merely conceptual. One can define contexts, augmentations, positives, negatives, and predictive losses precisely. Some objectives also admit limited theorem-level interpretations, such as lower-bound viewpoints for contrastive criteria. However, a mathematically clean objective is not the same thing as a complete theory of the representations it will produce in realistic large-scale settings.
+
+\paragraph{Transfer design spaces can be formalized.}
+Linear probing, frozen feature extraction, full fine-tuning, adapters, and low-rank updates are not just engineering terms. They define distinct optimization and function-class constraints. One can state exactly which parameters are fixed and which are allowed to move. Domain adaptation theory also provides rigorous upper bounds that relate target-domain error to source-domain error, discrepancy terms, and irreducible mismatch. These results do not solve transfer learning in practice, but they do provide a mathematical language for saying why low source error alone is insufficient.
+
+\paragraph{Finite-state reinforcement learning has strong foundations.}
+For Markov decision processes with finite state and action spaces and discount factor $\gamma \in [0,1)$, Bellman operators are contractions in the sup norm, have unique fixed points, and support convergent dynamic-programming procedures. This is one of the chapter's clearest theorem-level domains. The gap appears when moving from tabular value functions to large-scale function approximation, partial observability, and nonstationary data collection.
+
+\subsection*{Established empirical facts}
+
+A second group of claims is not purely theorem-driven, but is nevertheless strongly established by repeated experimental evidence.
+
+\paragraph{Pretraining often improves downstream performance.}
+Across language, vision, multimodal learning, and many practical pipelines, models trained first on large upstream corpora often outperform models trained only on the final target task. This is now a stable empirical pattern rather than an isolated observation. The size of the gain depends on data, architecture, and adaptation method, but the broad fact of useful reuse is no longer controversial.
+
+\paragraph{Self-supervised objectives can produce transferable features.}
+Masked language modeling yields representations useful for classification, tagging, retrieval, and many other language tasks. Contrastive image or image--text learning yields spaces that can support retrieval, linear evaluation, zero-shot transfer, and flexible adaptation. The precise mechanism remains debated, but the empirical fact that broad utility can arise without task-specific labels is firmly established.
+
+\paragraph{Scaling changes capability profiles.}
+Larger models trained on larger and more diverse corpora often exhibit better transfer, better few-shot or in-context adaptation, and broader coverage of downstream tasks. This statement should be read carefully: it is a robust empirical observation under particular training regimes, not a theorem that larger always means better. Nevertheless, scaling behavior is one of the central empirical regularities of modern representation learning.
+
+\paragraph{Adaptation mechanism matters.}
+Frozen backbones, linear probes, full fine-tuning, and lightweight parameter-efficient methods can behave quite differently even when built on the same pretrained model. In some settings a linear probe already performs strongly, indicating that the representation is well aligned with the target task. In other settings significant weight updates are needed. This too is a repeatable empirical fact: transfer success is not a binary property of a representation, but depends on how adaptation is carried out.
+
+\paragraph{Deep reinforcement learning can learn useful state abstractions.}
+In control tasks with high-dimensional observations, end-to-end systems can learn internal variables that support successful action selection. This is empirically important even when the internal states are not directly interpretable. What is established is that learned control can work and that representations matter. What remains less settled is a general account of which representation properties make such control sample-efficient, robust, and transferable.
+
+\subsection*{Theoretical conjectures, partial explanations, and design narratives}
+
+A third group of claims should be treated more cautiously. These are ideas that are plausible, often useful, and sometimes strongly supported by experiments, but not yet settled as general theory.
+
+\paragraph{Why broad transfer emerges.}
+It is tempting to say that pretraining works because models discover abstract semantic structure that is shared across tasks. This may be substantially true, but as a general theorem it is not available. Different models may transfer for different reasons: some may encode reusable syntax, some robust local statistics, some broad world regularities, and some simply exploit overlap between pretraining and downstream distributions. ``The model learned a reusable latent world model'' is therefore an interpretive claim, not a universally established conclusion.
+
+\paragraph{Why in-context learning works.}
+Large sequence models can often condition on examples in the prompt and improve performance without parameter updates. There are partial explanatory frameworks: implicit Bayesian analogies, meta-learning analogies, induction-head mechanisms in transformers, and linearized analyses in restricted regimes. But there is not yet one agreed theory that covers realistic large models across tasks. It is more accurate to say that in-context behavior is an established empirical phenomenon with several promising but incomplete explanatory accounts.
+
+\paragraph{What representation geometry means semantically.}
+It is common to describe latent spaces as if directions correspond to concepts and distances correspond to meaning. Sometimes this is a productive approximation. Sometimes it is misleading. A representation can be highly useful for transfer while remaining poorly aligned with human-interpretable factors. Thus statements about ``semantic structure'' should be read as claims about task-relevant organization, not automatic guarantees of transparent meaning.
+
+\paragraph{When scaling laws explain performance.}
+Empirical scaling laws describe useful regularities relating loss, data, model size, and compute in certain regimes. They are invaluable for engineering and forecasting. But they are not a complete theory of capability, transfer, or safety. In particular, extrapolating from smooth loss curves to qualitative behavioral claims requires caution.
+
+\subsection*{Unresolved questions}
+
+The chapter closes naturally with a short list of unresolved questions that remain central to current research.
+
+\paragraph{Open questions on transfer.}
+\begin{itemize}
+    \item What properties of a representation best predict successful transfer across distant tasks rather than merely nearby tasks?
+    \item When does full fine-tuning improve a representation, and when does it overwrite broadly useful structure?
+    \item Can we characterize, in advance, whether a downstream task will be well served by linear probing, adapters, or full model updating?
+\end{itemize}
+
+\paragraph{Open questions on in-context learning.}
+\begin{itemize}
+    \item Under what conditions does prompt conditioning behave like true task adaptation rather than superficial pattern matching?
+    \item Which parts of in-context learning can be explained by sequence statistics alone, and which require stronger internal algorithmic structure?
+    \item How should one separate genuine context-dependent computation from hidden memorization effects?
+\end{itemize}
+
+\paragraph{Open questions on representation semantics.}
+\begin{itemize}
+    \item When do latent directions correspond to meaningful factors of variation, and when are they merely convenient coordinates for optimization?
+    \item Can usefulness, interpretability, and robustness be aligned simultaneously, or do they often compete?
+    \item What should count as evidence that a representation captures ``concepts'' rather than only predictive correlations?
+\end{itemize}
+
+\paragraph{Open questions on reinforcement learning representations.}
+\begin{itemize}
+    \item How can one learn state abstractions that preserve control-relevant information while remaining sample-efficient?
+    \item Why do some deep RL representations transfer poorly across environments that look similar to humans?
+    \item Can representation-learning principles unify model-free and model-based control more cleanly than current design practice allows?
+\end{itemize}
+
+\subsection*{A sober closing synthesis}
+
+The central scholarly conclusion of this chapter is not that one grand theory has already unified self-supervision, transfer, foundation models, and reinforcement learning. Rather, the conclusion is more measured and more useful:
+
+\begin{quote}
+Modern machine learning is increasingly organized around the learning of reusable internal structure, but the degree to which that structure is understood depends strongly on the regime under study.
+\end{quote}
+
+In some regimes, such as finite Markov decision processes or formal decompositions of induced hypothesis classes, the mathematics is comparatively clear. In others, especially large-scale pretraining and in-context adaptation, practice is ahead of comprehensive theory. That is not a weakness of the subject so much as an honest description of its present state.
+
+\medskip
+
+The next chapter turns from reusable representations to another major theme of modern AI: models that do not only support prediction and control, but also learn to describe, generate, and sample from complex data distributions.
+
+\subsection*{Annotated bibliography}
+
+The references below are grouped by topic and annotated briefly to indicate why they matter for this chapter.
+
+\paragraph{Self-supervised learning.}
+\begin{itemize}
+    \item \textbf{Devlin et al. (BERT).} A canonical masked-language-model pretraining paper showing that bidirectional contextual prediction can produce broadly reusable language representations.
+    \item \textbf{He et al. (MAE).} A representative masked-prediction approach in vision, useful for understanding how reconstruction from partial information can scale beyond language.
+    \item \textbf{Chen et al. (SimCLR).} A clean contrastive-learning framework emphasizing the role of augmentations, positive pairs, and large-batch discrimination.
+    \item \textbf{Grill et al. (BYOL).} Important because it showed that strong representation learning can emerge even without the usual explicit negative-pair construction.
+\end{itemize}
+
+\paragraph{Transfer learning and adaptation.}
+\begin{itemize}
+    \item \textbf{Pan and Yang.} A standard early survey on transfer learning, useful for terminology such as source domain, target domain, and adaptation settings.
+    \item \textbf{Ben-David et al.} Foundational for domain-adaptation bounds that relate target error to source error and discrepancy measures.
+    \item \textbf{Howard and Ruder.} An influential practical account of transfer in modern NLP through fine-tuning, showing how pretrained representations can be adapted effectively.
+    \item \textbf{Hu et al. (LoRA).} A standard reference for low-rank adaptation and parameter-efficient transfer in large models.
+\end{itemize}
+
+\paragraph{Foundation models and large-scale pretraining.}
+\begin{itemize}
+    \item \textbf{Brown et al. (GPT-3).} Canonical for large autoregressive language models and few-shot prompting behavior.
+    \item \textbf{Bommasani et al.} A widely cited systems-level framework for discussing what foundation models are, how they are trained, and how they are deployed.
+    \item \textbf{Kaplan et al.} A central scaling-law reference describing empirical regularities relating performance, model size, data, and compute.
+    \item \textbf{Chowdhery et al. (PaLM) or Touvron et al. (LLaMA).} Representative large-model studies showing how scaling and design choices affect broad downstream performance.
+    \item \textbf{Ouyang et al. (InstructGPT).} Useful for post-pretraining alignment, instruction tuning, and the distinction between base-model capability and deployed assistant behavior.
+\end{itemize}
+
+\paragraph{Reinforcement learning and learned control.}
+\begin{itemize}
+    \item \textbf{Sutton and Barto.} The standard textbook foundation for Markov decision processes, value functions, Bellman equations, and policy gradients.
+    \item \textbf{Mnih et al. (DQN).} Canonical for deep value-based reinforcement learning from high-dimensional observations.
+    \item \textbf{Williams (REINFORCE).} A foundational policy-gradient reference.
+    \item \textbf{Lillicrap et al. (DDPG), Schulman et al. (TRPO/PPO), or Haarnoja et al. (SAC).} Standard examples of deep policy optimization and actor--critic style methods in continuous control.
+    \item \textbf{Lesort et al. or related surveys on representation learning in RL.} Helpful for connecting state abstraction and learned control directly to the chapter's representation-learning theme.
+\end{itemize}
+
+\subsection*{What to remember}
+
+\begin{itemize}
+    \item Some parts of this chapter are theorem-level; others are established mainly by repeated empirical success.
+    \item Broad transfer, self-supervised reuse, and scaling effects are real empirical facts, even when full explanatory theories are missing.
+    \item In-context learning and representation semantics remain active areas of explanation rather than settled theory.
+    \item A mature view of modern AI must separate mathematical certainty, empirical regularity, and open conjecture.
+\end{itemize}
+
+\subsection*{Common confusion}
+
+\begin{itemize}
+    \item ``Empirically established'' does not mean ``proved in general.''
+    \item ``Semantic representation'' does not automatically mean human-interpretable latent variables.
+    \item ``Scaling law'' does not mean a universal theorem about intelligence or capability.
+\end{itemize}
+
+\subsection*{Exercises}
+
+\begin{enumerate}
+    \item Give one example from this chapter of a claim that is mathematically established and one example of a claim that is primarily empirical.
+    \item Explain why a domain-adaptation bound does not by itself guarantee successful transfer in a new application.
+    \item Compare two possible explanations of in-context learning and state clearly what each explanation leaves open.
+    \item Describe a situation in which a representation is useful for prediction but not meaningfully interpretable.
+    \item Choose one item from the annotated bibliography and explain how it supports the chapter's central thesis about reusable learned structure.
+\end{enumerate}

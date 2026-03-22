@@ -1,0 +1,358 @@
+\chapter{Logistic Regression and Classification}
+
+\section{Introduction}
+
+Linear regression is suited to real-valued prediction, but classification requires a different output model. In binary classification, the target is typically
+\[
+Y\in\{0,1\},
+\]
+so a predictor should produce either a class label or a probability of class membership. A linear function
+\[
+x^\top\theta
+\]
+alone is not appropriate as a probability, since it may lie outside $[0,1]$. Logistic regression resolves this by combining a linear score with a nonlinear link function that maps $\mathbb R$ into $(0,1)$.
+
+This chapter develops logistic regression from both probabilistic and optimization viewpoints. We introduce the sigmoid function, interpret coefficients through log-odds, derive the likelihood and cross-entropy loss, and compute the gradient and Hessian. We then extend the construction to multiclass classification through softmax regression.
+
+\section{From Regression to Classification}
+
+In regression, the model predicts a numerical value. In classification, the task is to predict a discrete class. For binary classification, one often seeks either:
+\begin{itemize}
+    \item a class prediction in $\{0,1\}$, or
+    \item a probability estimate for class $1$.
+\end{itemize}
+
+A natural idea is to begin with a linear score
+\[
+z=x^\top \theta,
+\]
+and convert it into a probability. The conversion should be monotone: larger scores should correspond to higher class probability. It should also map all real numbers to the interval $(0,1)$.
+
+This leads to the logistic sigmoid.
+
+\section{Bernoulli Models and the Logistic Link}
+
+\subsection{Sigmoid Function}
+
+The logistic sigmoid is
+\[
+\sigma(z)=\frac{1}{1+e^{-z}}.
+\]
+It maps $\mathbb R$ to $(0,1)$ and satisfies
+\[
+\sigma'(z)=\sigma(z)(1-\sigma(z)).
+\]
+
+\begin{definition}[Logistic Regression Model]
+In binary logistic regression, the conditional probability of class $1$ given input $x$ is modeled as
+\[
+\mathbb P(Y=1\mid X=x)=\sigma(x^\top\theta),
+\]
+and hence
+\[
+\mathbb P(Y=0\mid X=x)=1-\sigma(x^\top\theta).
+\]
+\end{definition}
+
+Thus the output is Bernoulli with parameter $\sigma(x^\top\theta)$:
+\[
+Y\mid X=x \sim \mathrm{Bernoulli}(\sigma(x^\top\theta)).
+\]
+
+\subsection{Log-Odds Interpretation}
+
+A key feature of logistic regression is that it is linear in the log-odds. Let
+\[
+p(x)=\mathbb P(Y=1\mid X=x).
+\]
+Then
+\[
+p(x)=\sigma(x^\top\theta)
+\quad\Longleftrightarrow\quad
+\frac{p(x)}{1-p(x)}=e^{x^\top\theta}.
+\]
+Taking logarithms gives
+\[
+\log \frac{p(x)}{1-p(x)} = x^\top\theta.
+\]
+So logistic regression assumes that the \emph{log-odds} are a linear function of the features.
+
+This gives a useful interpretation: each coefficient describes how a one-unit change in a feature changes the log-odds, holding other features fixed.
+
+\section{Maximum Likelihood Derivation}
+
+Suppose we observe data
+\[
+(x_1,y_1),\dots,(x_n,y_n),
+\qquad y_i\in\{0,1\}.
+\]
+Under the logistic model,
+\[
+p_i:=\mathbb P(Y_i=1\mid X_i=x_i)=\sigma(x_i^\top\theta).
+\]
+Since $Y_i$ is Bernoulli,
+\[
+\mathbb P(Y_i=y_i\mid X_i=x_i)=p_i^{y_i}(1-p_i)^{1-y_i}.
+\]
+Assuming conditional independence across observations, the likelihood is
+\[
+L(\theta)=\prod_{i=1}^n p_i^{y_i}(1-p_i)^{1-y_i}.
+\]
+Taking logarithms,
+\[
+\ell(\theta)
+=
+\sum_{i=1}^n \Big(y_i\log p_i+(1-y_i)\log(1-p_i)\Big).
+\]
+
+Maximum likelihood chooses $\theta$ to maximize $\ell(\theta)$, or equivalently to minimize the negative log-likelihood:
+\[
+-\ell(\theta)
+=
+-\sum_{i=1}^n \Big(y_i\log p_i+(1-y_i)\log(1-p_i)\Big).
+\]
+
+\subsection{Cross-Entropy Loss}
+
+Dividing by $n$, the empirical objective becomes
+\[
+J(\theta)=
+-\frac1n\sum_{i=1}^n
+\Big(
+y_i\log \sigma(x_i^\top\theta)
++
+(1-y_i)\log(1-\sigma(x_i^\top\theta))
+\Big).
+\]
+This is the binary \emph{cross-entropy} or \emph{logistic loss}.
+
+\begin{proposition}[Cross-Entropy from Bernoulli Likelihood]
+For binary logistic regression, minimizing empirical cross-entropy is equivalent to maximum likelihood estimation under the Bernoulli model
+\[
+Y\mid X=x \sim \mathrm{Bernoulli}(\sigma(x^\top\theta)).
+\]
+\end{proposition}
+
+Thus logistic regression is not just a heuristic classifier; it is a probabilistic model estimated by likelihood.
+
+\section{Optimization: Gradient and Hessian}
+
+Let
+\[
+z_i=x_i^\top\theta,
+\qquad
+p_i=\sigma(z_i).
+\]
+Then the objective is
+\[
+J(\theta)=
+-\frac1n\sum_{i=1}^n \big(y_i\log p_i+(1-y_i)\log(1-p_i)\big).
+\]
+
+\subsection{Gradient}
+
+Using $\sigma'(z)=\sigma(z)(1-\sigma(z))$, one obtains
+\[
+\nabla J(\theta)
+=
+\frac1n\sum_{i=1}^n (p_i-y_i)x_i.
+\]
+In matrix form, if
+\[
+p=
+\begin{bmatrix}
+p_1\\ \vdots\\ p_n
+\end{bmatrix},
+\qquad
+y=
+\begin{bmatrix}
+y_1\\ \vdots\\ y_n
+\end{bmatrix},
+\]
+then
+\[
+\nabla J(\theta)=\frac1n X^\top(p-y).
+\]
+
+\subsection{Hessian}
+
+Differentiating again gives
+\[
+\nabla^2 J(\theta)
+=
+\frac1n X^\top W X,
+\]
+where
+\[
+W=\mathrm{diag}\big(p_1(1-p_1),\dots,p_n(1-p_n)\big).
+\]
+Since each diagonal entry is nonnegative, $W$ is positive semidefinite, and so is $X^\top W X$.
+
+\begin{proposition}[Convexity of Logistic Loss]
+The logistic regression objective $J(\theta)$ is convex in $\theta$.
+\end{proposition}
+
+This is a major advantage: unlike deep-network objectives, logistic regression has a convex optimization landscape.
+
+\section{Linear Decision Boundaries}
+
+Although logistic regression models probabilities, its classification rule is often obtained by thresholding:
+\[
+\hat y =
+\begin{cases}
+1, & \sigma(x^\top\theta)\ge \frac12,\\
+0, & \sigma(x^\top\theta)< \frac12.
+\end{cases}
+\]
+Since $\sigma(z)\ge 1/2$ exactly when $z\ge 0$, this becomes
+\[
+\hat y=
+\begin{cases}
+1, & x^\top\theta\ge 0,\\
+0, & x^\top\theta<0.
+\end{cases}
+\]
+Thus logistic regression induces a linear decision boundary:
+\[
+x^\top\theta=0.
+\]
+
+So logistic regression is linear as a classifier, even though it is nonlinear as a probability map.
+
+\section{Cross-Entropy and Calibration}
+
+Cross-entropy is more informative than zero-one loss because it takes confidence into account. Predicting the correct class with probability $0.99$ is better than predicting it with probability $0.51$, even though both give the same label.
+
+This connects logistic regression to \emph{calibration}. A probabilistic classifier is calibrated if its predicted probabilities match observed frequencies. Logistic regression is often used not only for classification but also for probability estimation, especially when interpretability matters.
+
+Cross-entropy encourages truthful probability prediction: assigning low probability to the true class is penalized heavily.
+
+\section{Regularized Logistic Regression}
+
+As with least squares, one often adds regularization:
+\[
+\min_\theta J(\theta)+\lambda \Omega(\theta).
+\]
+A common choice is $\Omega(\theta)=\|\theta\|^2$, giving $\ell_2$-regularized logistic regression:
+\[
+\min_\theta
+-\frac1n\sum_{i=1}^n
+\Big(
+y_i\log p_i+(1-y_i)\log(1-p_i)
+\Big)
++\lambda \|\theta\|^2.
+\]
+This improves stability and reduces overfitting, especially in high dimensions or when features are correlated.
+
+\section{Multiclass Softmax Regression}
+
+Logistic regression extends naturally to $K$ classes. Let
+\[
+Y\in\{1,\dots,K\}.
+\]
+For each class $k$, assign a score
+\[
+s_k(x)=w_k^\top x,
+\]
+and convert scores to probabilities using softmax:
+\[
+\mathbb P(Y=k\mid X=x)
+=
+\frac{e^{w_k^\top x}}{\sum_{j=1}^K e^{w_j^\top x}}.
+\]
+
+\begin{definition}[Softmax Regression]
+In multiclass softmax regression, the conditional class probabilities are
+\[
+p_k(x;\Theta)
+=
+\frac{e^{w_k^\top x}}{\sum_{j=1}^K e^{w_j^\top x}},
+\qquad k=1,\dots,K,
+\]
+where $\Theta=(w_1,\dots,w_K)$.
+\end{definition}
+
+\subsection{Softmax Likelihood}
+
+Given training data, the likelihood is
+\[
+L(\Theta)=\prod_{i=1}^n p_{y_i}(x_i;\Theta),
+\]
+so the negative log-likelihood is
+\[
+J(\Theta)
+=
+-\frac1n\sum_{i=1}^n \log p_{y_i}(x_i;\Theta).
+\]
+Equivalently,
+\[
+J(\Theta)
+=
+-\frac1n\sum_{i=1}^n
+\left(
+w_{y_i}^\top x_i
+-
+\log \sum_{j=1}^K e^{w_j^\top x_i}
+\right).
+\]
+This is multiclass cross-entropy.
+
+\subsection{Gradient Formula}
+
+If we use one-hot targets $y_{ik}\in\{0,1\}$, the gradient with respect to class weight vector $w_k$ is
+\[
+\nabla_{w_k} J(\Theta)
+=
+\frac1n\sum_{i=1}^n \big(p_k(x_i;\Theta)-y_{ik}\big)x_i.
+\]
+This is the multiclass analogue of the binary logistic gradient.
+
+\subsection{Softmax Classifier}
+
+The predicted class is
+\[
+\hat y = \arg\max_{k} \; p_k(x;\Theta).
+\]
+Since softmax is monotone in the scores, this is equivalent to
+\[
+\hat y=\arg\max_k \; w_k^\top x.
+\]
+
+\section{Worked Examples}
+
+\subsection{Binary Gradient Interpretation}
+
+For binary logistic regression,
+\[
+\nabla J(\theta)=\frac1n\sum_{i=1}^n (p_i-y_i)x_i.
+\]
+So each data point contributes:
+- little when the model predicts correctly with confidence,
+- strongly when the prediction is poor.
+
+This matches the intuition that optimization adjusts parameters in proportion to prediction error.
+
+\subsection{Softmax Classifier}
+
+Suppose there are three classes with score vectors $w_1,w_2,w_3$. Then
+\[
+p_k(x)=\frac{e^{w_k^\top x}}{e^{w_1^\top x}+e^{w_2^\top x}+e^{w_3^\top x}}.
+\]
+The model predicts the class with largest score. Thus softmax regression is a probabilistic model whose decision rule is still based on linear comparisons of class scores.
+
+\section{A Unifying Perspective}
+
+Logistic regression is the natural classification analogue of linear regression, but with important differences. It combines:
+- a linear score,
+- a probabilistic Bernoulli or categorical output model,
+- maximum likelihood estimation,
+- cross-entropy loss,
+- convex optimization.
+
+Its coefficients are interpretable through log-odds, its loss has a clear statistical origin, and its classifier has a linear decision boundary. These features make logistic regression one of the most important baseline models in supervised learning.
+
+\section{Summary}
+
+In this chapter we introduced logistic regression as a probabilistic model for classification. For binary classification, the model uses the sigmoid function to map a linear score to a Bernoulli probability, and the log-odds are linear in the features. We derived the likelihood, showed that maximum likelihood leads to cross-entropy minimization, and computed the gradient and Hessian.
+
+We then explained why logistic regression induces linear decision boundaries and briefly discussed calibration and regularization. Finally, we extended the model to multiclass classification using softmax regression and gave the corresponding likelihood and gradient formulas. These ideas prepare the way for more flexible nonlinear classifiers while retaining a clear probabilistic interpretation.

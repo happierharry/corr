@@ -1,0 +1,196 @@
+\chapter{Regularization and Structure}
+
+\section{Introduction}
+
+A learner should fit data well, but not in an arbitrary way. If a model is too flexible relative to the available sample, it may fit accidental variation rather than stable structure. Regularization is the collection of methods that prevent or reduce this failure. It introduces preference for certain solutions over others: smaller parameters, sparser representations, smoother functions, invariance to transformations, or solutions reached by specific optimization dynamics.
+
+Regularization is therefore one of the clearest places where statistical learning and deep learning meet. In classical models, regularization often appears as an explicit penalty or constraint. In deep learning, it also appears through early stopping, data augmentation, architecture, and the implicit bias of optimization. This chapter develops these ideas in a compact mathematical form.
+
+\section{Why Regularization Works}
+
+Suppose we choose a predictor by minimizing empirical risk alone:
+\[
+\min_{f\in\mathcal H} \widehat R_n(f).
+\]
+If the hypothesis class is rich, there may be many near-minimizers, some of which generalize well and others poorly. Regularization selects among them by preferring structured solutions.
+
+At a high level, regularization works because it reduces effective complexity. It discourages hypotheses that are unnecessarily flexible, unstable, or sensitive to the sample. In this way, it trades a small increase in training error for a potentially large decrease in test error.
+
+A useful schematic is:
+\[
+\text{good generalization} \approx \text{data fit} + \text{controlled complexity}.
+\]
+
+\section{Penalized ERM and Constraints}
+
+The standard regularized form of empirical risk minimization is
+
+\begin{definition}[Penalized ERM]
+Given a penalty $\Omega(f)$ and parameter $\lambda>0$, penalized ERM chooses
+\[
+\min_{f\in\mathcal H} \; \widehat R_n(f)+\lambda \Omega(f).
+\]
+\end{definition}
+
+Here:
+- $\widehat R_n(f)$ measures fit to the data,
+- $\Omega(f)$ measures complexity,
+- $\lambda$ controls the tradeoff.
+
+An alternative is a constrained formulation:
+\[
+\min_{f\in\mathcal H} \widehat R_n(f)
+\qquad
+\text{subject to } \Omega(f)\le c.
+\]
+
+These two viewpoints are closely related. One says “minimize error under a complexity budget”; the other says “minimize error while paying for complexity.”
+
+\subsection{Constrained--Penalized Equivalence}
+
+Under suitable conditions, constrained and penalized problems are equivalent in the sense that for an appropriate choice of $\lambda$, a solution of
+\[
+\min_f \widehat R_n(f)+\lambda\Omega(f)
+\]
+also solves
+\[
+\min_f \widehat R_n(f)\quad \text{subject to } \Omega(f)\le c
+\]
+for some corresponding $c$.
+
+This equivalence is conceptually important: regularization may be interpreted either as a soft preference or as a hard structural restriction.
+
+\section{Tikhonov and Ridge Regularization}
+
+The most classical regularizer is the squared Euclidean norm. For linear regression with parameter vector $\theta\in\mathbb R^p$, ridge regression solves
+\[
+\min_{\theta\in\mathbb R^p}
+\frac1n\|X\theta-y\|^2+\lambda \|\theta\|^2.
+\]
+This is also called \emph{Tikhonov regularization}.
+
+\subsection{Closed-Form Solution}
+
+Differentiate the objective:
+\[
+\nabla_\theta\!\left(\frac1n\|X\theta-y\|^2+\lambda\|\theta\|^2\right)
+=
+\frac{2}{n}X^\top(X\theta-y)+2\lambda\theta.
+\]
+Setting the gradient to zero gives
+\[
+\frac{1}{n}X^\top X\theta - \frac{1}{n}X^\top y + \lambda\theta = 0,
+\]
+so
+\[
+\left(X^\top X+n\lambda I\right)\theta = X^\top y.
+\]
+Hence
+\[
+\hat\theta_{\mathrm{ridge}}
+=
+\left(X^\top X+n\lambda I\right)^{-1}X^\top y.
+\]
+
+\subsection{Shrinkage Interpretation}
+
+Ridge regularization shrinks coefficients toward zero. It does not usually make them exactly zero, but it reduces their magnitude. This shrinkage stabilizes estimation, especially when features are correlated or the design matrix is ill-conditioned.
+
+Geometrically, ridge regression balances least-squares error with preference for small Euclidean norm. Statistically, it reduces variance at the cost of some bias.
+
+\section{Lasso and Sparsity}
+
+If we want not just small coefficients but sparse ones, a natural penalty is the $\ell_1$ norm:
+\[
+\min_{\theta\in\mathbb R^p}
+\frac1n\|X\theta-y\|^2+\lambda \|\theta\|_1.
+\]
+This is the \emph{lasso}.
+
+The key difference from ridge is qualitative:
+- ridge prefers small coefficients,
+- lasso can drive some coefficients exactly to zero.
+
+This makes lasso attractive when one believes only a small number of features are truly relevant.
+
+\subsection{Geometric Picture of \texorpdfstring{$L_1$}{L1} vs \texorpdfstring{$L_2$}{L2}}
+
+The difference is often explained geometrically. In two dimensions:
+- an $\ell_2$ constraint $\|\theta\|_2\le c$ is a disk,
+- an $\ell_1$ constraint $\|\theta\|_1\le c$ is a diamond.
+
+The least-squares objective has elliptical level sets. The first point where such a level set touches the feasible set is often:
+- smooth on the ridge disk, leading to shrinkage,
+- at a corner of the lasso diamond, leading to zeros in coordinates.
+
+So the geometry of the constraint explains sparsity.
+
+\section{Structure-Aware Regularization}
+
+Not all regularization is simple norm control. Many forms of regularization encode task structure more directly.
+
+\subsection{Smoothness and Stability}
+
+A regularizer may prefer functions that change slowly with the input, discouraging unstable fits. This is common in kernel methods and inverse problems.
+
+\subsection{Group and Structured Sparsity}
+
+Sometimes features come in groups or known structures. Then one may regularize entire blocks together rather than individual coordinates. This encourages sparsity at the level of groups, channels, or modules.
+
+\subsection{Architecture as Regularization}
+
+A convolutional network is regularized not only by penalties but by its structure:
+- local connectivity,
+- weight sharing,
+- translation-related bias.
+
+Likewise, transformer architectures regularize the space of functions by making token interaction occur through attention and layered composition. In this broader sense, architecture is a structural regularizer.
+
+\section{Data Augmentation and Invariance as Regularization}
+
+Regularization can also come from modifying the data rather than the objective. If a task should be invariant to certain transformations, then training on transformed examples encourages the model to learn this invariance.
+
+Examples include:
+- image flips and crops,
+- noise injection,
+- token masking,
+- time-series perturbations.
+
+This acts as regularization because it reduces the set of acceptable hypotheses to those that behave consistently under the chosen transformations. Thus data augmentation is not merely more data; it is a way of imposing structure.
+
+\section{Early Stopping}
+
+Another important regularization method is \emph{early stopping}. Instead of optimizing until the training objective is minimized as much as possible, one stops training once validation performance stops improving.
+
+Why can this help? Because very long optimization may eventually fit noise or idiosyncrasies of the sample. Stopping early limits how far the optimizer moves into highly adapted solutions.
+
+In many settings, early stopping behaves similarly to explicit norm regularization: it restricts the effective complexity of the fitted model even when no formal penalty is written down.
+
+\section{Implicit Regularization from Optimization}
+
+Modern learning systems often generalize better than one would predict from parameter count alone. One reason is that optimization itself can induce preference for certain kinds of solutions.
+
+Examples include:
+- gradient descent favoring low-norm or large-margin solutions in some settings,
+- initialization affecting which minima are reachable,
+- stochastic optimization adding noise that biases training dynamics.
+
+This is called \emph{implicit regularization}. The objective may allow many minimizing solutions, but the optimizer does not select uniformly among them.
+
+This idea is especially important in deep learning, where explicit penalties alone do not fully explain generalization.
+
+\section{A Unifying Perspective}
+
+Regularization is the deliberate control of complexity through penalties, constraints, data transformations, architecture, or optimization dynamics. Its purpose is not to prevent learning, but to steer learning toward solutions that capture persistent structure rather than accidental sample noise.
+
+The unifying principle is:
+\[
+\text{fit the data} \quad \text{subject to structural preference}.
+\]
+Ridge prefers small norms, lasso prefers sparsity, augmentation prefers invariance, early stopping prefers simpler optimization trajectories, and architecture prefers task-aligned function structure. These are different expressions of the same idea.
+
+\section{Summary}
+
+In this chapter we introduced regularization as the bridge between fitting and structure. We formulated penalized ERM, discussed its constrained counterpart, and studied two central examples: ridge regularization and lasso. We derived the ridge closed form, explained shrinkage, and gave the geometric intuition behind the different behavior of $\ell_1$ and $\ell_2$ penalties.
+
+We also emphasized that regularization in modern learning goes beyond explicit penalties. Data augmentation, early stopping, architectural design, and optimization dynamics all shape effective complexity and therefore affect generalization. The next chapters will build on this view when we study specific models and their statistical properties.

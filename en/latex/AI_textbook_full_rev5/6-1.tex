@@ -1,0 +1,76 @@
+
+\section{Why Deep Learning Still Puzzles Us}
+
+Deep learning has achieved striking empirical success across a wide range of domains:
+vision, language, speech, control, scientific modeling, and generative AI.
+Yet this success raises a scientific puzzle.
+
+\medskip
+
+Classical learning intuition suggests that highly flexible models should be at serious risk of overfitting.
+Deep neural networks are often massively overparameterized, capable of fitting training data extremely well, and sometimes even capable of interpolating the training sample almost perfectly.
+Nevertheless, they frequently generalize far better than naive intuition would predict.
+
+\medskip
+
+This creates a tension:
+
+\begin{quote}
+deep learning works extremely well in practice, but our theory still does not provide a single complete explanation of why it works so well.
+\end{quote}
+
+\subsection*{Overparameterization and interpolation}
+
+A modern neural network may contain far more parameters than training examples.
+From a purely classical counting perspective, this might appear dangerous.
+One could imagine many parameter settings that fit the training data while behaving very differently away from it.
+
+\medskip
+
+And yet empirical practice shows something subtler.
+In many regimes, larger networks are not only more expressive, but also easier to optimize and sometimes better at generalizing.
+
+\medskip
+
+This does not mean classical learning theory is wrong.
+Rather, it means that the interaction between model size, optimization, data structure, and inductive bias is more subtle than early intuition suggested.
+
+\subsection*{Optimization and generalization are different questions}
+
+Two questions must be kept separate:
+\begin{enumerate}
+    \item \textbf{Optimization:} can we find parameters that fit the training objective well?
+    \item \textbf{Generalization:} will the resulting solution perform well on new data?
+\end{enumerate}
+
+Deep learning has complicated both questions.
+Overparameterization may make optimization easier in some regimes, while also changing the geometry of the space of solutions.
+The learned model is not just any interpolating solution; it is the solution found by a particular optimization process with a particular architecture and initialization.
+
+\subsection*{Why theory trails practice}
+
+One reason theory trails practice is that modern systems combine many ingredients:
+\begin{itemize}
+    \item compositional function classes,
+    \item stochastic gradient-based optimization,
+    \item normalization and residual pathways,
+    \item architectural inductive bias,
+    \item large-scale pretraining,
+    \item self-supervised and generative objectives.
+\end{itemize}
+
+Each ingredient is partly understood in isolation.
+What is harder is to explain how they interact in realistic large systems.
+
+\subsection*{The purpose of this chapter}
+
+This chapter is not meant to give a complete theory of deep learning.
+That theory does not yet exist in a fully unified form.
+Instead, the goal is more modest and more useful:
+\begin{itemize}
+    \item to identify what is genuinely puzzling,
+    \item to describe the main partial explanations,
+    \item to explain why strong benchmark performance is not the same as reliability,
+    \item to clarify what remains open.
+\end{itemize}
+

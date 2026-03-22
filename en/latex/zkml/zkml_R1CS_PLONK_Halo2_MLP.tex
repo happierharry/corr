@@ -1,0 +1,231 @@
+\section{A Comparative View: R1CS, PLONK, and Halo2 for Neural Networks}
+
+\subsection{Running Example: A Small MLP}
+
+Consider a simple neural network:
+\[
+z_1 = 2x_1 - x_2 + 1, \qquad
+z_2 = x_1 + 3x_2,
+\]
+\[
+h_1 = \operatorname{ReLU}(z_1), \qquad
+h_2 = \operatorname{ReLU}(z_2),
+\]
+\[
+y = 4h_1 - 2h_2 + 3.
+\]
+
+Our goal is to express this computation in three different proof systems.
+
+\medskip
+
+\noindent
+\textbf{Key question.}  
+How does the same computation look under different constraint paradigms?
+
+\subsection{R1CS Representation}
+
+R1CS expresses computation using constraints:
+\[
+\langle A_i, w \rangle \cdot \langle B_i, w \rangle = \langle C_i, w \rangle.
+\]
+
+Affine operations are encoded as:
+\[
+(\text{linear form}) \cdot 1 = \text{output}.
+\]
+
+For example:
+\[
+(1 + 2x_1 - x_2)\cdot 1 = z_1,
+\qquad
+(x_1 + 3x_2)\cdot 1 = z_2.
+\]
+
+The output layer becomes:
+\[
+(3 + 4h_1 - 2h_2)\cdot 1 = y.
+\]
+
+\paragraph{Handling ReLU in R1CS.}
+
+R1CS does not support comparisons directly, so two approaches are used.
+
+\medskip
+
+\noindent
+\textbf{(A) Polynomial approximation.}
+\[
+h = p(z), \quad p(z) = a_0 + a_1 z + a_2 z^2.
+\]
+
+This requires:
+\[
+z \cdot z = u, \qquad
+(a_0 + a_1 z + a_2 u)\cdot 1 = h.
+\]
+
+\medskip
+
+\noindent
+\textbf{(B) Gadget-based emulation.}  
+More complex constructions can simulate comparisons, but at significant cost.
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+R1CS favors algebraic (polynomial) representations over piecewise functions.
+
+\subsection{PLONK Representation}
+
+PLONK represents computation as a table of values with row-wise constraints:
+\[
+q_M ab + q_L a + q_R b + q_O c + q_C = 0.
+\]
+
+A possible layout is:
+
+\begin{center}
+\begin{tabular}{c|ccc|l}
+Row & $a$ & $b$ & $c$ & Meaning \\
+\hline
+1 & $x_1$ & $x_2$ & $z_1$ & affine \\
+2 & $x_1$ & $x_2$ & $z_2$ & affine \\
+3 & $z_1$ & -- & $h_1$ & activation \\
+4 & $z_2$ & -- & $h_2$ & activation \\
+5 & $h_1$ & $h_2$ & $y$ & output
+\end{tabular}
+\end{center}
+
+Affine rows are enforced by choosing coefficients appropriately, e.g.
+\[
+2a - b + 1 - c = 0.
+\]
+
+\paragraph{ReLU via lookup.}
+
+Define a table:
+\[
+T = \{(t, \max(0,t)) : t \in D\}.
+\]
+
+Then enforce:
+\[
+(z_1, h_1) \in T, \qquad (z_2, h_2) \in T.
+\]
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+PLONK naturally supports lookup constraints, making piecewise functions efficient.
+
+\subsection{Halo2 Representation}
+
+Halo2 is a PLONKish framework with flexible circuit design:
+
+\begin{itemize}
+\item advice columns (witness values)
+\item fixed columns (constants)
+\item selector columns (activate gates)
+\item lookup tables (nonlinearities)
+\end{itemize}
+
+\paragraph{Affine gate.}
+
+Define:
+\[
+s_{\mathrm{aff}} \cdot (\alpha a + \beta b + \gamma - c) = 0.
+\]
+
+Use it for:
+\[
+2x_1 - x_2 + 1 = z_1, \quad
+x_1 + 3x_2 = z_2, \quad
+4h_1 - 2h_2 + 3 = y.
+\]
+
+\paragraph{ReLU via lookup.}
+
+Construct a lookup table:
+\[
+(t, \operatorname{ReLU}(t)).
+\]
+
+Then enforce:
+\[
+(z_1, h_1) \text{ in table}, \qquad
+(z_2, h_2) \text{ in table}.
+\]
+
+\paragraph{Alternative: polynomial gate.}
+
+Define:
+\[
+s_{\mathrm{poly}} \cdot \big(c - (a_0 + a_1 a + a_2 a^2)\big) = 0.
+\]
+
+\medskip
+
+\noindent
+\textbf{Observation.}  
+Halo2 combines custom gates and lookup arguments in a programmable framework.
+
+\subsection{Lookup vs Polynomial ReLU}
+
+\paragraph{Lookup-based ReLU.}
+\[
+(z,h) \in \{(t,\max(0,t))\}.
+\]
+
+\begin{itemize}
+\item exact on discrete domain
+\item efficient in PLONK/Halo2
+\item requires quantization
+\end{itemize}
+
+\paragraph{Polynomial ReLU.}
+\[
+h = p(z).
+\]
+
+\begin{itemize}
+\item compatible with R1CS
+\item smooth algebraic form
+\item only approximate
+\end{itemize}
+
+\subsection{Comparison}
+
+\begin{center}
+\begin{tabular}{l|c|c|c}
+Feature & R1CS & PLONK & Halo2 \\
+\hline
+Constraint form & $a\cdot b=c$ & polynomial gate & programmable gates \\
+Custom operations & limited & yes & yes \\
+Lookup support & weak & strong & very strong \\
+ReLU implementation & polynomial & lookup & lookup (preferred) \\
+Circuit flexibility & low & medium & high
+\end{tabular}
+\end{center}
+
+\subsection{Key Insight}
+
+\begin{quote}
+The same neural network can be expressed at multiple levels of abstraction:
+\[
+\text{R1CS} \;\subset\; \text{PLONK} \;\subset\; \text{Halo2}.
+\]
+\end{quote}
+
+\noindent
+R1CS provides a minimal algebraic foundation,  
+PLONK introduces structured polynomial constraints,  
+and Halo2 enables practical, modular circuit design.
+
+\medskip
+
+\noindent
+\textbf{Conclusion.}  
+The choice of representation is not merely technical—it determines how efficiently machine learning models can be proven in zero knowledge.

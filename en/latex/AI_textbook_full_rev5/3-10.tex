@@ -1,0 +1,335 @@
+\section{What Is Understood and What Remains Open}
+
+The theory and practice of architecture in deep learning contain both mature ideas and major open questions.
+
+\subsection*{What is well understood}
+
+This chapter developed a central theme of deep learning architecture:
+different model classes should be understood as different structured operators acting on data with different kinds of regularity.
+Convolution exploits locality and translation structure.
+Recurrence exploits ordered state evolution.
+Gated recurrence modifies state evolution so that memory can be preserved or overwritten selectively.
+Attention introduces content-dependent interaction.
+Transformers organize these interaction rules into reusable sequence-processing blocks.
+
+\medskip
+
+A good closing section should do more than summarize these ideas rhetorically.
+It should also separate what the chapter established mathematically, what it distilled as durable design principles, and what remains open.
+That distinction matters for students.
+Without it, one can either become too skeptical and treat all architecture design as ad hoc engineering, or too optimistic and imagine that the current empirical success of modern architectures is already fully explained by theory.
+The right view lies between these extremes.
+Some architectural facts are precise and stable.
+Some design lessons are strong but empirical.
+Some central questions remain genuinely unresolved.
+
+\subsection*{A theorem map of the chapter}
+
+The word \emph{theorem} should be used carefully.
+Not every useful architectural statement is a theorem in the narrow mathematical sense.
+Still, this chapter did establish a coherent map of mathematically clean claims and exact operator identities.
+Table~\ref{tab:chapter3theoremmap} collects the most important ones.
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{|p{2.3cm}|p{5.6cm}|p{4.1cm}|}
+\hline
+\textbf{Topic} & \textbf{Established claim} & \textbf{Nature of claim} \\
+\hline
+Convolution & A discrete convolution layer is a structured linear operator with local connectivity and weight sharing; translation of the input leads to a corresponding translation of the feature responses, up to boundary effects. & Algebraic operator identity / equivariance statement \\
+\hline
+Pooling and hierarchy & Stacking local operators increases effective receptive field with depth, allowing progressively larger-scale features to be represented. & Structural derivation from composition \\
+\hline
+Recurrence & An RNN defines a nonlinear state-space evolution
+\(h_t = \phi(W_h h_{t-1}+W_x x_t+b)\), so sequential processing can be studied as iterative state update. & Exact dynamical-systems formulation \\
+\hline
+Gated recurrence & LSTM- and GRU-style updates create additive memory pathways and multiplicative control signals that regulate preservation, deletion, and exposure of information. & Exact operator decomposition \\
+\hline
+Attention & Attention outputs are weighted sums of value vectors, and hence lie in the span of the values and, under normalized nonnegative weights, in their convex hull. & Proposition-level structural statement \\
+\hline
+Self-attention & Self-attention without positional information is permutation equivariant. & Proposition with proof sketch \\
+\hline
+Transformer block & A transformer layer can be written algebraically as repeated composition of normalization, attention, residual addition, and pointwise nonlinear maps. & Exact architectural identity \\
+\hline
+Scaling model & For dense transformers, a useful leading-order cost model is
+\(O(LTd^2 + LT^2 d)\), separating projection/MLP cost from all-to-all token interaction cost. & Asymptotic complexity derivation \\
+\hline
+Cross-attention & Encoder--decoder interaction is described exactly by letting one stream supply queries and another stream supply keys and values. & Exact operator identity \\
+\hline
+\end{tabular}
+\caption{A theorem map for Chapter 3. Some entries are formal propositions, while others are exact algebraic or asymptotic statements derived from the model definitions. The point of the map is to distinguish mathematically established structure from broader empirical belief.}
+\label{tab:chapter3theoremmap}
+\end{table}
+
+Several remarks help interpret this map correctly.
+First, the cleanest results in architecture are often \emph{structural} rather than \emph{statistical}.
+For example, one can prove permutation equivariance of self-attention without positional encoding exactly, but one cannot yet give a comparably complete theory of why transformer pretraining scales so effectively across domains.
+Second, many important architectural insights arise from algebraic form.
+The fact that attention produces convex combinations is already informative because it constrains what a single layer can and cannot represent directly.
+Third, asymptotic cost formulas are valuable but limited.
+They tell us how arithmetic and memory scale, but not by themselves whether the corresponding model class is best for a given problem.
+
+\subsection*{Design principles distilled from the chapter}
+
+A chapter on architecture should end not only with claims but also with principles.
+These are not all theorems.
+They are higher-level lessons that help one decide which architectural family is appropriate for which data geometry.
+
+\paragraph{Principle 1: Build the operator around the dominant structure of the data.}
+Images exhibit local spatial regularity and approximate translation symmetry, so convolutions are natural.
+Sequences exhibit order and evolving context, so recurrent or attention-based operators are natural.
+Graphs and manifolds exhibit relational rather than grid-like structure, so architectures must respect adjacency, symmetry, and geometry directly rather than pretending the data lie on a Euclidean lattice.
+The most durable lesson of the chapter is that architecture is inductive bias made operational.
+
+\paragraph{Principle 2: Separate local processing from long-range interaction.}
+One recurring design pattern is to use one mechanism for nearby structure and another for distant dependence.
+CNNs use local filters and then enlarge receptive fields by stacking or pooling.
+RNNs use local temporal updates but must transport information through state.
+Transformers make long-range interaction explicit through attention.
+Modern hybrid designs often combine these ideas rather than choosing only one.
+
+\paragraph{Principle 3: Memory is an architectural object, not only an optimization side effect.}
+Plain recurrence stores the past in a continuously updated hidden state.
+Gated recurrence makes preservation and forgetting controllable.
+Attention turns memory retrieval into a weighted lookup over representations.
+These are not cosmetic differences.
+They reflect different hypotheses about what should be remembered, how it should be accessed, and what computational path information should take through the model.
+
+\paragraph{Principle 4: Depth composes simple operators into richer ones.}
+A single local filter sees only a small patch.
+A single recurrent step sees only one update.
+A single attention layer computes one round of adaptive interaction.
+Depth matters because repeated composition enlarges receptive field, increases representational hierarchy, and allows iterative refinement of intermediate states.
+This principle is broad enough to cover CNNs, RNNs, and transformers alike.
+
+\paragraph{Principle 5: Symmetry and equivariance should be used when they are real, not merely convenient.}
+Architectural sharing is powerful when it matches actual invariance or equivariance in the domain.
+Weight sharing in convolution is effective because the same local pattern may matter across positions.
+Permutation equivariance is appropriate for set-like inputs.
+Graph neural networks exploit relational symmetries.
+But the chapter also showed the danger of overextending symmetry assumptions.
+A model that ignores order entirely is unsuitable for language unless positional or relational information is reintroduced.
+
+\paragraph{Principle 6: Keep theory, empirical regularity, and engineering practice distinct.}
+A theorem about equivariance is not the same kind of statement as an empirical scaling law.
+An empirical scaling law is not the same kind of statement as a hardware-driven design convention.
+Students often blur these levels together.
+Doing so makes the literature seem either more chaotic or more settled than it really is.
+Part of architectural maturity is learning to ask which category a claim belongs to.
+
+\begin{remark}[What is probably most stable over time]
+Specific fashionable architectures may change.
+The most stable ideas are deeper than the current brand names:
+locality, symmetry, hierarchy, state, memory control, content-based interaction, and representation interfaces.
+These are the concepts most likely to survive shifts in implementation style.
+\end{remark}
+
+\subsection*{What appears well understood}
+
+It is now reasonable to say that several parts of architectural deep learning are conceptually mature.
+Convolution is no longer mysterious.
+Its relation to locality, translation structure, and hierarchical feature extraction is clear.
+Recurrent models are also conceptually clear as sequential state machines, even if their optimization can be difficult.
+Attention is mathematically transparent at the operator level: it forms data-dependent weighted aggregation according to learned similarities.
+The transformer block itself is algebraically explicit.
+
+What is mature here is not that every practical question has been solved.
+Rather, it is that the conceptual and mathematical backbone is in place.
+A student can understand what these operators do, what structures they encode, and why they differ.
+This is already a major intellectual achievement.
+A field becomes more mature when its main architectural objects can be written, analyzed, and compared in a common language.
+That is exactly what this chapter tried to provide.
+
+\subsection*{Open questions}
+
+The open problems begin where architectural algebra meets modern large-scale learning.
+These questions should be stated explicitly rather than hidden inside vague closing prose.
+
+\paragraph{Why does scale help as much as it does?}
+We understand how cost grows with depth, width, and context length.
+We do not yet possess a fully satisfactory theory explaining why large transformer systems, trained on massive corpora, acquire such broad and transferable behavior.
+This is partly an optimization question, partly a representation-learning question, and partly a question about the interaction of architecture with data distribution.
+
+\paragraph{What is the right theory of in-context computation?}
+Attention layers clearly permit flexible content-based interaction.
+But modern transformer systems seem to use context not only as memory but sometimes as a substrate for task adaptation, pattern matching, or implicit algorithm execution.
+How much of this can be characterized cleanly in terms of the architecture itself, and how much depends on large-scale training dynamics, remains open.
+
+\paragraph{When should architectural bias dominate, and when should generic scale dominate?}
+General-purpose transformers have been remarkably successful.
+At the same time, vision, audio, scientific data, and geometric data often retain domain-specific structure that seems too important to ignore.
+A central open design question is where the boundary lies between highly specialized architectural bias and sufficiently large generic token-based modeling.
+
+\paragraph{How should multimodal interfaces be designed?}
+The transformer core is relatively uniform, but the map from raw data to tokens is not.
+For language, tokenization is discrete and symbolic.
+For images, audio, video, or scientific measurements, the interface involves patching, framing, quantization, or learned latent coding.
+These choices strongly affect sample efficiency, compute, and downstream behavior, yet much of their current design remains empirical.
+
+\paragraph{What are the right long-context approximations?}
+Dense attention is expensive in context length.
+Sparse patterns, memory compression, retrieval mechanisms, and low-rank approximations all aim to reduce this burden.
+The asymptotic savings are easy to state.
+What remains difficult is to predict, from first principles, which approximation preserves the interactions that matter for a given task.
+
+\paragraph{How should geometry enter modern deep learning?}
+The chapter emphasized classical structures such as grids and sequences, but many domains are inherently geometric or relational.
+One open frontier is to unify the lessons of convolution, attention, and equivariance with deeper geometric principles on graphs, manifolds, and symmetry groups.
+This is one reason geometric deep learning has become such an important extension of the architectural viewpoint.
+
+\begin{remark}[A useful intellectual discipline]
+When reading current papers, ask whether a claim is about expressivity, optimization, statistical generalization, computational cost, or empirical benchmark behavior.
+Many apparent disagreements in the literature are really disagreements between different levels of analysis.
+\end{remark}
+
+\subsection*{Annotated bibliography}
+
+The references below are organized by architectural theme.
+They are not meant to be exhaustive.
+They are meant to help a mathematically inclined reader orient themselves historically and conceptually.
+
+\paragraph{CNNs.}
+The conceptual ancestor is Fukushima's \emph{Neocognitron}, which introduced a hierarchical pattern-recognition architecture with local receptive fields and shared feature extraction ideas.
+LeCun and collaborators established the modern practical CNN tradition through early convolutional networks for document recognition, culminating in the well-known LeNet line.
+For a broader retrospective synthesis, the review by LeCun, Bengio, and Hinton is valuable because it situates convolution inside the larger rise of deep learning and explains why locality and hierarchical composition matter.
+
+\paragraph{Recurrence.}
+Early simple recurrent networks associated with Elman and Jordan provide the cleanest entry point to recurrence as state evolution.
+They are especially useful pedagogically because the update equations are minimal and the dynamical-systems viewpoint is easy to see.
+For gated recurrence, the foundational source is the LSTM paper of Hochreiter and Schmidhuber, which addresses long-term dependency through controlled memory pathways.
+The GRU work of Cho and collaborators gives a streamlined variant that is often easier to teach comparatively.
+
+\paragraph{Attention.}
+The turning point for neural sequence modeling is Bahdanau, Cho, and Bengio, where attention was introduced to overcome the fixed-bottleneck problem of classical encoder--decoder models.
+That paper is still the best place to see attention in its original role as differentiable soft alignment.
+Luong-style attention variants are also worth reading because they clarify several alternative scoring forms and make the alignment picture more concrete for students.
+
+\paragraph{Transformers.}
+The central reference is \emph{Attention Is All You Need} by Vaswani and collaborators.
+It is foundational both because it introduced the transformer block and because it made attention a first-class sequence operator rather than an auxiliary mechanism.
+For broader textbook treatment, the deep learning texts by Goodfellow, Bengio, and Courville, and later modern treatments of sequence modeling, help place transformers in relation to earlier recurrent architectures.
+When reading transformer literature, it is useful to separate the original algebraic block from the later ecosystem of scaling methods, positional schemes, multimodal extensions, and long-context modifications.
+
+\paragraph{Geometric deep learning.}
+For readers interested in how the architectural viewpoint extends beyond grids and sequences, the geometric deep learning program associated with Bronstein, Bruna, Cohen, Veli\v{c}kovi\'{c}, and others is the natural next step.
+Its central message is that many modern neural architectures can be organized around symmetry, invariance, equivariance, and relational structure.
+This literature helps unify convolution on Euclidean domains, message passing on graphs, and more general group- or geometry-aware operators.
+
+\paragraph{How to use these references.}
+A productive reading order is often historical first, unifying second.
+Read one foundational paper in each category to see the motivating problem clearly.
+Then read a modern survey or textbook chapter to understand how the idea was absorbed into the larger field.
+This prevents the common mistake of learning only the most recent implementation pattern without understanding the conceptual reason it was invented.
+
+\subsection*{Closing perspective}
+
+The main intellectual lesson of this chapter is that architecture is the language in which learning systems express prior assumptions about structure.
+A model is never just a black box with more or fewer parameters.
+Its operator form decides which interactions are easy, which symmetries are respected, which information paths are short or long, and which regularities are encoded before any data are seen.
+
+The chapter also leaves an important balanced conclusion.
+Architecture is neither fully solved nor completely mysterious.
+It contains a stable mathematical core, a set of durable design principles, and a frontier of open questions that are still being negotiated by theory, experiment, and engineering practice.
+That is precisely why architectural study matters.
+It sits at the point where mathematics, modeling judgment, and empirical performance meet.
+
+The next chapter turns from \emph{architectural structure} to \emph{representation learning at scale}.
+Once one has operators capable of expressing useful inductive bias, the next question becomes how those operators are trained on massive data to produce transferable internal representations.
+
+\paragraph{What to remember.}
+Chapter 3 established a set of mathematically clean architectural claims: convolution as a structured local operator, recurrence as state evolution, gating as controlled memory flow, attention as weighted aggregation, self-attention without positional information as permutation equivariant, and transformer scaling as governed in part by the cost of all-to-all token interaction.
+Beyond these claims, the chapter distilled broader design principles about matching operators to data structure, separating local and global interaction, and distinguishing theory from empirical design practice.
+The major open questions concern scale, in-context computation, multimodal interfaces, long-context approximation, and the integration of geometry into modern deep learning.
+
+\paragraph{Common confusion.}
+Students sometimes think that because modern architectures achieve impressive benchmark performance, the theoretical picture must already be complete.
+The opposite mistake is to conclude that because much of the frontier is empirical, the existing theory is shallow.
+Both views are wrong.
+The correct picture is layered:
+some results are exact and structural, some principles are strong but empirical, and some central design questions remain open.
+A second common confusion is to treat architectural categories such as CNN, RNN, and transformer as isolated historical episodes.
+A better perspective is to view them as different answers to one general question: what operator should be used when the data exhibit a given form of structure?
+
+\paragraph{Exercises.}
+\begin{enumerate}
+    \item Pick three entries from Table~\ref{tab:chapter3theoremmap} and classify each one as a theorem, a proposition-level structural statement, an exact architectural identity, or an asymptotic derivation.
+    Explain why these are different kinds of mathematical knowledge.
+    \item Compare convolution and self-attention as inductive biases.
+    In what sense does convolution build in stronger prior assumptions than dense self-attention?
+    In what sense does self-attention allow a richer interaction family?
+    \item Starting from the recurrence
+    \(h_t = \phi(W_h h_{t-1}+W_x x_t)\), explain why the path length from token 1 to token \(T\) grows with \(T\).
+    Then compare this with the direct interaction path in self-attention.
+    \item Give a concrete example of a domain in which explicit symmetry or equivariance should guide architecture design.
+    Explain what would likely be lost if one used a completely generic token model without encoding that structure.
+    \item ``Transformers succeeded, so architecture no longer matters.''
+    Critically evaluate this statement using ideas from multimodal interfaces, long-context modeling, and geometric deep learning.
+    \item Choose one category from the annotated bibliography and trace a short historical arc from a foundational paper to a modern architectural family.
+    Identify what stayed conceptually stable and what changed in implementation practice.
+\end{enumerate}
+
+\paragraph{Notes and references.}
+This closing section is intentionally synthetic.
+Its role is to separate the mathematically established content of the chapter from larger empirical and conceptual questions.
+For convolutional architectures, early foundational works by Fukushima and LeCun remain important historically, while broader retrospectives help situate CNNs within deep learning as a whole.
+For recurrence, Elman, Jordan, Hochreiter--Schmidhuber, and Cho et al. mark the key conceptual steps from simple state evolution to controlled gating.
+For attention and transformers, Bahdanau et al.
+and Vaswani et al.
+are the canonical turning points.
+For geometric deep learning, modern surveys provide a useful bridge from classical equivariance ideas to graph- and geometry-aware architectures.
+The pedagogical point is not merely to know these names, but to see that each major architecture arose in response to a precise structural problem.
+
+Several architectural principles are by now conceptually clear.
+
+\paragraph{Convolution and equivariance.}
+The logic of locality, weight sharing, and translation structure is mathematically clean and well motivated.
+
+\paragraph{Recurrence as state evolution.}
+RNNs provide a natural framework for sequential dependence and temporal memory.
+
+\paragraph{Gating as memory control.}
+LSTM and GRU architectures embody the useful principle that information flow should be selectively regulated.
+
+\paragraph{Attention as adaptive interaction.}
+Attention mechanisms provide direct, content-dependent communication among representations.
+
+\subsection*{What remains only partially understood}
+
+Other issues are much less settled.
+
+\paragraph{Why transformers are so dominant across modalities.}
+Their empirical success is undeniable, but the full theoretical explanation for their breadth of applicability remains incomplete.
+
+\paragraph{What scaling really changes.}
+Increasing depth, width, and context length clearly alters performance, but the mechanisms behind large-scale emergent behavior are still not fully understood.
+
+\paragraph{The theory of in-context behavior.}
+Attention-based models often perform sophisticated context-dependent adaptation, yet a full theory of this phenomenon remains open.
+
+\paragraph{When architectural bias still beats raw scale.}
+There are many settings where strong domain-specific structure remains valuable.
+Understanding the boundary between built-in architectural bias and broad general-purpose scale is an ongoing question.
+
+\subsection*{Closing perspective}
+
+Architecture is not a superficial design choice.
+It is one of the main ways machine learning expresses assumptions about the world.
+
+\medskip
+
+This chapter showed that different architectures encode different structural hypotheses:
+\begin{itemize}
+    \item spatial locality,
+    \item temporal state,
+    \item controlled memory,
+    \item adaptive interaction,
+    \item scalable compositional processing.
+\end{itemize}
+
+The next chapter shifts from \emph{architectural structure} to \emph{learning structure at scale}.
+Once architectures can express useful inductive bias, the next question is:
+
+\begin{quote}
+How do modern systems learn reusable representations from massive data, and how are those representations adapted across many tasks?
+\end{quote}

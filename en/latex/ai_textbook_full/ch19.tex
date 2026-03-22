@@ -1,0 +1,213 @@
+\chapter{Normalization Methods}
+
+\section{Introduction}
+
+Normalization layers are a central component of modern deep networks. They improve training stability, accelerate optimization, and enable deeper architectures. However, their role is often described informally (e.g., ``reducing internal covariate shift''), which can obscure their true effect.
+
+This chapter develops normalization methods from both mathematical and practical perspectives. We study batch normalization, layer normalization, and related variants, and interpret normalization as a form of reparameterization that improves conditioning and gradient flow.
+
+\section{Why Normalization Helps}
+
+Deep networks suffer from unstable signal propagation and poor conditioning. Activations can grow or shrink across layers, and gradients may become ill-scaled.
+
+Normalization addresses these issues by:
+\begin{itemize}
+    \item controlling the scale of activations,
+    \item improving gradient conditioning,
+    \item making optimization less sensitive to parameter initialization,
+    \item introducing a mild regularization effect.
+\end{itemize}
+
+Rather than viewing normalization as fixing data distributions, it is more accurate to view it as improving the geometry of the optimization problem.
+
+\section{Batch Normalization}
+
+Batch normalization (BN) normalizes activations across a mini-batch.
+
+\subsection{Transformation}
+
+Given activations $x_1,\dots,x_m$ in a batch, define:
+\[
+\mu_B = \frac{1}{m}\sum_{i=1}^m x_i,
+\qquad
+\sigma_B^2 = \frac{1}{m}\sum_{i=1}^m (x_i - \mu_B)^2.
+\]
+
+The normalized activations are:
+\[
+\hat{x}_i = \frac{x_i - \mu_B}{\sqrt{\sigma_B^2 + \varepsilon}}.
+\]
+
+A learned affine transformation is then applied:
+\[
+y_i = \gamma \hat{x}_i + \beta,
+\]
+where $\gamma$ and $\beta$ are trainable parameters.
+
+\subsection{Interpretation}
+
+BN standardizes activations within each batch, then allows the network to recover any necessary scale and shift through $\gamma$ and $\beta$.
+
+This can be interpreted as:
+\begin{itemize}
+    \item enforcing a normalized intermediate representation,
+    \item while preserving expressive flexibility.
+\end{itemize}
+
+\subsection{Train/Test Discrepancy}
+
+During training, BN uses batch statistics $(\mu_B, \sigma_B^2)$.  
+At test time, it uses running averages:
+\[
+\mu_{\mathrm{test}}, \quad \sigma^2_{\mathrm{test}}.
+\]
+
+\begin{itemize}
+    \item this introduces a discrepancy between training and inference,
+    \item small batch sizes can lead to noisy estimates.
+\end{itemize}
+
+Thus BN depends on batch size and training dynamics.
+
+\subsection{Internal Covariate Shift (Nuanced View)}
+
+The original motivation for BN was to reduce ``internal covariate shift,'' meaning changes in layer input distributions during training.
+
+However, modern understanding suggests:
+\begin{itemize}
+    \item the main benefit is improved optimization geometry,
+    \item BN smooths the loss landscape and stabilizes gradients,
+    \item it enables larger learning rates.
+\end{itemize}
+
+Thus its effectiveness is better explained by conditioning rather than distributional stability alone.
+
+\section{Layer Normalization and Sequence Models}
+
+Batch normalization depends on batch statistics, which can be problematic for:
+\begin{itemize}
+    \item small batch sizes,
+    \item sequential or autoregressive models.
+\end{itemize}
+
+\subsection{Layer Normalization (LN)}
+
+Layer normalization normalizes across features for a single example:
+\[
+\mu = \frac{1}{d}\sum_{j=1}^d x_j,
+\qquad
+\sigma^2 = \frac{1}{d}\sum_{j=1}^d (x_j - \mu)^2.
+\]
+
+Then:
+\[
+\hat{x}_j = \frac{x_j - \mu}{\sqrt{\sigma^2 + \varepsilon}},
+\qquad
+y_j = \gamma \hat{x}_j + \beta.
+\]
+
+\subsection{Properties}
+
+\begin{itemize}
+    \item independent of batch size,
+    \item consistent between training and testing,
+    \item widely used in transformers and sequence models.
+\end{itemize}
+
+\subsection{Instance and Group Normalization}
+
+Other variants include:
+\begin{itemize}
+    \item \textbf{Instance normalization:} normalize each channel independently per example,
+    \item \textbf{Group normalization:} normalize over groups of channels.
+\end{itemize}
+
+These provide flexibility between BN and LN, especially in vision tasks.
+
+\section{Normalization as Geometry and Conditioning}
+
+Normalization can be understood as a reparameterization of the model.
+
+\subsection{Reparameterization View}
+
+Consider a layer output:
+\[
+z = W x.
+\]
+
+With normalization:
+\[
+\hat{z} = \frac{z - \mu}{\sigma}.
+\]
+
+This effectively rescales directions in parameter space, making optimization less sensitive to parameter magnitudes.
+
+\subsection{Conditioning Intuition}
+
+Poorly scaled features lead to ill-conditioned optimization problems. Normalization:
+\begin{itemize}
+    \item makes level sets more isotropic,
+    \item improves gradient alignment,
+    \item allows larger and more stable updates.
+\end{itemize}
+
+Thus normalization acts as a preconditioner embedded within the network.
+
+\section{When Normalization Fails or Is Unnecessary}
+
+Normalization is not universally beneficial.
+
+\subsection{Failure Modes}
+
+\begin{itemize}
+    \item very small batch sizes degrade BN performance,
+    \item mismatch between training and inference statistics,
+    \item added computational overhead.
+\end{itemize}
+
+\subsection{Alternatives}
+
+Some architectures reduce reliance on normalization by:
+\begin{itemize}
+    \item careful initialization,
+    \item residual connections,
+    \item architectural constraints.
+\end{itemize}
+
+In such cases, normalization may be less critical.
+
+\section{Worked Comparison: BN vs LN}
+
+\begin{itemize}
+    \item BN normalizes across the batch:
+    \begin{itemize}
+        \item depends on batch statistics,
+        \item effective in large-batch vision models.
+    \end{itemize}
+    \item LN normalizes across features:
+    \begin{itemize}
+        \item independent of batch size,
+        \item preferred in sequence and transformer models.
+    \end{itemize}
+\end{itemize}
+
+Thus the choice depends on data structure and training setup.
+
+\section{A Unifying Perspective}
+
+Normalization layers control scale and improve conditioning within deep networks. Rather than merely stabilizing distributions, they reshape the optimization landscape through reparameterization.
+
+Different normalization methods correspond to different choices of:
+\begin{itemize}
+    \item normalization axis (batch, feature, channel),
+    \item statistical estimation (batch vs per-sample),
+    \item invariance properties.
+\end{itemize}
+
+Understanding these choices clarifies when each method is appropriate.
+
+\section{Summary}
+
+In this chapter we studied normalization methods in deep learning. We defined batch normalization and analyzed its transformation, training/inference behavior, and practical effects. We introduced layer normalization and related variants, highlighting their role in sequence models.
+
+We interpreted normalization as a geometric reparameterization that improves conditioning and gradient flow. Finally, we discussed when normalization may fail or be unnecessary. These ideas are essential for designing stable and efficient deep architectures.

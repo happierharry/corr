@@ -1,0 +1,269 @@
+\chapter{Likelihood-Based Learning with Latent Variables}
+
+\section{Maximum Likelihood Estimation}
+
+A central principle in generative modeling is maximum likelihood estimation (MLE). The goal is to choose model parameters that maximize the probability of observed data.
+
+\medskip
+
+\noindent
+\textbf{Objective.}  
+Given data $\{x_i\}_{i=1}^n$, we maximize:
+\[
+\max_\theta \; \frac{1}{n} \sum_{i=1}^n \log p_\theta(x_i).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Encourages the model to assign high probability to observed data
+    \item Equivalent to minimizing the negative log-likelihood
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Connection to divergence.}  
+MLE minimizes the Kullback--Leibler divergence:
+\[
+\mathrm{KL}(p_{\text{data}} \,\|\, p_\theta).
+\]
+
+\medskip
+
+\noindent
+\textbf{Gradient.}
+\[
+\nabla_\theta \log p_\theta(x)
+\]
+can often be computed efficiently for explicit models.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+MLE provides a principled way to learn probabilistic models from data.
+
+\section{Hidden Variables and Marginalization}
+
+Latent variable models introduce hidden variables $z$ to capture underlying structure.
+
+\medskip
+
+\noindent
+\textbf{Marginal likelihood.}
+\[
+p_\theta(x) = \int p_\theta(x, z) \, dz = \int p_\theta(x \mid z) p(z) \, dz.
+\]
+
+\medskip
+
+\noindent
+\textbf{Log-likelihood.}
+\[
+\log p_\theta(x) = \log \int p_\theta(x, z) \, dz.
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item $z$ explains variability in $x$
+    \item The model integrates over all possible latent explanations
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Challenge.}  
+The integral over $z$ is often intractable, especially in high dimensions.
+
+\medskip
+
+\noindent
+\textbf{Posterior distribution.}
+\[
+p_\theta(z \mid x) = \frac{p_\theta(x, z)}{p_\theta(x)}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Learning requires both evaluating the marginal likelihood and reasoning about latent variables.
+
+\section{Intractability and Approximation}
+
+Exact computation of the marginal likelihood is typically infeasible.
+
+\medskip
+
+\noindent
+\textbf{Sources of intractability.}
+\begin{itemize}
+    \item High-dimensional latent space
+    \item Complex likelihood functions
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Approximation strategies.}
+\begin{itemize}
+    \item Sampling-based methods (e.g., Monte Carlo)
+    \item Deterministic approximations
+    \item Variational methods
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Monte Carlo approximation.}
+\[
+p_\theta(x) \approx \frac{1}{N} \sum_{i=1}^N p_\theta(x \mid z_i), \quad z_i \sim p(z).
+\]
+
+\medskip
+
+\noindent
+\textbf{Limitations.}
+\begin{itemize}
+    \item High variance estimates
+    \item Computationally expensive
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Alternative viewpoint.}  
+Rather than approximating the integral directly, we approximate the posterior $p_\theta(z \mid x)$.
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Approximation is unavoidable in latent variable models and shapes both theory and practice.
+
+\section{Variational Principles}
+
+Variational methods provide a powerful framework for approximating intractable quantities.
+
+\medskip
+
+\noindent
+\textbf{Variational distribution.}  
+Introduce a tractable distribution $q_\phi(z \mid x)$ to approximate the true posterior.
+
+\medskip
+
+\noindent
+\textbf{Key identity.}
+\[
+\log p_\theta(x)
+=
+\mathbb{E}_{q_\phi(z \mid x)}\left[\log \frac{p_\theta(x, z)}{q_\phi(z \mid x)}\right]
++
+\mathrm{KL}(q_\phi(z \mid x) \,\|\, p_\theta(z \mid x)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Evidence lower bound (ELBO).}
+\[
+\mathcal{L}(\theta, \phi)
+=
+\mathbb{E}_{q_\phi(z \mid x)}[\log p_\theta(x, z) - \log q_\phi(z \mid x)].
+\]
+
+\medskip
+
+\noindent
+\textbf{Lower bound property.}
+\[
+\mathcal{L}(\theta, \phi) \leq \log p_\theta(x).
+\]
+
+\medskip
+
+\noindent
+\textbf{Decomposition.}
+\[
+\mathcal{L}(\theta, \phi)
+=
+\mathbb{E}_{q_\phi(z \mid x)}[\log p_\theta(x \mid z)]
+-
+\mathrm{KL}(q_\phi(z \mid x) \,\|\, p(z)).
+\]
+
+\medskip
+
+\noindent
+\textbf{Interpretation.}
+\begin{itemize}
+    \item First term: reconstruction quality
+    \item Second term: regularization toward the prior
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Optimization.}
+\begin{itemize}
+    \item Maximize ELBO with respect to $\theta$ and $\phi$
+    \item Jointly learn generative and inference models
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Insight.}  
+Variational methods transform intractable inference into an optimization problem.
+
+\section{A Unifying Perspective}
+
+Likelihood-based learning with latent variables involves several interconnected ideas:
+
+\begin{itemize}
+    \item \textbf{MLE:} learning from observed data
+    \item \textbf{Latent variables:} modeling hidden structure
+    \item \textbf{Approximation:} handling intractable integrals
+    \item \textbf{Variational inference:} optimization-based approximation
+\end{itemize}
+
+\medskip
+
+\noindent
+\textbf{Core tradeoff.}
+\[
+\text{Accuracy of approximation} \quad \text{vs} \quad \text{computational tractability}.
+\]
+
+\medskip
+
+\noindent
+\textbf{Key insight.}  
+Introducing latent variables increases modeling power but requires approximate inference techniques.
+
+\section{Outlook}
+
+This chapter introduced likelihood-based learning with latent variables:
+\begin{itemize}
+    \item maximum likelihood estimation,
+    \item marginalization over hidden variables,
+    \item challenges of intractability,
+    \item variational principles and the ELBO.
+\end{itemize}
+
+\medskip
+
+In the next chapter, we apply these ideas to variational autoencoders, a practical and widely used class of generative models.
+
+\medskip
+
+\noindent
+\textbf{Guiding principle.}  
+Complex probabilistic models require approximate inference, and variational methods provide a principled and scalable solution.
